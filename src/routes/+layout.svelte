@@ -2,9 +2,12 @@
   import "../app.css";
   import AppSidebar from "$lib/components/app-sidebar/AppSidebar.svelte";
   import AppHeader from "$lib/components/app-header/AppHeader.svelte";
+  import { ModeWatcher } from "mode-watcher";
 
   let { children } = $props();
 </script>
+
+<ModeWatcher />
 
 <div
   class="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]"

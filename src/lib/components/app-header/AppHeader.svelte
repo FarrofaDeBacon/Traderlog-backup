@@ -4,6 +4,7 @@
     import { Input } from "$lib/components/ui/input";
     import { Search, User, LogOut, Settings } from "lucide-svelte";
     import * as Avatar from "$lib/components/ui/avatar";
+    import ModeToggle from "$lib/components/mode-toggle/ModeToggle.svelte";
 
     // Props for mobile trigger injection if needed, but Sidebar handles its own trigger currently.
     // We might want to move the trigger here if we want a unified header.
@@ -29,6 +30,7 @@
             </div>
         </form>
     </div>
+    <ModeToggle />
     <DropdownMenu.Root>
         <DropdownMenu.Trigger>
             {#snippet child({ props }: { props: Record<string, any> })}
