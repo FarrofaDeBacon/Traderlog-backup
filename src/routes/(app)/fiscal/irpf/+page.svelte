@@ -16,7 +16,6 @@
         Eye,
         Trash2,
         AlertTriangle,
-        RefreshCw,
         ArrowRight,
         ChevronLeft,
         ChevronRight,
@@ -35,9 +34,6 @@
     // Delete Modal State
     let isDeleteModalOpen = $state(false);
     let appraisalToDelete = $state<any>(null);
-
-    // Reset Modal State
-    let isResetModalOpen = $state(false);
 
     // Appraisal Modal State
     let isAppraisalModalOpen = $state(false);
@@ -162,12 +158,6 @@
         }
     }
 
-    async function confirmReset() {
-        await irpfStore.resetData();
-        isResetModalOpen = false;
-        loadData();
-    }
-
     function loadData() {
         irpfStore.loadAppraisals(currentYear);
         irpfStore.loadAccumulatedLosses();
@@ -212,14 +202,7 @@
                 <FileText class="w-4 h-4 mr-2" />
                 Gerenciar DARFs
             </Button>
-            <Button
-                variant="outline"
-                onclick={() => (isResetModalOpen = true)}
-                class="border-red-500/20 text-red-400 hover:bg-red-500/10 hover:text-red-300"
-            >
-                <RefreshCw class="w-4 h-4 mr-2" />
-                Resetar Dados
-            </Button>
+
             <Button
                 onclick={() => (isAppraisalModalOpen = true)}
                 class="neon-glow bg-primary text-black font-bold"
@@ -1005,28 +988,6 @@
                 >
                 <Button variant="destructive" onclick={confirmDelete}
                     >Excluir</Button
-                >
-            </Dialog.Footer>
-        </Dialog.Content>
-    </Dialog.Root>
-
-    <!-- Reset Modal -->
-    <Dialog.Root bind:open={isResetModalOpen}>
-        <Dialog.Content class="sm:max-w-[400px]">
-            <Dialog.Header>
-                <Dialog.Title>Resetar Dados Fiscais</Dialog.Title>
-                <Dialog.Description
-                    >CUIDADO: Isso apagará todas as apurações, DARFs e histórico
-                    de prejuízos. Deseja continuar?</Dialog.Description
-                >
-            </Dialog.Header>
-            <Dialog.Footer>
-                <Button
-                    variant="outline"
-                    onclick={() => (isResetModalOpen = false)}>Cancelar</Button
-                >
-                <Button variant="destructive" onclick={confirmReset}
-                    >Confirmar Reset</Button
                 >
             </Dialog.Footer>
         </Dialog.Content>
