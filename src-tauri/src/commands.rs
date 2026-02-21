@@ -15,16 +15,23 @@ pub mod irpf;
 async fn upsert_record(db: &Surreal<Db>, table: &str, id: &str, data: serde_json::Value) -> Result<(), String> {
     // Utilize native Rust SurrealDB SDK which correctly serializes Things and saves to disk securely
     println!("[DB] Attempting SDK Upsert for {}:{}", table, id);
-    let result: Option<serde_json::Value> = db
-        .upsert((table, id))
-        .content(data)
+    // Convert serde_json::Value to surrealdb::sql::Value if needed, or rely on .content()
+    // The previous fail was due to .content() attempting to parse the result back into an incompatible type.
+    // If we request a generic Option<surrealdb::sql::Value> it fails on the input JSON being an object instead of enum variant Thing.
+    // Let's use raw query for 'upsert' to bypass the rigid .content() deserializer constraints.
+
+    let query_str = format!("UPSERT {}:{} CONTENT $data;", table, id);
+    let parsed_val = surrealdb::sql::json(&data.to_string()).map_err(|e| e.to_string())?;
+
+    let _ = db.query(&query_str)
+        .bind(("data", parsed_val))
         .await
         .map_err(|e| {
             println!("[DB] SDK Upsert ERROR for {}:{}. Error: {}", table, id, e);
             e.to_string()
         })?;
         
-    println!("[DB] SDK Upsert SUCCESS for {}:{}, Returned: {:?}", table, id, result.is_some());
+    println!("[DB] SDK Upsert SUCCESS for {}:{}", table, id);
     Ok(())
 }
 

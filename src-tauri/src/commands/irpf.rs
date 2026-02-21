@@ -1157,17 +1157,19 @@ pub async fn save_tax_rule(db: State<'_, DbState>, rule: TaxRule) -> Result<TaxR
     let clean_id = id.split(':').last().unwrap_or(&id);
 
     // Using Native Rust SDK for guaranteed format parsing
-    let result: Option<TaxRule> = match db.0.upsert(("tax_rule", clean_id))
-        .content(json)
-        .await {
-            Ok(r) => r,
-            Err(e) => {
-                println!("[IRPF_ERROR] UPSERT Failed on tax_rule: {}", e);
-                return Err(e.to_string());
-            }
-        };
+    let query_str = format!("UPSERT {}:{} CONTENT $data;", "tax_rule", clean_id);
+    let parsed_val = surrealdb::sql::json(&json.to_string()).map_err(|e| e.to_string())?;
+
+    let mut result = db.0.query(&query_str)
+        .bind(("data", parsed_val))
+        .await
+        .map_err(|e| {
+            println!("[IRPF_ERROR] UPSERT Failed on tax_rule: {}", e);
+            e.to_string()
+        })?;
         
-    result.ok_or_else(|| "Failed to save tax rule".to_string())
+    let saved: Option<TaxRule> = result.take(0).map_err(|e| e.to_string())?;
+    saved.ok_or_else(|| "Failed to save tax rule".to_string())
 }
 
 #[tauri::command]
@@ -1194,12 +1196,16 @@ pub async fn save_tax_mapping(db: State<'_, DbState>, mapping: TaxMapping) -> Re
     
     let clean_id = id.split(':').last().unwrap_or(&id);
     
-    let result: Option<TaxMapping> = db.0.upsert(("tax_mapping", clean_id))
-        .content(json)
+    let query_str = format!("UPSERT {}:{} CONTENT $data;", "tax_mapping", clean_id);
+    let parsed_val = surrealdb::sql::json(&json.to_string()).map_err(|e| e.to_string())?;
+
+    let mut result = db.0.query(&query_str)
+        .bind(("data", parsed_val))
         .await
         .map_err(|e| e.to_string())?;
         
-    result.ok_or_else(|| "Failed to save tax mapping".to_string())
+    let saved: Option<TaxMapping> = result.take(0).map_err(|e| e.to_string())?;
+    saved.ok_or_else(|| "Failed to save tax mapping".to_string())
 }
 
 #[tauri::command]
@@ -1228,12 +1234,16 @@ pub async fn save_tax_profile(db: State<'_, DbState>, profile: TaxProfile) -> Re
     
     let clean_id = id.split(':').last().unwrap_or(&id);
 
-    let result: Option<TaxProfile> = db.0.upsert(("tax_profile", clean_id))
-        .content(json)
+    let query_str = format!("UPSERT {}:{} CONTENT $data;", "tax_profile", clean_id);
+    let parsed_val = surrealdb::sql::json(&json.to_string()).map_err(|e| e.to_string())?;
+
+    let mut result = db.0.query(&query_str)
+        .bind(("data", parsed_val))
         .await
         .map_err(|e| e.to_string())?;
         
-    result.ok_or_else(|| "Failed to save tax profile".to_string())
+    let saved: Option<TaxProfile> = result.take(0).map_err(|e| e.to_string())?;
+    saved.ok_or_else(|| "Failed to save tax profile".to_string())
 }
 
 #[tauri::command]
@@ -1277,12 +1287,16 @@ pub async fn save_tax_profile_entry(db: State<'_, DbState>, entry: TaxProfileEnt
     
     let clean_id = id.split(':').last().unwrap_or(&id);
 
-    let result: Option<TaxProfileEntry> = db.0.upsert(("tax_profile_entry", clean_id))
-        .content(json)
+    let query_str = format!("UPSERT {}:{} CONTENT $data;", "tax_profile_entry", clean_id);
+    let parsed_val = surrealdb::sql::json(&json.to_string()).map_err(|e| e.to_string())?;
+
+    let mut result = db.0.query(&query_str)
+        .bind(("data", parsed_val))
         .await
         .map_err(|e| e.to_string())?;
         
-    result.ok_or_else(|| "Failed to save tax profile entry".to_string())
+    let saved: Option<TaxProfileEntry> = result.take(0).map_err(|e| e.to_string())?;
+    saved.ok_or_else(|| "Failed to save tax profile entry".to_string())
 }
 
 #[tauri::command]
