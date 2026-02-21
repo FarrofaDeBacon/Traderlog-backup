@@ -20,7 +20,7 @@ async fn upsert_record(db: &Surreal<Db>, table: &str, id: &str, data: serde_json
     // If we request a generic Option<surrealdb::sql::Value> it fails on the input JSON being an object instead of enum variant Thing.
     // Let's use raw query for 'upsert' to bypass the rigid .content() deserializer constraints.
 
-    let query_str = format!("UPSERT {}:{} CONTENT $data;", table, id);
+    let query_str = format!("UPSERT {}:`{}` CONTENT $data;", table, id);
     let parsed_val = surrealdb::sql::json(&data.to_string()).map_err(|e| e.to_string())?;
 
     let _ = db.query(&query_str)

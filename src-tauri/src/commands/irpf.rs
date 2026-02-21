@@ -1157,7 +1157,7 @@ pub async fn save_tax_rule(db: State<'_, DbState>, rule: TaxRule) -> Result<TaxR
     let clean_id = id.split(':').last().unwrap_or(&id);
 
     // Using Native Rust SDK for guaranteed format parsing
-    let query_str = format!("UPSERT {}:{} CONTENT $data;", "tax_rule", clean_id);
+    let query_str = format!("UPSERT {}:`{}` CONTENT $data;", "tax_rule", clean_id);
     let parsed_val = surrealdb::sql::json(&json.to_string()).map_err(|e| e.to_string())?;
 
     let mut result = db.0.query(&query_str)
@@ -1196,7 +1196,7 @@ pub async fn save_tax_mapping(db: State<'_, DbState>, mapping: TaxMapping) -> Re
     
     let clean_id = id.split(':').last().unwrap_or(&id);
     
-    let query_str = format!("UPSERT {}:{} CONTENT $data;", "tax_mapping", clean_id);
+    let query_str = format!("UPSERT {}:`{}` CONTENT $data;", "tax_mapping", clean_id);
     let parsed_val = surrealdb::sql::json(&json.to_string()).map_err(|e| e.to_string())?;
 
     let mut result = db.0.query(&query_str)
@@ -1234,7 +1234,7 @@ pub async fn save_tax_profile(db: State<'_, DbState>, profile: TaxProfile) -> Re
     
     let clean_id = id.split(':').last().unwrap_or(&id);
 
-    let query_str = format!("UPSERT {}:{} CONTENT $data;", "tax_profile", clean_id);
+    let query_str = format!("UPSERT {}:`{}` CONTENT $data;", "tax_profile", clean_id);
     let parsed_val = surrealdb::sql::json(&json.to_string()).map_err(|e| e.to_string())?;
 
     let mut result = db.0.query(&query_str)
@@ -1287,7 +1287,7 @@ pub async fn save_tax_profile_entry(db: State<'_, DbState>, entry: TaxProfileEnt
     
     let clean_id = id.split(':').last().unwrap_or(&id);
 
-    let query_str = format!("UPSERT {}:{} CONTENT $data;", "tax_profile_entry", clean_id);
+    let query_str = format!("UPSERT {}:`{}` CONTENT $data;", "tax_profile_entry", clean_id);
     let parsed_val = surrealdb::sql::json(&json.to_string()).map_err(|e| e.to_string())?;
 
     let mut result = db.0.query(&query_str)
