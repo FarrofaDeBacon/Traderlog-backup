@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Licenças - TraderLogPro</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --border: #334155;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: var(--card);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid var(--border);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 2rem;
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #94a3b8;
+        }
+
+        select,
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        select:focus,
+        input:focus {
+            outline: 2px solid var(--primary);
+            border-color: transparent;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .result-area {
+            margin-top: 2rem;
+            padding: 1rem;
+            background-color: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.875rem;
+            color: #4ade80;
+            min-height: 100px;
+            display: none;
+        }
+
+        .copy-btn {
+            background-color: #334155;
+            margin-top: 1rem;
+        }
+
+        .copy-btn:hover {
+            background-color: #475569;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        input[type="checkbox"] {
+            width: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>TraderLogPro Admin KeyGen</h1>
+
+        <div class="form-group">
+            <label>Plano</label>
+            <select id="plan">
+                <option value="Pro">Pro</option>
+                <option value="Trial">Trial</option>
+                <option value="Enterprise">Enterprise</option>
+                <option value="Lifetime">Lifetime</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Customer ID (ID de Identificação)</label>
+            <input type="text" id="cid" placeholder="Ex: 4A1B2C3D4E5F (Opcional)">
+            <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">Cole aqui o ID gerado pelo app do
+                cliente para vincular a licença.</p>
+        </div>
+
+        <div class="form-group">
+            <label>Validade (Dias)</label>
+            <input type="number" id="days" value="30">
+        </div>
+
+        <div class="form-group checkbox-group">
+            <input type="checkbox" id="lifetime" onchange="toggleLifetime()">
+            <label for="lifetime" style="margin-bottom:0; cursor:pointer;">Licença Vitalícia (Sem Validade)</label>
+        </div>
+
+        <button onclick="generateKey()">GERAR LICENÇA LINKADA</button>
+
+        <div id="result" class="result-area"></div>
+        <button id="copyBtn" class="copy-btn" style="display:none;" onclick="copyToClipboard()">Copiar Chave</button>
+    </div>
+
+    <script>
+        const SECRET_KEY = "TRADERLOGPRO_SECRET_KEY_2026";
+        const VERSION = "v1";
+        const PREFIX = "TLP";
+
+        function toggleLifetime() {
+            const isLifetime = document.getElementById('lifetime').checked;
+            const daysInput = document.getElementById('days');
+            const planSelect = document.getElementById('plan');
+
+            if (isLifetime) {
+                daysInput.disabled = true;
+                planSelect.value = "Lifetime";
+            } else {
+                daysInput.disabled = false;
+                planSelect.value = "Pro";
+            }
+        }
+
+        async function generateKey() {
+            const plan = document.getElementById('plan').value;
+            const isLifetime = document.getElementById('lifetime').checked;
+            let exp = null;
+
+            if (!isLifetime) {
+                const days = parseInt(document.getElementById('days').value);
+                if (isNaN(days) || days <= 0) {
+                    alert("Por favor insira um número válido de dias.");
+                    return;
+                }
+                const date = new Date();
+                date.setDate(date.getDate() + days);
+                exp = date.toISOString();
+            }
+
+            const payload = {
+                plan: plan,
+                exp: exp,
+                cid: document.getElementById('cid').value.trim().toUpperCase(),
+                created_at: new Date().toISOString()
+            };
+
+            const payloadStr = JSON.stringify(payload);
+            const payloadB64 = btoa(payloadStr); // Standard Base64
+
+            // TLP-v1-PAYLOAD
+            const dataToSign = `${PREFIX}-${VERSION}-${payloadB64}`;
+
+            // HMAC SHA-256 Signature
+            const encoder = new TextEncoder();
+            const keyData = encoder.encode(SECRET_KEY);
+            const messageData = encoder.encode(dataToSign);
+
+            try {
+                const key = await crypto.subtle.importKey(
+                    "raw", keyData,
+                    { name: "HMAC", hash: "SHA-256" },
+                    false, ["sign"]
+                );
+
+                const signatureBuffer = await crypto.subtle.sign("HMAC", key, messageData);
+
+                // Convert to Hex
+                const signatureArray = Array.from(new Uint8Array(signatureBuffer));
+                const signatureHex = signatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+                const finalKey = `${dataToSign}-${signatureHex}`;
+
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerText = finalKey;
+                resultDiv.style.display = 'block';
+                document.getElementById('copyBtn').style.display = 'block';
+
+            } catch (e) {
+                console.error(e);
+                alert("Erro ao gerar chave: " + e.message);
+            }
+        }
+
+        function copyToClipboard() {
+            const text = document.getElementById('result').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Chave copiada!");
+            });
+        }
+    </script>
+</body>
+
+</html>

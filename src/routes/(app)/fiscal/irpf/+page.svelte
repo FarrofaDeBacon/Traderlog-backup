@@ -1,0 +1,1159 @@
+<script lang="ts">
+    import { onMount } from "svelte";
+    import { toast } from "svelte-sonner";
+    import { _ } from "svelte-i18n";
+    import * as Card from "$lib/components/ui/card";
+    import { Button } from "$lib/components/ui/button";
+    import { Input } from "$lib/components/ui/input";
+    import { Label } from "$lib/components/ui/label";
+    import * as Dialog from "$lib/components/ui/dialog";
+    import {
+        Calendar,
+        DollarSign,
+        FileText,
+        TrendingDown,
+        TrendingUp,
+        Eye,
+        Trash2,
+        AlertTriangle,
+        RefreshCw,
+        ArrowRight,
+        ChevronLeft,
+        ChevronRight,
+        CheckCircle2,
+        AlertCircle,
+    } from "lucide-svelte";
+    import { irpfStore } from "$lib/stores/irpfStore.svelte";
+    import TaxEvolutionChart from "$lib/components/dashboard/TaxEvolutionChart.svelte";
+    import * as Select from "$lib/components/ui/select";
+    import * as Tabs from "$lib/components/ui/tabs";
+
+    // View Modal State
+    let isViewModalOpen = $state(false);
+    let selectedAppraisal = $state<any>(null);
+
+    // Delete Modal State
+    let isDeleteModalOpen = $state(false);
+    let appraisalToDelete = $state<any>(null);
+
+    // Reset Modal State
+    let isResetModalOpen = $state(false);
+
+    // Appraisal Modal State
+    let isAppraisalModalOpen = $state(false);
+    let appraisalMonth = $state(new Date().getMonth() + 1);
+    let appraisalYear = $state(new Date().getFullYear());
+    let appraisalResults = $state<any[]>([]);
+
+    let currentYear = $state(new Date().getFullYear());
+    let currentMonth = new Date().getMonth() + 1;
+    let selectedMonth = $state<number | null>(null); // null = "Todos"
+
+    let taxEvolutionData = $derived.by(() => {
+        const data = [];
+        for (let i = 1; i <= 12; i++) {
+            // Fix: Backend returns period as MM/YYYY
+            const monthStr = `${String(i).padStart(2, "0")}/${currentYear}`;
+            // Filter DARFs for this month (by period)
+            const darfs = irpfStore.darfs.filter((d) => d.period === monthStr);
+
+            // Sum Tax Due (Original value) and Tax Paid
+            const taxDue = darfs.reduce((acc, d) => acc + d.total_value, 0);
+
+            const taxPaid = darfs
+                .filter((d) => d.status === "Paid")
+                .reduce((acc, d) => acc + d.total_value, 0);
+
+            data.push({
+                month: months.find((m) => m.val === i)?.label || String(i),
+                taxDue,
+                taxPaid,
+            });
+        }
+        return data;
+    });
+
+    const months = [
+        { val: 1, label: "Janeiro" },
+        { val: 2, label: "Fevereiro" },
+        { val: 3, label: "Março" },
+        { val: 4, label: "Abril" },
+        { val: 5, label: "Maio" },
+        { val: 6, label: "Junho" },
+        { val: 7, label: "Julho" },
+        { val: 8, label: "Agosto" },
+        { val: 9, label: "Setembro" },
+        { val: 10, label: "Outubro" },
+        { val: 11, label: "Novembro" },
+        { val: 12, label: "Dezembro" },
+    ];
+
+    // Filter appraisals by selected month
+    let filteredAppraisals = $derived(
+        selectedMonth === null
+            ? irpfStore.appraisals
+            : irpfStore.appraisals.filter(
+                  (a) => a.period_month === selectedMonth,
+              ),
+    );
+
+    onMount(() => {
+        irpfStore.loadAppraisals(currentYear);
+        irpfStore.loadAccumulatedLosses();
+        irpfStore.loadDarfs(currentYear);
+    });
+
+    function deleteAppraisal(item: any) {
+        appraisalToDelete = item;
+        isDeleteModalOpen = true;
+    }
+
+    async function confirmDelete() {
+        if (!appraisalToDelete) return;
+        const idStr = irpfStore.getId(appraisalToDelete.id);
+        await irpfStore.deleteAppraisal(idStr);
+        isDeleteModalOpen = false;
+    }
+
+    async function generateDarf(item: any) {
+        let idStr = irpfStore.getId(item.id);
+
+        // Block if not saved
+        if (!idStr) {
+            toast.error("Salve a apuração antes de gerar a DARF.");
+            return;
+        }
+
+        try {
+            await irpfStore.generateDarf(idStr);
+        } catch (error) {
+            // Error handled in store
+        }
+    }
+
+    function openViewModal(item: any) {
+        selectedAppraisal = item;
+        isViewModalOpen = true;
+    }
+
+    function formatCurrency(val: number) {
+        return new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+        }).format(val || 0);
+    }
+
+    async function calculateAppraisal() {
+        try {
+            appraisalResults = await irpfStore.calculateMonthlyTax(
+                Number(appraisalMonth),
+                Number(appraisalYear),
+            );
+        } catch (error) {
+            // Handled in store
+        }
+    }
+
+    async function saveAppraisalResult(item: any) {
+        const saved = await irpfStore.saveAppraisal(item);
+        // Update item.id so "Gerar DARF" button appears immediately
+        if (saved?.id) {
+            item.id = saved.id;
+        }
+    }
+
+    async function confirmReset() {
+        await irpfStore.resetData();
+        isResetModalOpen = false;
+        loadData();
+    }
+
+    function loadData() {
+        irpfStore.loadAppraisals(currentYear);
+        irpfStore.loadAccumulatedLosses();
+        irpfStore.loadDarfs(currentYear);
+    }
+
+    function getTotalLoss(type: string) {
+        return irpfStore.losses
+            .filter((l) => l.trade_type === type)
+            .reduce((acc, curr) => acc + curr.balance, 0);
+    }
+
+    async function deleteLoss(id: any) {
+        const idStr = irpfStore.getId(id);
+        await irpfStore.deleteLoss(idStr);
+    }
+</script>
+
+<div
+    class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20"
+>
+    <div
+        class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-6"
+    >
+        <div>
+            <h2
+                class="text-3xl font-bold text-white tracking-tight flex items-center gap-3"
+            >
+                <FileText class="w-8 h-8 text-primary" />
+                Apuração Mensal
+            </h2>
+            <p class="text-muted-foreground mt-1">
+                Gerencie suas apurações de IRPF e emita DARFs (Regras B3).
+            </p>
+        </div>
+        <div class="flex gap-2">
+            <Button
+                variant="outline"
+                href="/fiscal/irpf/darf"
+                class="border-white/10"
+            >
+                <FileText class="w-4 h-4 mr-2" />
+                Gerenciar DARFs
+            </Button>
+            <Button
+                variant="outline"
+                onclick={() => (isResetModalOpen = true)}
+                class="border-red-500/20 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+            >
+                <RefreshCw class="w-4 h-4 mr-2" />
+                Resetar Dados
+            </Button>
+            <Button
+                onclick={() => (isAppraisalModalOpen = true)}
+                class="neon-glow bg-primary text-black font-bold"
+            >
+                <Calendar class="w-4 h-4 mr-2" />
+                Nova Apuração
+            </Button>
+        </div>
+    </div>
+
+    <!-- KPI Cards (Standardized) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Card 1: Total Devido (Ano) -->
+        <Card.Root class="border-l-4 border-l-rose-500 shadow-sm bg-card">
+            <Card.Header
+                class="flex flex-row items-center justify-between space-y-0 pb-2"
+            >
+                <Card.Title class="text-sm font-medium"
+                    >Total Devido ({currentYear})</Card.Title
+                >
+                <DollarSign class="w-4 h-4 text-rose-500" />
+            </Card.Header>
+            <Card.Content>
+                <div class="text-2xl font-bold font-mono">
+                    {formatCurrency(
+                        irpfStore.darfs
+                            .filter((d) => {
+                                const parts = d.period.split("/");
+                                const y =
+                                    parts.length > 1 ? parseInt(parts[1]) : 0;
+                                return y === currentYear;
+                            })
+                            .reduce((acc, d) => acc + d.total_value, 0),
+                    )}
+                </div>
+                <p class="text-xs text-muted-foreground mt-1">
+                    Imposto calculado no ano
+                </p>
+            </Card.Content>
+        </Card.Root>
+
+        <!-- Card 2: Total Pago (Ano) -->
+        <Card.Root class="border-l-4 border-l-emerald-500 shadow-sm bg-card">
+            <Card.Header
+                class="flex flex-row items-center justify-between space-y-0 pb-2"
+            >
+                <Card.Title class="text-sm font-medium"
+                    >Total Pago ({currentYear})</Card.Title
+                >
+                <CheckCircle2 class="w-4 h-4 text-emerald-500" />
+            </Card.Header>
+            <Card.Content>
+                <div class="text-2xl font-bold font-mono text-emerald-500">
+                    {formatCurrency(
+                        irpfStore.darfs
+                            .filter((d) => {
+                                const parts = d.period.split("/");
+                                const y =
+                                    parts.length > 1 ? parseInt(parts[1]) : 0;
+                                return y === currentYear && d.status === "Paid";
+                            })
+                            .reduce((acc, d) => acc + d.total_value, 0),
+                    )}
+                </div>
+                <p class="text-xs text-muted-foreground mt-1">DARFs quitadas</p>
+            </Card.Content>
+        </Card.Root>
+
+        <!-- Card 3: Pendente Atual -->
+        <Card.Root class="border-l-4 border-l-amber-500 shadow-sm bg-card">
+            <Card.Header
+                class="flex flex-row items-center justify-between space-y-0 pb-2"
+            >
+                <Card.Title class="text-sm font-medium"
+                    >Pendente Atual</Card.Title
+                >
+                <AlertTriangle class="w-4 h-4 text-amber-500" />
+            </Card.Header>
+            <Card.Content>
+                <div class="text-2xl font-bold font-mono text-amber-500">
+                    {formatCurrency(
+                        irpfStore.darfs
+                            .filter((d) => d.status === "Pending")
+                            .reduce((acc, d) => acc + d.total_value, 0),
+                    )}
+                </div>
+                <div class="flex justify-between items-center mt-1">
+                    <p class="text-xs text-muted-foreground">
+                        {irpfStore.darfs.filter((d) => d.status === "Pending")
+                            .length} guias em aberto
+                    </p>
+                    <Button
+                        variant="link"
+                        href="/fiscal/irpf/darf"
+                        class="h-auto p-0 text-[10px] text-amber-400"
+                    >
+                        Verificar &rarr;
+                    </Button>
+                </div>
+            </Card.Content>
+        </Card.Root>
+
+        <!-- Card 4: Prejuízos Acumulados -->
+        <Card.Root class="border-l-4 border-l-blue-500 shadow-sm bg-card">
+            <Card.Header
+                class="flex flex-row items-center justify-between space-y-0 pb-2"
+            >
+                <Card.Title class="text-sm font-medium"
+                    >Prejuízos Acum.</Card.Title
+                >
+                <TrendingDown class="w-4 h-4 text-blue-500" />
+            </Card.Header>
+            <Card.Content>
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-muted-foreground">Day Trade:</span>
+                        <span class="text-red-400 font-mono"
+                            >{formatCurrency(getTotalLoss("DayTrade"))}</span
+                        >
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-muted-foreground">Swing Trade:</span>
+                        <span class="text-red-400 font-mono"
+                            >{formatCurrency(getTotalLoss("SwingTrade"))}</span
+                        >
+                    </div>
+                </div>
+            </Card.Content>
+        </Card.Root>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Evolution Chart -->
+        <Card.Root class="lg:col-span-2 bg-black/40 border-white/10 glass">
+            <Card.Header>
+                <Card.Title class="text-lg font-medium"
+                    >Evolução Fiscal ({currentYear})</Card.Title
+                >
+            </Card.Header>
+            <Card.Content class="h-[300px]">
+                <TaxEvolutionChart data={taxEvolutionData} />
+            </Card.Content>
+        </Card.Root>
+
+        <!-- Year Selector & Quick Actions (Side) -->
+        <div class="space-y-6">
+            <Card.Root class="bg-black/40 border-white/10 glass">
+                <Card.Header>
+                    <Card.Title class="text-sm font-medium"
+                        >Filtro de Período</Card.Title
+                    >
+                </Card.Header>
+                <Card.Content>
+                    <div class="flex items-center gap-2">
+                        <Select.Root
+                            type="single"
+                            value={currentYear.toString()}
+                            onValueChange={(v) => {
+                                if (v) {
+                                    currentYear = parseInt(v);
+                                    loadData();
+                                }
+                            }}
+                        >
+                            <Select.Trigger
+                                class="w-full bg-black/20 border-white/10 text-white"
+                            >
+                                {currentYear}
+                            </Select.Trigger>
+                            <Select.Content>
+                                {#each Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i) as y}
+                                    <Select.Item
+                                        value={y.toString()}
+                                        label={y.toString()}>{y}</Select.Item
+                                    >
+                                {/each}
+                            </Select.Content>
+                        </Select.Root>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onclick={loadData}
+                        >
+                            <RefreshCw class="w-4 h-4" />
+                        </Button>
+                    </div>
+                </Card.Content>
+            </Card.Root>
+
+            <Card.Root class="bg-amber-500/10 border-amber-500/20">
+                <Card.Content class="p-4 flex flex-col gap-3">
+                    <div class="flex items-start gap-3">
+                        <div class="p-2 bg-amber-500/20 rounded-full">
+                            <FileText class="w-5 h-5 text-amber-500" />
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-amber-500">
+                                Central de DARFs
+                            </h4>
+                            <p class="text-xs text-amber-200/70 mt-1">
+                                Gerencie pagamentos, multas e impressões.
+                            </p>
+                        </div>
+                    </div>
+                    <Button
+                        variant="secondary"
+                        class="w-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 border-amber-500/20"
+                        href="/fiscal/irpf/darf"
+                    >
+                        Acessar Gestão de DARFs
+                    </Button>
+                </Card.Content>
+            </Card.Root>
+        </div>
+    </div>
+
+    <!-- Appraisals List -->
+    <Card.Root class="bg-black/40 border-white/10 glass">
+        <Card.Header>
+            <Card.Title>Apurações Realizadas</Card.Title>
+        </Card.Header>
+        <Card.Content>
+            <!-- Month Filter Tabs -->
+            <Tabs.Root
+                value={selectedMonth === null
+                    ? "all"
+                    : selectedMonth.toString()}
+                onValueChange={(v) => {
+                    selectedMonth = v === "all" ? null : parseInt(v);
+                }}
+                class="mb-6"
+            >
+                <Tabs.List
+                    class="grid grid-cols-7 lg:grid-cols-13 gap-1 bg-black/20 p-1"
+                >
+                    <Tabs.Trigger value="all" class="text-xs"
+                        >Todos</Tabs.Trigger
+                    >
+                    {#each months as m}
+                        <Tabs.Trigger value={m.val.toString()} class="text-xs">
+                            {m.label.substring(0, 3)}
+                        </Tabs.Trigger>
+                    {/each}
+                </Tabs.List>
+            </Tabs.Root>
+            {#if irpfStore.loading}
+                <div class="p-8 text-center text-muted-foreground">
+                    Carregando...
+                </div>
+            {:else if filteredAppraisals.length === 0}
+                <div class="p-12 text-center flex flex-col items-center gap-3">
+                    <div
+                        class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center"
+                    >
+                        <FileText class="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <p class="text-muted-foreground">
+                        {selectedMonth === null
+                            ? `Nenhuma apuração encontrada em ${currentYear}.`
+                            : `Nenhuma apuração em ${months.find((m) => m.val === selectedMonth)?.label}/${currentYear}.`}
+                    </p>
+                    <Button
+                        variant="outline"
+                        onclick={() => (isAppraisalModalOpen = true)}
+                        class="mt-2"
+                    >
+                        Realizar Apuração Mensal
+                    </Button>
+                </div>
+            {:else}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead
+                            class="text-xs text-muted-foreground uppercase bg-black/20 border-b border-white/5"
+                        >
+                            <tr>
+                                <th class="px-6 py-3">Mês/Ano</th>
+                                <th class="px-6 py-3">Tipo</th>
+                                <th class="px-6 py-3 text-right">Lucro Líq.</th>
+                                <th class="px-6 py-3 text-right">A Pagar</th>
+                                <th class="px-6 py-3 text-right">Compensado</th>
+                                <th class="px-6 py-3 text-center">Status</th>
+                                <th class="px-6 py-3 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            {#each filteredAppraisals as item}
+                                {@const revenueCode =
+                                    item.trade_type === "DayTrade"
+                                        ? "6015"
+                                        : "3317"}
+                                {@const period = `${String(item.period_month).padStart(2, "0")}/${item.period_year}`}
+                                {@const existingDarf = irpfStore.darfs.find(
+                                    (d) =>
+                                        irpfStore.getId(d.appraisal_id) ===
+                                            irpfStore.getId(item.id) ||
+                                        (d.period === period &&
+                                            d.revenue_code === revenueCode),
+                                )}
+                                <tr class="hover:bg-white/5 transition-colors">
+                                    <td class="px-6 py-4 font-medium"
+                                        >{item.period_month}/{item.period_year}</td
+                                    >
+                                    <td class="px-6 py-4">
+                                        <span
+                                            class="px-2 py-1 rounded text-xs font-bold {item.trade_type ===
+                                            'DayTrade'
+                                                ? 'bg-blue-500/10 text-blue-500'
+                                                : 'bg-purple-500/10 text-purple-500'}"
+                                        >
+                                            {item.trade_type === "DayTrade"
+                                                ? "Day Trade"
+                                                : "Swing Trade"}
+                                        </span>
+                                    </td>
+                                    <td
+                                        class="px-6 py-4 text-right font-mono {item.net_profit >=
+                                        0
+                                            ? 'text-green-400'
+                                            : 'text-red-400'}"
+                                    >
+                                        {formatCurrency(item.net_profit)}
+                                    </td>
+                                    <td
+                                        class="px-6 py-4 text-right font-mono text-white"
+                                        title={item.tax_accumulated > 0
+                                            ? `Mês: ${formatCurrency(item.tax_payable)} + Acumulado: ${formatCurrency(item.tax_accumulated)}`
+                                            : ""}
+                                    >
+                                        {formatCurrency(item.total_payable)}
+                                    </td>
+                                    <td
+                                        class="px-6 py-4 text-right font-mono text-yellow-400"
+                                    >
+                                        {item.compensated_loss > 0
+                                            ? `-${formatCurrency(item.compensated_loss)}`
+                                            : "-"}
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        {#if item.status === "Paid"}
+                                            <span
+                                                class="px-2 py-1 rounded text-xs bg-green-500/10 text-green-500 border border-green-500/20"
+                                                >Pago</span
+                                            >
+                                        {:else if item.status === "Pending"}
+                                            <span
+                                                class="px-2 py-1 rounded text-xs bg-yellow-500/10 text-yellow-500 border border-yellow-500/20"
+                                                >Pendente</span
+                                            >
+                                        {:else}
+                                            <span
+                                                class="px-2 py-1 rounded text-xs bg-green-500/10 text-green-500 border border-green-500/20"
+                                                >OK</span
+                                            >
+                                        {/if}
+                                    </td>
+                                    <td
+                                        class="px-6 py-4 text-right flex justify-end gap-2"
+                                    >
+                                        {#if item.status !== "Paid" && item.total_payable > 0}
+                                            {@const revenueCode_cat =
+                                                item.trade_type === "DayTrade"
+                                                    ? "6015"
+                                                    : "3317"}
+                                            {@const period_cat = `${String(item.period_month).padStart(2, "0")}/${item.period_year}`}
+                                            {@const existingDarf_row =
+                                                irpfStore.darfs.find(
+                                                    (d) =>
+                                                        irpfStore.getId(
+                                                            d.appraisal_id,
+                                                        ) ===
+                                                            irpfStore.getId(
+                                                                item.id,
+                                                            ) ||
+                                                        (d.period ===
+                                                            period_cat &&
+                                                            d.revenue_code ===
+                                                                revenueCode_cat),
+                                                )}
+                                            {#if existingDarf_row}
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    title="Ver DARF (Já gerada)"
+                                                    href="/fiscal/irpf/darf"
+                                                >
+                                                    <FileText
+                                                        class="w-4 h-4 text-green-400"
+                                                    />
+                                                </Button>
+                                            {:else if item.total_payable >= 10}
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    title="Gerar DARF"
+                                                    onclick={() =>
+                                                        generateDarf(item)}
+                                                >
+                                                    <FileText
+                                                        class="w-4 h-4 text-yellow-400"
+                                                    />
+                                                </Button>
+                                            {:else}
+                                                <div
+                                                    class="flex items-center"
+                                                    title="Valor inferior a R$ 10,00 (Transportado)"
+                                                >
+                                                    <AlertCircle
+                                                        class="w-4 h-4 text-muted-foreground mr-1"
+                                                    />
+                                                    <span
+                                                        class="text-[10px] text-muted-foreground"
+                                                        >Min R$ 10</span
+                                                    >
+                                                </div>
+                                            {/if}
+                                        {/if}
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onclick={() => openViewModal(item)}
+                                        >
+                                            <Eye
+                                                class="w-4 h-4 text-blue-400"
+                                            />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onclick={() =>
+                                                deleteAppraisal(item)}
+                                        >
+                                            <Trash2
+                                                class="w-4 h-4 text-red-400"
+                                            />
+                                        </Button>
+                                    </td>
+                                </tr>
+                            {/each}
+                        </tbody>
+                    </table>
+                </div>
+            {/if}
+        </Card.Content>
+    </Card.Root>
+
+    <!-- Appraisal Modal -->
+    <Dialog.Root bind:open={isAppraisalModalOpen}>
+        <Dialog.Content class="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+            <Dialog.Header>
+                <Dialog.Title>Calcular Imposto Mensal</Dialog.Title>
+                <Dialog.Description
+                    >Selecione o mês para apurar o imposto devido.</Dialog.Description
+                >
+            </Dialog.Header>
+
+            <div class="space-y-6 py-4">
+                <div
+                    class="flex flex-col md:flex-row gap-4 items-end bg-black/20 p-4 rounded-lg border border-white/5"
+                >
+                    <div class="space-y-2 w-full md:w-48">
+                        <Label>Mês</Label>
+                        <select
+                            bind:value={appraisalMonth}
+                            class="flex h-10 w-full rounded-md border border-white/10 bg-black/20 px-3 py-2 text-sm text-white focus:border-primary/50"
+                        >
+                            {#each months as m}
+                                <option value={m.val}>{m.label}</option>
+                            {/each}
+                        </select>
+                    </div>
+                    <div class="space-y-2 w-full md:w-40">
+                        <Label>Ano</Label>
+                        <div class="flex items-center gap-1">
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                type="button"
+                                class="h-10 w-10 shrink-0 bg-black/20"
+                                onclick={() => appraisalYear--}
+                            >
+                                <ChevronLeft class="w-4 h-4 p-0 m-0" />
+                            </Button>
+                            <Input
+                                type="number"
+                                bind:value={appraisalYear}
+                                class="bg-black/20 border-white/10 text-white text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                type="button"
+                                class="h-10 w-10 shrink-0 bg-black/20"
+                                onclick={() => appraisalYear++}
+                            >
+                                <ChevronRight class="w-4 h-4 p-0 m-0" />
+                            </Button>
+                        </div>
+                    </div>
+                    <Button
+                        class="neon-glow bg-primary text-black font-bold w-full md:w-auto"
+                        onclick={calculateAppraisal}
+                        disabled={irpfStore.loading}
+                    >
+                        {#if irpfStore.loading}
+                            Calculando...
+                        {:else}
+                            <FileText class="w-4 h-4 mr-2" /> Calcular
+                        {/if}
+                    </Button>
+                </div>
+
+                {#if appraisalResults.length > 0}
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {#each appraisalResults as item}
+                            <Card.Root
+                                class="bg-black/40 border-white/10 glass overflow-hidden relative group"
+                            >
+                                <div
+                                    class="absolute top-0 left-0 w-1 h-full {item.trade_type ===
+                                    'DayTrade'
+                                        ? 'bg-blue-500'
+                                        : 'bg-purple-500'}"
+                                ></div>
+                                <Card.Header>
+                                    <Card.Title
+                                        class="flex justify-between items-center"
+                                    >
+                                        <span
+                                            class="text-lg {item.trade_type ===
+                                            'DayTrade'
+                                                ? 'text-blue-400'
+                                                : 'text-purple-400'}"
+                                        >
+                                            {item.trade_type === "DayTrade"
+                                                ? "Day Trade"
+                                                : "Swing Trade"}
+                                        </span>
+                                        {#if item.is_exempt}
+                                            <span
+                                                class="px-2 py-1 rounded text-xs bg-green-500/10 text-green-500 border border-green-500/20"
+                                                >Isento</span
+                                            >
+                                        {/if}
+                                    </Card.Title>
+                                </Card.Header>
+                                <Card.Content class="space-y-4">
+                                    <div class="grid grid-cols-2 gap-4 text-sm">
+                                        <div class="space-y-1">
+                                            <span class="text-muted-foreground"
+                                                >Lucro Bruto</span
+                                            >
+                                            <div
+                                                class="text-green-400 font-mono"
+                                            >
+                                                {formatCurrency(
+                                                    item.gross_profit,
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div class="space-y-1">
+                                            <span class="text-muted-foreground"
+                                                >Prejuízo</span
+                                            >
+                                            <div class="text-red-400 font-mono">
+                                                {formatCurrency(item.loss)}
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="space-y-1 pt-2 border-t border-white/5 col-span-2"
+                                        >
+                                            <span
+                                                class="text-muted-foreground font-bold"
+                                                >Lucro Líquido</span
+                                            >
+                                            <div
+                                                class="text-xl font-bold font-mono {item.net_profit >=
+                                                0
+                                                    ? 'text-white'
+                                                    : 'text-red-400'}"
+                                            >
+                                                {formatCurrency(
+                                                    item.net_profit,
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {#if item.net_profit > 0}
+                                            <div
+                                                class="space-y-1 col-span-2 bg-white/5 p-3 rounded border border-white/5"
+                                            >
+                                                <div
+                                                    class="flex justify-between"
+                                                >
+                                                    <span
+                                                        class="text-muted-foreground"
+                                                        >Base de Cálculo:</span
+                                                    >
+                                                    <span class="font-mono"
+                                                        >{formatCurrency(
+                                                            item.calculation_basis,
+                                                        )}</span
+                                                    >
+                                                </div>
+                                                <div
+                                                    class="flex justify-between"
+                                                >
+                                                    <span
+                                                        class="text-muted-foreground"
+                                                        >Alíquota:</span
+                                                    >
+                                                    <span class="font-mono"
+                                                        >{(
+                                                            item.tax_rate * 100
+                                                        ).toFixed(0)}%</span
+                                                    >
+                                                </div>
+                                                <div
+                                                    class="flex justify-between text-red-300"
+                                                >
+                                                    <span
+                                                        class="text-muted-foreground"
+                                                        >Imposto Devido:</span
+                                                    >
+                                                    <span class="font-mono"
+                                                        >{formatCurrency(
+                                                            item.tax_due,
+                                                        )}</span
+                                                    >
+                                                </div>
+                                                {#if item.withheld_tax > 0}
+                                                    <div
+                                                        class="flex justify-between text-green-300"
+                                                    >
+                                                        <span
+                                                            class="text-muted-foreground"
+                                                            >IRRF (Dedo-Duro):</span
+                                                        >
+                                                        <span class="font-mono"
+                                                            >-{formatCurrency(
+                                                                item.withheld_tax,
+                                                            )}</span
+                                                        >
+                                                    </div>
+                                                {/if}
+                                                <div
+                                                    class="flex justify-between pt-2 border-t border-white/10 mt-2"
+                                                >
+                                                    <span
+                                                        class="text-muted-foreground"
+                                                        >Imposto do Mês:</span
+                                                    >
+                                                    <span
+                                                        class="font-mono text-white"
+                                                        >{formatCurrency(
+                                                            item.tax_payable,
+                                                        )}</span
+                                                    >
+                                                </div>
+                                                {#if item.tax_accumulated > 0}
+                                                    <div
+                                                        class="flex justify-between"
+                                                    >
+                                                        <span
+                                                            class="text-muted-foreground"
+                                                            >Acumulado Anterior:</span
+                                                        >
+                                                        <span
+                                                            class="font-mono text-yellow-400"
+                                                            >+{formatCurrency(
+                                                                item.tax_accumulated,
+                                                            )}</span
+                                                        >
+                                                    </div>
+                                                {/if}
+                                                <div
+                                                    class="flex justify-between pt-2 border-t border-white/10 mt-1"
+                                                >
+                                                    <span
+                                                        class="font-bold text-white"
+                                                        >Total a Pagar:</span
+                                                    >
+                                                    <span
+                                                        class="font-bold text-xl text-primary font-mono"
+                                                        >{formatCurrency(
+                                                            item.total_payable,
+                                                        )}</span
+                                                    >
+                                                </div>
+                                            </div>
+                                        {:else}
+                                            <div
+                                                class="col-span-2 p-3 rounded bg-yellow-500/10 border border-yellow-500/20 flex items-center gap-3"
+                                            >
+                                                <AlertTriangle
+                                                    class="w-5 h-5 text-yellow-500"
+                                                />
+                                                <span
+                                                    class="text-xs text-yellow-200"
+                                                    >Prejuízo a compensar: {formatCurrency(
+                                                        item.net_profit,
+                                                    )}</span
+                                                >
+                                            </div>
+                                        {/if}
+                                    </div>
+                                </Card.Content>
+                                <Card.Footer
+                                    class="bg-black/20 border-t border-white/5 p-4 flex justify-end gap-2"
+                                >
+                                    {#if item.id}
+                                        {#if item.total_payable >= 10}
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onclick={() =>
+                                                    generateDarf(item)}
+                                            >
+                                                <FileText
+                                                    class="w-4 h-4 mr-2"
+                                                /> Gerar DARF
+                                            </Button>
+                                        {:else if item.total_payable > 0}
+                                            <div
+                                                class="flex items-center px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded text-yellow-500 text-xs mr-auto"
+                                            >
+                                                <AlertCircle
+                                                    class="w-3 h-3 mr-1"
+                                                />
+                                                Valor menor que R$ 10,00 (Transportado)
+                                            </div>
+                                        {/if}
+                                    {/if}
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onclick={() =>
+                                            saveAppraisalResult(item)}
+                                    >
+                                        <FileText class="w-4 h-4 mr-2" /> Salvar
+                                    </Button>
+                                </Card.Footer>
+                            </Card.Root>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        </Dialog.Content>
+    </Dialog.Root>
+
+    <!-- Delete Modal -->
+    <Dialog.Root bind:open={isDeleteModalOpen}>
+        <Dialog.Content class="sm:max-w-[400px]">
+            <Dialog.Header>
+                <Dialog.Title>Confirmar Exclusão</Dialog.Title>
+                <Dialog.Description
+                    >Tem certeza que deseja excluir esta apuração? Isso pode
+                    afetar o saldo de prejuízos.</Dialog.Description
+                >
+            </Dialog.Header>
+            <Dialog.Footer>
+                <Button
+                    variant="outline"
+                    onclick={() => (isDeleteModalOpen = false)}>Cancelar</Button
+                >
+                <Button variant="destructive" onclick={confirmDelete}
+                    >Excluir</Button
+                >
+            </Dialog.Footer>
+        </Dialog.Content>
+    </Dialog.Root>
+
+    <!-- Reset Modal -->
+    <Dialog.Root bind:open={isResetModalOpen}>
+        <Dialog.Content class="sm:max-w-[400px]">
+            <Dialog.Header>
+                <Dialog.Title>Resetar Dados Fiscais</Dialog.Title>
+                <Dialog.Description
+                    >CUIDADO: Isso apagará todas as apurações, DARFs e histórico
+                    de prejuízos. Deseja continuar?</Dialog.Description
+                >
+            </Dialog.Header>
+            <Dialog.Footer>
+                <Button
+                    variant="outline"
+                    onclick={() => (isResetModalOpen = false)}>Cancelar</Button
+                >
+                <Button variant="destructive" onclick={confirmReset}
+                    >Confirmar Reset</Button
+                >
+            </Dialog.Footer>
+        </Dialog.Content>
+    </Dialog.Root>
+
+    <!-- View Modal (Legacy Style) -->
+    <Dialog.Root bind:open={isViewModalOpen}>
+        <Dialog.Content class="sm:max-w-[500px] border-white/10 bg-[#09090b]">
+            <Dialog.Header class="pb-4 border-b border-white/10">
+                <Dialog.Title class="text-xl">Detalhes da Apuração</Dialog.Title
+                >
+                <Dialog.Description class="text-muted-foreground"
+                    >Resumo financeiro do período selecionado.</Dialog.Description
+                >
+            </Dialog.Header>
+            {#if selectedAppraisal}
+                <div class="py-6 space-y-8">
+                    <!-- Header Info -->
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span
+                                class="text-xs text-muted-foreground uppercase tracking-wider"
+                                >Período</span
+                            >
+                            <div class="text-2xl font-bold text-white mt-1">
+                                {selectedAppraisal.period_month}/{selectedAppraisal.period_year}
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span
+                                class="text-xs text-muted-foreground uppercase tracking-wider"
+                                >Tipo</span
+                            >
+                            <div class="mt-1">
+                                <span
+                                    class="text-lg font-bold {selectedAppraisal.trade_type ===
+                                    'DayTrade'
+                                        ? 'text-blue-500'
+                                        : 'text-purple-500'}"
+                                >
+                                    {selectedAppraisal.trade_type === "DayTrade"
+                                        ? "Day Trade"
+                                        : "Swing Trade"}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Values Grid -->
+                    <div class="grid grid-cols-2 gap-8">
+                        <div>
+                            <span
+                                class="text-xs text-muted-foreground block mb-1"
+                                >Lucro Bruto</span
+                            >
+                            <div class="text-lg font-mono text-green-400">
+                                {formatCurrency(selectedAppraisal.gross_profit)}
+                            </div>
+                        </div>
+                        <div>
+                            <span
+                                class="text-xs text-muted-foreground block mb-1"
+                                >Prejuízo do Mês</span
+                            >
+                            <div class="text-lg font-mono text-red-400">
+                                {formatCurrency(selectedAppraisal.loss)}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="pt-4 border-t border-white/5 flex justify-between items-end"
+                    >
+                        <span class="text-sm text-muted-foreground"
+                            >Lucro Líquido</span
+                        >
+                        <div
+                            class="text-2xl font-mono font-bold {selectedAppraisal.net_profit >=
+                            0
+                                ? 'text-white'
+                                : 'text-red-500'}"
+                        >
+                            {formatCurrency(selectedAppraisal.net_profit)}
+                        </div>
+                    </div>
+
+                    <!-- Compensation Info -->
+                    <div class="grid grid-cols-2 gap-8 pt-2">
+                        <div>
+                            <span
+                                class="text-xs text-muted-foreground block mb-1 uppercase"
+                                >Compensado</span
+                            >
+                            <div class="font-mono text-yellow-500">
+                                {selectedAppraisal.compensated_loss > 0
+                                    ? `-${formatCurrency(selectedAppraisal.compensated_loss)}`
+                                    : "-"}
+                            </div>
+                        </div>
+                        <div>
+                            <span
+                                class="text-xs text-muted-foreground block mb-1 uppercase"
+                                >Status</span
+                            >
+                            {#if selectedAppraisal.status === "Paid"}
+                                <span
+                                    class="px-2 py-1 rounded text-xs bg-green-500/10 text-green-500 border border-green-500/20"
+                                    >Pago</span
+                                >
+                            {:else if selectedAppraisal.status === "Pending"}
+                                <span
+                                    class="px-2 py-1 rounded text-xs bg-yellow-500/10 text-yellow-500 border border-yellow-500/20"
+                                    >Pendente</span
+                                >
+                            {:else}
+                                <span
+                                    class="px-2 py-1 rounded text-xs bg-green-500/10 text-green-500 border border-green-500/20"
+                                    >Ok</span
+                                >
+                            {/if}
+                        </div>
+                    </div>
+
+                    <!-- Warning Box for Loss -->
+                    {#if selectedAppraisal.net_profit < 0}
+                        <div
+                            class="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex gap-3 items-start"
+                        >
+                            <AlertTriangle
+                                class="w-5 h-5 text-yellow-500 shrink-0 mt-0.5"
+                            />
+                            <div>
+                                <h4 class="text-sm font-bold text-yellow-500">
+                                    Prejuízo a Compensar
+                                </h4>
+                                <p class="text-xs text-yellow-200/80 mt-1">
+                                    Este valor será acumulado para abater
+                                    impostos de meses futuros.
+                                </p>
+                            </div>
+                        </div>
+                    {/if}
+                </div>
+            {/if}
+        </Dialog.Content>
+    </Dialog.Root>
+</div>

@@ -10,22 +10,69 @@
         Settings,
         LogOut,
         Menu,
+        Target,
+        Wallet,
+        Brain,
+        Activity,
+        PanelLeftClose,
+        PanelLeftOpen,
+        FileText,
+        DollarSign,
     } from "lucide-svelte";
+    import * as Tooltip from "$lib/components/ui/tooltip";
+    import * as AlertDialog from "$lib/components/ui/alert-dialog";
+    import { sidebarState } from "$lib/stores/sidebar.svelte";
+    import { settingsStore } from "$lib/stores/settings.svelte";
+    import { goto } from "$app/navigation";
+    import { toast } from "svelte-sonner";
+    import { t } from "svelte-i18n";
     import { page } from "$app/stores";
 
-    // Navigation Items
-    const navItems = [
-        { label: "Dashboard", href: "/", icon: LayoutDashboard },
-        { label: "Diário", href: "/journal", icon: BookOpen },
-        { label: "Trades", href: "/trades", icon: TrendingUp },
-        { label: "Configurações", href: "/settings", icon: Settings },
-    ];
+    // Workspace Items (Principal)
+    let workspaceItems = $derived([
+        { label: $t("sidebar.finance"), href: "/finance", icon: Wallet },
+        { label: $t("sidebar.strategies"), href: "/strategies", icon: Target },
+        { label: $t("sidebar.trades"), href: "/trades", icon: TrendingUp },
+    ]);
+
+    // Análise Items
+    let analysisItems = $derived([
+        { label: $t("sidebar.dashboard"), href: "/", icon: LayoutDashboard },
+        { label: $t("sidebar.psychology"), href: "/psychology", icon: Brain },
+    ]);
+
+    // Fiscal Items
+    let fiscalItems = $derived([
+        {
+            label: "Módulo IRPF",
+            href: "/fiscal/irpf",
+            icon: FileText,
+        },
+        {
+            label: "DARFs",
+            href: "/fiscal/irpf/darf",
+            icon: DollarSign,
+        },
+    ]);
+
+    // System Items
+    let systemItems = $derived([
+        {
+            label: $t("sidebar.settings"),
+            href: "/settings",
+            icon: Settings,
+        },
+    ]);
 
     let isOpen = $state(false);
 
     // Helper to check active route
     function isActive(href: string) {
-        return $page.url.pathname === href;
+        if (href === "/" && $page.url.pathname !== "/") return false;
+        return (
+            $page.url.pathname.startsWith(href) &&
+            (href !== "/" || $page.url.pathname === "/")
+        );
     }
 </script>
 
@@ -51,7 +98,54 @@
             <Separator />
             <ScrollArea class="flex-1 py-4">
                 <nav class="grid gap-1 px-2">
-                    {#each navItems as item}
+                    <div
+                        class="px-3 py-2 text-[10px] font-bold uppercase text-muted-foreground tracking-widest"
+                    >
+                        Workspace
+                    </div>
+                    {#each workspaceItems as item}
+                        <a
+                            href={item.href}
+                            class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground {isActive(
+                                item.href,
+                            )
+                                ? 'bg-accent text-accent-foreground'
+                                : 'text-muted-foreground'}"
+                            onclick={() => (isOpen = false)}
+                        >
+                            <item.icon class="h-4 w-4" />
+                            {item.label}
+                        </a>
+                    {/each}
+
+                    <Separator class="my-2" />
+                    <div
+                        class="px-3 py-2 text-[10px] font-bold uppercase text-muted-foreground tracking-widest"
+                    >
+                        Análise & Mindset
+                    </div>
+                    {#each analysisItems as item}
+                        <a
+                            href={item.href}
+                            class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground {isActive(
+                                item.href,
+                            )
+                                ? 'bg-accent text-accent-foreground'
+                                : 'text-muted-foreground'}"
+                            onclick={() => (isOpen = false)}
+                        >
+                            <item.icon class="h-4 w-4" />
+                            {item.label}
+                        </a>
+                    {/each}
+
+                    <Separator class="my-2" />
+                    <div
+                        class="px-3 py-2 text-[10px] font-bold uppercase text-muted-foreground tracking-widest"
+                    >
+                        Fiscal
+                    </div>
+                    {#each fiscalItems as item}
                         <a
                             href={item.href}
                             class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground {isActive(
@@ -72,19 +166,72 @@
 </Sheet.Root>
 
 <!-- Desktop Sidebar -->
+<!-- Desktop Sidebar -->
+<!-- Desktop Sidebar -->
 <aside
-    class="hidden border-r bg-muted/40 md:block md:w-[220px] lg:w-[280px] h-screen sticky top-0"
+    class="hidden border-r bg-muted/40 md:flex md:flex-col h-screen sticky top-0 transition-all duration-300 relative group"
 >
-    <div class="flex h-full flex-col gap-2">
-        <div class="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <a href="/" class="flex items-center gap-2 font-semibold">
-                <TrendingUp class="h-6 w-6" />
-                <span class="">TraderLog Pro</span>
-            </a>
-        </div>
-        <div class="flex-1">
-            <nav class="grid items-start px-2 text-sm font-medium lg:px-4 pt-4">
-                {#each navItems as item}
+    <!-- Floating Toggle Button -->
+    <Button
+        variant="outline"
+        size="icon"
+        class="absolute -right-3 top-20 z-50 h-6 w-6 rounded-full border shadow-md p-0 flex items-center justify-center bg-background"
+        onclick={() => sidebarState.toggle()}
+    >
+        {#if sidebarState.isCollapsed}
+            <PanelLeftOpen class="h-4 w-4" />
+        {:else}
+            <PanelLeftClose class="h-4 w-4" />
+        {/if}
+    </Button>
+
+    <div class="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+        <a
+            href="/"
+            class="flex items-center gap-2 font-semibold overflow-hidden"
+        >
+            <TrendingUp class="h-6 w-6 shrink-0" />
+            {#if !sidebarState.isCollapsed}
+                <span class="truncate">TraderLog Pro</span>
+            {/if}
+        </a>
+    </div>
+    <div class="flex-1 overflow-y-auto overflow-x-hidden">
+        <nav class="grid gap-1 px-2 pt-4">
+            {#if !sidebarState.isCollapsed}
+                <div
+                    class="px-3 py-2 text-[10px] font-bold uppercase text-muted-foreground tracking-widest"
+                >
+                    Workspace
+                </div>
+            {/if}
+            {#each workspaceItems as item}
+                {#if sidebarState.isCollapsed}
+                    <Tooltip.Root>
+                        <Tooltip.Trigger>
+                            {#snippet child({
+                                props,
+                            }: {
+                                props: Record<string, any>;
+                            })}
+                                <a
+                                    href={item.href}
+                                    class="flex items-center justify-center rounded-lg px-2 py-2 transition-all hover:text-primary {isActive(
+                                        item.href,
+                                    )
+                                        ? 'bg-muted text-primary'
+                                        : 'text-muted-foreground'}"
+                                    {...props}
+                                >
+                                    <item.icon class="h-5 w-5 shrink-0" />
+                                </a>
+                            {/snippet}
+                        </Tooltip.Trigger>
+                        <Tooltip.Content side="right"
+                            >{item.label}</Tooltip.Content
+                        >
+                    </Tooltip.Root>
+                {:else}
                     <a
                         href={item.href}
                         class="flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary {isActive(
@@ -93,14 +240,203 @@
                             ? 'bg-muted text-primary'
                             : 'text-muted-foreground'}"
                     >
-                        <item.icon class="h-4 w-4" />
+                        <item.icon class="h-4 w-4 shrink-0" />
                         {item.label}
                     </a>
-                {/each}
-            </nav>
-        </div>
-        <div class="mt-auto p-4">
-            <!-- Future User Profile or Credits area -->
-        </div>
+                {/if}
+            {/each}
+
+            <Separator class="my-2" />
+            {#if !sidebarState.isCollapsed}
+                <div
+                    class="px-3 py-2 text-[10px] font-bold uppercase text-muted-foreground tracking-widest"
+                >
+                    Análise & Mindset
+                </div>
+            {/if}
+            {#each analysisItems as item}
+                {#if sidebarState.isCollapsed}
+                    <Tooltip.Root>
+                        <Tooltip.Trigger>
+                            {#snippet child({
+                                props,
+                            }: {
+                                props: Record<string, any>;
+                            })}
+                                <a
+                                    href={item.href}
+                                    class="flex items-center justify-center rounded-lg px-2 py-2 transition-all hover:text-primary {isActive(
+                                        item.href,
+                                    )
+                                        ? 'bg-muted text-primary'
+                                        : 'text-muted-foreground'}"
+                                    {...props}
+                                >
+                                    <item.icon class="h-5 w-5 shrink-0" />
+                                </a>
+                            {/snippet}
+                        </Tooltip.Trigger>
+                        <Tooltip.Content side="right"
+                            >{item.label}</Tooltip.Content
+                        >
+                    </Tooltip.Root>
+                {:else}
+                    <a
+                        href={item.href}
+                        class="flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary {isActive(
+                            item.href,
+                        )
+                            ? 'bg-muted text-primary'
+                            : 'text-muted-foreground'}"
+                    >
+                        <item.icon class="h-4 w-4 shrink-0" />
+                        {item.label}
+                    </a>
+                {/if}
+            {/each}
+
+            <Separator class="my-2" />
+            {#if !sidebarState.isCollapsed}
+                <div
+                    class="px-3 py-2 text-[10px] font-bold uppercase text-muted-foreground tracking-widest"
+                >
+                    Fiscal
+                </div>
+            {/if}
+            {#each fiscalItems as item}
+                {#if sidebarState.isCollapsed}
+                    <Tooltip.Root>
+                        <Tooltip.Trigger>
+                            {#snippet child({
+                                props,
+                            }: {
+                                props: Record<string, any>;
+                            })}
+                                <a
+                                    href={item.href}
+                                    class="flex items-center justify-center rounded-lg px-2 py-2 transition-all hover:text-primary {isActive(
+                                        item.href,
+                                    )
+                                        ? 'bg-muted text-primary'
+                                        : 'text-muted-foreground'}"
+                                    {...props}
+                                >
+                                    <item.icon class="h-5 w-5 shrink-0" />
+                                </a>
+                            {/snippet}
+                        </Tooltip.Trigger>
+                        <Tooltip.Content side="right"
+                            >{item.label}</Tooltip.Content
+                        >
+                    </Tooltip.Root>
+                {:else}
+                    <a
+                        href={item.href}
+                        class="flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary {isActive(
+                            item.href,
+                        )
+                            ? 'bg-muted text-primary'
+                            : 'text-muted-foreground'}"
+                    >
+                        <item.icon class="h-4 w-4 shrink-0" />
+                        {item.label}
+                    </a>
+                {/if}
+            {/each}
+        </nav>
+    </div>
+
+    <!-- Footer: Settings & Logout -->
+    <div class="mt-auto p-4 border-t flex flex-col gap-2">
+        {#each systemItems as item}
+            {#if sidebarState.isCollapsed}
+                <Tooltip.Root>
+                    <Tooltip.Trigger>
+                        {#snippet child({
+                            props,
+                        }: {
+                            props: Record<string, any>;
+                        })}
+                            <a
+                                href={item.href}
+                                class="flex items-center justify-center rounded-lg px-2 py-2 transition-all hover:text-primary {isActive(
+                                    item.href,
+                                )
+                                    ? 'bg-muted text-primary'
+                                    : 'text-muted-foreground'}"
+                                {...props}
+                            >
+                                <item.icon class="h-5 w-5 shrink-0" />
+                            </a>
+                        {/snippet}
+                    </Tooltip.Trigger>
+                    <Tooltip.Content side="right">{item.label}</Tooltip.Content>
+                </Tooltip.Root>
+            {:else}
+                <a
+                    href={item.href}
+                    class="flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary {isActive(
+                        item.href,
+                    )
+                        ? 'bg-muted text-primary'
+                        : 'text-muted-foreground'}"
+                >
+                    <item.icon class="h-4 w-4 shrink-0" />
+                    {item.label}
+                </a>
+            {/if}
+        {/each}
+        <!-- Logout Button -->
+        <AlertDialog.Root>
+            <AlertDialog.Trigger>
+                {#snippet child({ props }: { props: Record<string, any> })}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        class="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 {sidebarState.isCollapsed
+                            ? 'px-2 justify-center'
+                            : ''}"
+                        {...props}
+                    >
+                        <LogOut
+                            class="h-4 w-4 {sidebarState.isCollapsed
+                                ? ''
+                                : 'mr-2'}"
+                        />
+                        {#if !sidebarState.isCollapsed}
+                            <span>{$t("settings.profile.security.logout")}</span
+                            >
+                        {/if}
+                    </Button>
+                {/snippet}
+            </AlertDialog.Trigger>
+            <AlertDialog.Content>
+                <AlertDialog.Header>
+                    <AlertDialog.Title
+                        >{$t(
+                            "settings.profile.security.logout",
+                        )}</AlertDialog.Title
+                    >
+                    <AlertDialog.Description>
+                        {$t("settings.profile.security.confirmLogout")}
+                    </AlertDialog.Description>
+                </AlertDialog.Header>
+                <AlertDialog.Footer>
+                    <AlertDialog.Cancel>Cancelar</AlertDialog.Cancel>
+                    <AlertDialog.Action
+                        onclick={() => {
+                            toast.success(
+                                $t("settings.profile.security.loggingOut"),
+                            );
+                            settingsStore.logout();
+                            setTimeout(() => goto("/login"), 1000);
+                        }}
+                        class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                        {$t("settings.profile.security.logout")}
+                    </AlertDialog.Action>
+                </AlertDialog.Footer>
+            </AlertDialog.Content>
+        </AlertDialog.Root>
     </div>
 </aside>

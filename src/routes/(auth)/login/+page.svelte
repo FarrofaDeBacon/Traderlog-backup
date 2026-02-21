@@ -1,0 +1,157 @@
+<script lang="ts">
+    import { Button } from "$lib/components/ui/button";
+    import { Input } from "$lib/components/ui/input";
+    import { Label } from "$lib/components/ui/label";
+    import * as Card from "$lib/components/ui/card";
+    import { Separator } from "$lib/components/ui/separator";
+    import { Mail, Lock, LogIn, Github, Chrome } from "lucide-svelte";
+    import { settingsStore } from "$lib/stores/settings.svelte";
+    import { goto } from "$app/navigation";
+    import { toast } from "svelte-sonner";
+    import { t } from "svelte-i18n";
+
+    let email = $state("admin@traderlog.pro");
+    let password = $state("123456");
+    let isLoading = $state(false);
+
+    async function handleLogin() {
+        if (!email || !password) {
+            toast.error($t("auth.login.error.fillAll"));
+            return;
+        }
+
+        isLoading = true;
+
+        // Simulate network delay
+        setTimeout(() => {
+            const success = settingsStore.login(email, password);
+            if (success) {
+                toast.success($t("auth.login.success"));
+                // Force reload to ensure clean state
+                window.location.href = "/";
+            } else {
+                toast.error($t("auth.login.error.invalidCredentials"));
+                isLoading = false;
+            }
+        }, 1500);
+    }
+</script>
+
+<div
+    class="min-h-screen flex items-center justify-center bg-zinc-950 p-4 relative overflow-hidden text-zinc-50"
+>
+    <!-- Ambient Background Effects -->
+    <div
+        class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[128px] pointer-events-none opacity-50"
+    ></div>
+    <div
+        class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[128px] pointer-events-none opacity-50"
+    ></div>
+
+    <Card.Root
+        class="w-full max-w-md border-zinc-800 bg-zinc-900/50 backdrop-blur-xl shadow-2xl relative z-10"
+    >
+        <Card.Header class="space-y-1 text-center pb-8 pt-10">
+            <div
+                class="mx-auto w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20"
+            >
+                <LogIn class="w-6 h-6 text-primary" />
+            </div>
+            <Card.Title class="text-2xl font-bold tracking-tight text-white"
+                >{$t("auth.login.title")}</Card.Title
+            >
+            <Card.Description class="text-zinc-400">
+                {$t("auth.login.description")}
+            </Card.Description>
+        </Card.Header>
+        <Card.Content class="space-y-4">
+            <div class="space-y-2">
+                <Label for="email" class="text-zinc-200"
+                    >{$t("auth.login.email")}</Label
+                >
+                <div class="relative">
+                    <Mail class="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
+                    <Input
+                        id="email"
+                        type="email"
+                        placeholder="nome@exemplo.com"
+                        class="pl-9 bg-zinc-950/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-primary/50"
+                        bind:value={email}
+                    />
+                </div>
+            </div>
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <Label for="password" class="text-zinc-200"
+                        >{$t("auth.login.password")}</Label
+                    >
+                    <a href="#" class="text-xs text-primary hover:underline"
+                        >{$t("auth.login.forgotPassword")}</a
+                    >
+                </div>
+                <div class="relative">
+                    <Lock class="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
+                    <Input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        class="pl-9 bg-zinc-950/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-primary/50"
+                        bind:value={password}
+                        onkeydown={(e) => e.key === "Enter" && handleLogin()}
+                    />
+                </div>
+            </div>
+
+            <Button
+                class="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20"
+                size="lg"
+                onclick={handleLogin}
+                disabled={isLoading}
+            >
+                {#if isLoading}
+                    {$t("auth.login.loading")}
+                {:else}
+                    {$t("auth.login.submit")}
+                {/if}
+            </Button>
+
+            <div class="relative my-4">
+                <div class="absolute inset-0 flex items-center">
+                    <span class="w-full border-t border-zinc-800"></span>
+                </div>
+                <div class="relative flex justify-center text-xs uppercase">
+                    <span class="px-2 text-zinc-500 bg-zinc-900/50"
+                        >{$t("auth.login.orContinueWith")}</span
+                    >
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <Button
+                    variant="outline"
+                    class="w-full bg-zinc-950/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                >
+                    <Github class="mr-2 h-4 w-4" />
+                    Github
+                </Button>
+                <Button
+                    variant="outline"
+                    class="w-full bg-zinc-950/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                >
+                    <Chrome class="mr-2 h-4 w-4" />
+                    Google
+                </Button>
+            </div>
+        </Card.Content>
+        <Card.Footer
+            class="flex flex-col space-y-4 text-center text-sm text-zinc-500 pb-8"
+        >
+            <p>
+                {$t("auth.login.noAccount")}
+                <a href="#" class="text-primary hover:underline font-medium"
+                    >{$t("auth.login.createAccount")}</a
+                >
+            </p>
+        </Card.Footer>
+    </Card.Root>
+</div>

@@ -109,6 +109,12 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Dashboard Custom Tokens */
+  --dashboard-surface: var(--card);
+  --dashboard-sidebar: var(--sidebar);
+  --dashboard-chart-grid: var(--muted);
+  --dashboard-accent: var(--primary);
 }
 
 @layer base {

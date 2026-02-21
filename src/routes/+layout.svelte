@@ -1,22 +1,30 @@
 <script lang="ts">
   import "../app.css";
-  import AppSidebar from "$lib/components/app-sidebar/AppSidebar.svelte";
-  import AppHeader from "$lib/components/app-header/AppHeader.svelte";
   import { ModeWatcher } from "mode-watcher";
+  import { TooltipProvider } from "$lib/components/ui/tooltip";
+  import { setupI18n } from "$lib/i18n";
+  import { isLoading } from "svelte-i18n";
+  import { Toaster } from "$lib/components/ui/sonner";
+
+  setupI18n();
 
   let { children } = $props();
 </script>
 
 <ModeWatcher />
 
-<div
-  class="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]"
->
-  <AppSidebar />
-  <div class="flex flex-col">
-    <AppHeader />
-    <main class="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-      {@render children()}
-    </main>
+{#if $isLoading}
+  <div class="flex items-center justify-center h-screen w-full bg-zinc-950">
+    <div class="flex flex-col items-center gap-4">
+      <div
+        class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"
+      ></div>
+      <p class="text-zinc-500 font-medium">Carregando PsicoTrade Pro...</p>
+    </div>
   </div>
-</div>
+{:else}
+  <TooltipProvider>
+    {@render children()}
+    <Toaster />
+  </TooltipProvider>
+{/if}

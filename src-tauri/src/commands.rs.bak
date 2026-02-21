@@ -1,0 +1,373 @@
+use crate::db::DbState;
+use crate::models::{
+    UserProfile, Account, Currency, Market, AssetType, Asset, EmotionalState, Strategy, ApiConfig,
+    Trade, CashTransaction, JournalEntry, FeeProfile, RiskProfile, Modality, Tag, Indicator,
+    Timeframe, ChartType
+};
+use tauri::State;
+
+// --- User Profile & Settings ---
+
+#[tauri::command]
+pub async fn get_user_profile(db: State<'_, DbState>) -> Result<Option<UserProfile>, String> {
+    let profile: Option<UserProfile> = db.0.select(("user_profile", "main")).await.map_err(|e| e.to_string())?;
+    Ok(profile)
+}
+
+#[tauri::command]
+pub async fn save_user_profile(db: State<'_, DbState>, profile: UserProfile) -> Result<(), String> {
+    let _: Option<UserProfile> = db.0.upsert(("user_profile", "main")).content(profile).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_api_configs(db: State<'_, DbState>) -> Result<Vec<ApiConfig>, String> {
+    let configs: Vec<ApiConfig> = db.0.select("api_config").await.map_err(|e| e.to_string())?;
+    Ok(configs)
+}
+
+#[tauri::command]
+pub async fn save_api_config(db: State<'_, DbState>, config: ApiConfig) -> Result<(), String> {
+    let _: Option<ApiConfig> = db.0.upsert(("api_config", config.id.clone())).content(config).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Accounts ---
+
+#[tauri::command]
+pub async fn get_accounts(db: State<'_, DbState>) -> Result<Vec<Account>, String> {
+    let accounts: Vec<Account> = db.0.select("account").await.map_err(|e| e.to_string())?;
+    Ok(accounts)
+}
+
+#[tauri::command]
+pub async fn save_account(db: State<'_, DbState>, account: Account) -> Result<(), String> {
+    let _: Option<Account> = db.0.upsert(("account", account.id.clone())).content(account).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_account(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<Account> = db.0.delete(("account", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Currencies ---
+
+#[tauri::command]
+pub async fn get_currencies(db: State<'_, DbState>) -> Result<Vec<Currency>, String> {
+    let currencies: Vec<Currency> = db.0.select("currency").await.map_err(|e| e.to_string())?;
+    Ok(currencies)
+}
+
+#[tauri::command]
+pub async fn save_currency(db: State<'_, DbState>, currency: Currency) -> Result<(), String> {
+    let _: Option<Currency> = db.0.upsert(("currency", currency.id.clone())).content(currency).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Markets ---
+
+#[tauri::command]
+pub async fn get_markets(db: State<'_, DbState>) -> Result<Vec<Market>, String> {
+    let markets: Vec<Market> = db.0.select("market").await.map_err(|e| e.to_string())?;
+    Ok(markets)
+}
+
+#[tauri::command]
+pub async fn save_market(db: State<'_, DbState>, market: Market) -> Result<(), String> {
+    let _: Option<Market> = db.0.upsert(("market", market.id.clone())).content(market).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Asset Types ---
+
+#[tauri::command]
+pub async fn get_asset_types(db: State<'_, DbState>) -> Result<Vec<AssetType>, String> {
+    let types: Vec<AssetType> = db.0.select("asset_type").await.map_err(|e| e.to_string())?;
+    Ok(types)
+}
+
+#[tauri::command]
+pub async fn save_asset_type(db: State<'_, DbState>, asset_type: AssetType) -> Result<(), String> {
+    let _: Option<AssetType> = db.0.upsert(("asset_type", asset_type.id.clone())).content(asset_type).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Assets ---
+
+#[tauri::command]
+pub async fn get_assets(db: State<'_, DbState>) -> Result<Vec<Asset>, String> {
+    let assets: Vec<Asset> = db.0.select("asset").await.map_err(|e| e.to_string())?;
+    Ok(assets)
+}
+
+#[tauri::command]
+pub async fn save_asset(db: State<'_, DbState>, asset: Asset) -> Result<(), String> {
+    let _: Option<Asset> = db.0.upsert(("asset", asset.id.clone())).content(asset).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Emotional States ---
+
+#[tauri::command]
+pub async fn get_emotional_states(db: State<'_, DbState>) -> Result<Vec<EmotionalState>, String> {
+    let states: Vec<EmotionalState> = db.0.select("emotional_state").await.map_err(|e| e.to_string())?;
+    Ok(states)
+}
+
+#[tauri::command]
+pub async fn save_emotional_state(db: State<'_, DbState>, state: EmotionalState) -> Result<(), String> {
+    let _: Option<EmotionalState> = db.0.upsert(("emotional_state", state.id.clone())).content(state).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Strategies ---
+
+#[tauri::command]
+pub async fn get_strategies(db: State<'_, DbState>) -> Result<Vec<Strategy>, String> {
+    let strategies: Vec<Strategy> = db.0.select("strategy").await.map_err(|e| e.to_string())?;
+    Ok(strategies)
+}
+
+#[tauri::command]
+pub async fn save_strategy(db: State<'_, DbState>, strategy: Strategy) -> Result<(), String> {
+    let _: Option<Strategy> = db.0.upsert(("strategy", strategy.id.clone())).content(strategy).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Trades ---
+
+#[tauri::command]
+pub async fn get_trades(db: State<'_, DbState>) -> Result<Vec<Trade>, String> {
+    let trades: Vec<Trade> = db.0.select("trade").await.map_err(|e| e.to_string())?;
+    Ok(trades)
+}
+
+#[tauri::command]
+pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), String> {
+    let _: Option<Trade> = db.0.upsert(("trade", trade.id.clone())).content(trade).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<Trade> = db.0.delete(("trade", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Cash Transactions ---
+
+#[tauri::command]
+pub async fn get_cash_transactions(db: State<'_, DbState>) -> Result<Vec<CashTransaction>, String> {
+    let transactions: Vec<CashTransaction> = db.0.select("cash_transaction").await.map_err(|e| e.to_string())?;
+    Ok(transactions)
+}
+
+#[tauri::command]
+pub async fn save_cash_transaction(db: State<'_, DbState>, transaction: CashTransaction) -> Result<(), String> {
+    let _: Option<CashTransaction> = db.0.upsert(("cash_transaction", transaction.id.clone())).content(transaction).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_cash_transaction(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<CashTransaction> = db.0.delete(("cash_transaction", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Journal Entries ---
+
+#[tauri::command]
+pub async fn get_journal_entries(db: State<'_, DbState>) -> Result<Vec<JournalEntry>, String> {
+    let entries: Vec<JournalEntry> = db.0.select("journal_entry").await.map_err(|e| e.to_string())?;
+    Ok(entries)
+}
+
+#[tauri::command]
+pub async fn save_journal_entry(db: State<'_, DbState>, entry: JournalEntry) -> Result<(), String> {
+    let _: Option<JournalEntry> = db.0.upsert(("journal_entry", entry.id.clone())).content(entry).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_journal_entry(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<JournalEntry> = db.0.delete(("journal_entry", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Fee Profiles ---
+
+#[tauri::command]
+pub async fn get_fees(db: State<'_, DbState>) -> Result<Vec<FeeProfile>, String> {
+    let fees: Vec<FeeProfile> = db.0.select("fee_profile").await.map_err(|e| e.to_string())?;
+    Ok(fees)
+}
+
+#[tauri::command]
+pub async fn save_fee(db: State<'_, DbState>, fee: FeeProfile) -> Result<(), String> {
+    let _: Option<FeeProfile> = db.0.upsert(("fee_profile", fee.id.clone())).content(fee).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_fee(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<FeeProfile> = db.0.delete(("fee_profile", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Risk Profiles ---
+
+#[tauri::command]
+pub async fn get_risk_profiles(db: State<'_, DbState>) -> Result<Vec<RiskProfile>, String> {
+    let profiles: Vec<RiskProfile> = db.0.select("risk_profile").await.map_err(|e| e.to_string())?;
+    Ok(profiles)
+}
+
+#[tauri::command]
+pub async fn save_risk_profile(db: State<'_, DbState>, profile: RiskProfile) -> Result<(), String> {
+    let _: Option<RiskProfile> = db.0.upsert(("risk_profile", profile.id.clone())).content(profile).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_risk_profile(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<RiskProfile> = db.0.delete(("risk_profile", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Modalities ---
+
+#[tauri::command]
+pub async fn get_modalities(db: State<'_, DbState>) -> Result<Vec<Modality>, String> {
+    let modalities: Vec<Modality> = db.0.select("modality").await.map_err(|e| e.to_string())?;
+    Ok(modalities)
+}
+
+#[tauri::command]
+pub async fn save_modality(db: State<'_, DbState>, modality: Modality) -> Result<(), String> {
+    let _: Option<Modality> = db.0.upsert(("modality", modality.id.clone())).content(modality).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_modality(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<Modality> = db.0.delete(("modality", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Tags ---
+
+#[tauri::command]
+pub async fn get_tags(db: State<'_, DbState>) -> Result<Vec<Tag>, String> {
+    let tags: Vec<Tag> = db.0.select("tag").await.map_err(|e| e.to_string())?;
+    Ok(tags)
+}
+
+#[tauri::command]
+pub async fn save_tag(db: State<'_, DbState>, tag: Tag) -> Result<(), String> {
+    let _: Option<Tag> = db.0.upsert(("tag", tag.id.clone())).content(tag).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_tag(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<Tag> = db.0.delete(("tag", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Indicators ---
+
+#[tauri::command]
+pub async fn get_indicators(db: State<'_, DbState>) -> Result<Vec<Indicator>, String> {
+    let indicators: Vec<Indicator> = db.0.select("indicator").await.map_err(|e| e.to_string())?;
+    Ok(indicators)
+}
+
+#[tauri::command]
+pub async fn save_indicator(db: State<'_, DbState>, indicator: Indicator) -> Result<(), String> {
+    let _: Option<Indicator> = db.0.upsert(("indicator", indicator.id.clone())).content(indicator).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_indicator(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<Indicator> = db.0.delete(("indicator", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Timeframes ---
+
+#[tauri::command]
+pub async fn get_timeframes(db: State<'_, DbState>) -> Result<Vec<Timeframe>, String> {
+    let timeframes: Vec<Timeframe> = db.0.select("timeframe").await.map_err(|e| e.to_string())?;
+    Ok(timeframes)
+}
+
+#[tauri::command]
+pub async fn save_timeframe(db: State<'_, DbState>, timeframe: Timeframe) -> Result<(), String> {
+    let _: Option<Timeframe> = db.0.upsert(("timeframe", timeframe.id.clone())).content(timeframe).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_timeframe(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<Timeframe> = db.0.delete(("timeframe", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// --- Chart Types ---
+
+#[tauri::command]
+pub async fn get_chart_types(db: State<'_, DbState>) -> Result<Vec<ChartType>, String> {
+    let types: Vec<ChartType> = db.0.select("chart_type").await.map_err(|e| e.to_string())?;
+    Ok(types)
+}
+
+#[tauri::command]
+pub async fn save_chart_type(db: State<'_, DbState>, chart_type: ChartType) -> Result<(), String> {
+    let _: Option<ChartType> = db.0.upsert(("chart_type", chart_type.id.clone())).content(chart_type).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_chart_type(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<ChartType> = db.0.delete(("chart_type", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_market(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<Market> = db.0.delete(("market", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_asset_type(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<AssetType> = db.0.delete(("asset_type", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_asset(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<Asset> = db.0.delete(("asset", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_currency(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<Currency> = db.0.delete(("currency", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_strategy(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<Strategy> = db.0.delete(("strategy", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_emotional_state(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let _: Option<EmotionalState> = db.0.delete(("emotional_state", id)).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
