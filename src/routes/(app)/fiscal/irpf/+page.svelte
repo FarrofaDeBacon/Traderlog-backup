@@ -122,9 +122,19 @@
 
         try {
             await irpfStore.generateDarf(idStr);
-            // Close modals after generating DARF
-            isAppraisalModalOpen = false;
-            isViewModalOpen = false;
+            item.darfGenerated = true;
+
+            if (isAppraisalModalOpen) {
+                // Only close if all items with total_payable >= 10 have had their DARF generated
+                const hasPendingDarfs = appraisalResults.some(
+                    (res) => res.total_payable >= 10 && !res.darfGenerated,
+                );
+                if (!hasPendingDarfs) {
+                    isAppraisalModalOpen = false;
+                }
+            } else if (isViewModalOpen) {
+                isViewModalOpen = false;
+            }
         } catch (error) {
             // Error handled in store
         }
@@ -936,12 +946,19 @@
                                             <Button
                                                 variant="secondary"
                                                 size="sm"
+                                                disabled={item.darfGenerated}
                                                 onclick={() =>
                                                     generateDarf(item)}
                                             >
-                                                <FileText
-                                                    class="w-4 h-4 mr-2"
-                                                /> Gerar DARF
+                                                {#if item.darfGenerated}
+                                                    <CheckCircle2
+                                                        class="w-4 h-4 mr-2"
+                                                    /> DARF Gerada
+                                                {:else}
+                                                    <FileText
+                                                        class="w-4 h-4 mr-2"
+                                                    /> Gerar DARF
+                                                {/if}
                                             </Button>
                                         {:else if item.total_payable > 0}
                                             <div
