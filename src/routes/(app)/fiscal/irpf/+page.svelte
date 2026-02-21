@@ -122,6 +122,9 @@
 
         try {
             await irpfStore.generateDarf(idStr);
+            // Close modals after generating DARF
+            isAppraisalModalOpen = false;
+            isViewModalOpen = false;
         } catch (error) {
             // Error handled in store
         }
