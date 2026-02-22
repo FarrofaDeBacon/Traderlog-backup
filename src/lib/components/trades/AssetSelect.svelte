@@ -1,10 +1,11 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { invoke } from "@tauri-apps/api/core";
     import { onMount } from "svelte";
 
     let {
         value = $bindable(""),
-        placeholder = "Selecione um ativo",
+        placeholder = $t("trades.wizard.messages.select_asset"),
         class: className = "",
     } = $props<{
         value: string;

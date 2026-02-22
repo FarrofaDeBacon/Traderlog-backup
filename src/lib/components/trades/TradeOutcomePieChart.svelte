@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import EChart from "$lib/components/ui/echart.svelte";
     import { settingsStore } from "$lib/stores/settings.svelte";
     import { tradesStore } from "$lib/stores/trades.svelte";
@@ -25,23 +26,28 @@
             else beCount++;
         });
 
+        const gainLabel = $t("trades.wizard.charts.outcome.gain");
+        const lossLabel = $t("trades.wizard.charts.outcome.loss");
+        const beLabel = $t("trades.wizard.charts.outcome.be");
+        const emptyLabel = $t("trades.wizard.charts.outcome.vazio");
+
         const data = [];
         if (gainCount > 0)
             data.push({
                 value: gainCount,
-                name: "Gain",
+                name: gainLabel,
                 itemStyle: { color: "#10b981" },
             });
         if (lossCount > 0)
             data.push({
                 value: lossCount,
-                name: "Loss",
+                name: lossLabel,
                 itemStyle: { color: "#f43f5e" },
             });
         if (beCount > 0)
             data.push({
                 value: beCount,
-                name: "BE",
+                name: beLabel,
                 itemStyle: { color: "#71717a" },
             });
 
@@ -52,7 +58,7 @@
                 : [
                       {
                           value: 1,
-                          name: "Vazio",
+                          name: emptyLabel,
                           itemStyle: { color: "#27272a" },
                           label: { show: false },
                       },
@@ -94,7 +100,7 @@
                         show: true,
                         position: "center",
                         formatter: () =>
-                            `{total|${tradesData.length}}\n{label|TRADES}`,
+                            `{total|${tradesData.length}}\n{label|${$t("trades.wizard.charts.outcome.trades_label")}}`,
                         rich: {
                             total: {
                                 fontSize: 10,
@@ -130,7 +136,7 @@
         <div
             class="absolute inset-0 flex items-center justify-center text-muted-foreground italic text-xs"
         >
-            Sem operações
+            {$t("trades.wizard.charts.outcome.empty")}
         </div>
     {/if}
 </div>

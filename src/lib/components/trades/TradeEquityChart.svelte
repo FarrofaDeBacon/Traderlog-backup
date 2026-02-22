@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import EChart from "$lib/components/ui/echart.svelte";
     import * as echarts from "echarts";
     import { settingsStore } from "$lib/stores/settings.svelte";
@@ -74,6 +75,10 @@
                 borderColor: "#27272a",
                 textStyle: { color: "#fff", fontSize: 12 },
                 formatter: (params: any) => {
+                    const capitalLabel = $t(
+                        "trades.wizard.charts.equity.capital",
+                    );
+                    const ddLabel = $t("trades.wizard.charts.equity.drawdown");
                     const equity = params.find(
                         (p: any) => p.seriesName === "Capital",
                     )?.data;
@@ -93,7 +98,7 @@
                         <div class="flex flex-col gap-1">
                             <span class="text-zinc-500 text-[10px] font-bold uppercase">${date}</span>
                             <div class="flex items-center justify-between gap-4">
-                                <span class="text-[10px] text-zinc-400 uppercase">Capital</span>
+                                <span class="text-[10px] text-zinc-400 uppercase">${capitalLabel}</span>
                                 <span class="text-xs font-black" style="color: ${color}">
                                     ${val >= 0 ? "+" : ""}${formatCurrency(val, settingsStore.userProfile?.main_currency || "BRL")}
                                 </span>
@@ -103,7 +108,7 @@
                     if (dd && dd.value[1] < 0) {
                         html += `
                             <div class="flex items-center justify-between gap-4 border-t border-white/5 pt-1 mt-1">
-                                <span class="text-[10px] text-zinc-400 uppercase">Drawdown</span>
+                                <span class="text-[10px] text-zinc-400 uppercase">${ddLabel}</span>
                                 <span class="text-xs font-bold text-rose-500">
                                     ${formatCurrency(Math.abs(dd.value[1]), settingsStore.userProfile?.main_currency || "BRL")}
                                 </span>
@@ -203,7 +208,7 @@
         <div
             class="absolute inset-0 flex items-center justify-center text-muted-foreground italic text-xs"
         >
-            Sem operações no período
+            {$t("trades.wizard.charts.equity.empty")}
         </div>
     {/if}
 </div>

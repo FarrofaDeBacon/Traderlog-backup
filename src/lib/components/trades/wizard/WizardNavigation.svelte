@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import { ChevronLeft, ChevronRight, Save, X } from "lucide-svelte";
+    import { t } from "svelte-i18n";
 
     let {
         currentStep = 1,
@@ -35,7 +36,7 @@
             class="text-zinc-500 hover:text-white"
         >
             <X class="w-4 h-4 mr-2" />
-            Cancelar
+            {$t("trades.wizard.summary.cancel")}
         </Button>
     </div>
 
@@ -48,7 +49,7 @@
                 class="border-zinc-800 text-zinc-300"
             >
                 <ChevronLeft class="w-4 h-4 mr-2" />
-                Anterior
+                {$t("trades.wizard.summary.prev")}
             </Button>
         {/if}
 
@@ -58,7 +59,7 @@
                 disabled={isSubmitting}
                 class="bg-primary text-black font-bold"
             >
-                Próximo
+                {$t("trades.wizard.summary.next")}
                 <ChevronRight class="w-4 h-4 ml-2" />
             </Button>
         {:else}
@@ -68,7 +69,9 @@
                 class="bg-green-600 hover:bg-green-700 text-white font-bold"
             >
                 <Save class="w-4 h-4 mr-2" />
-                {isSubmitting ? "Salvando..." : "Salvar Trade"}
+                {isSubmitting
+                    ? $t("trades.wizard.summary.saving")
+                    : $t("trades.wizard.summary.save_trade")}
             </Button>
         {/if}
     </div>

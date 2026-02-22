@@ -548,7 +548,7 @@ class SettingsStore {
     }
     async deleteMarket(id: string): Promise<{ success: boolean; error?: string }> {
         if (this.assetTypes.some(at => at.market_id === id)) {
-            return { success: false, error: "Este Mercado está associado a Tipos de Ativos existentes." };
+            return { success: false, error: "This Market is associated with existing Asset Types." };
         }
         try {
             await invoke("delete_market", { id });
@@ -575,7 +575,7 @@ class SettingsStore {
     }
     async deleteAssetType(id: string): Promise<{ success: boolean; error?: string }> {
         if (this.assets.some(a => a.asset_type_id === id)) {
-            return { success: false, error: "Este Tipo de Ativo está associado a Ativos existentes." };
+            return { success: false, error: "This Asset Type is associated with existing Assets." };
         }
         try {
             await invoke("delete_asset_type", { id });
@@ -602,7 +602,7 @@ class SettingsStore {
     async deleteAsset(id: string): Promise<{ success: boolean; error?: string }> {
         const asset = this.assets.find(a => a.id === id);
         if (asset && this.strategies.some(s => s.specific_assets.includes(asset.symbol))) {
-            return { success: false, error: "Este Ativo é referenciado especificamente em Estratégias." };
+            return { success: false, error: "This Asset is specifically referenced in Strategies." };
         }
         await invoke("delete_asset", { id });
         this.assets = this.assets.filter(a => a.id !== id);
@@ -626,16 +626,16 @@ class SettingsStore {
         if (sym.startsWith("WIN") || sym.startsWith("WDO") || sym.startsWith("IND") || sym.startsWith("DOL") || sym.startsWith("BIT")) {
             const type = this.assetTypes.find(at => at.name.toLowerCase().includes("futuro") || at.code.toLowerCase().includes("index"));
             typeId = type?.id || this.assetTypes[0]?.id || "";
-            name = sym.startsWith("WIN") ? "Mini Índice" :
-                sym.startsWith("WDO") ? "Mini Dólar" :
-                    sym.startsWith("IND") ? "Índice Bovespa" :
-                        sym.startsWith("DOL") ? "Dólar Cheio" :
+            name = sym.startsWith("WIN") ? "Mini Index" :
+                sym.startsWith("WDO") ? "Mini Dollar" :
+                    sym.startsWith("IND") ? "Bovespa Index" :
+                        sym.startsWith("DOL") ? "Full Dollar" :
                             sym.startsWith("BIT") ? "Mini Bitcoin" : sym;
         } else if (sym.length === 6 && !sym.match(/\d/)) {
             const type = this.assetTypes.find(at => at.name.toLowerCase().includes("forex") || at.code.toLowerCase().includes("fx"));
             typeId = type?.id || this.assetTypes[0]?.id || "";
         } else if (sym.length >= 5 && (sym.endsWith("11") || sym.endsWith("3") || sym.endsWith("4"))) {
-            const type = this.assetTypes.find(at => at.name.toLowerCase().includes("ação") || at.code.toLowerCase().includes("stk"));
+            const type = this.assetTypes.find(at => at.name.toLowerCase().includes("stock") || at.name.toLowerCase().includes("ação") || at.code.toLowerCase().includes("stk"));
             typeId = type?.id || this.assetTypes[0]?.id || "";
         } else {
             typeId = this.assetTypes[0]?.id || "";
@@ -697,7 +697,7 @@ class SettingsStore {
     }
     async deleteCurrency(id: string): Promise<{ success: boolean; error?: string }> {
         if (this.accounts.some(a => a.currency === id || a.currency === this.currencies.find(c => c.id === id)?.code)) {
-            return { success: false, error: "Esta Moeda está associada a contas existentes." };
+            return { success: false, error: "This Currency is associated with existing accounts." };
         }
         await invoke("delete_currency", { id });
         this.currencies = this.currencies.filter(c => c.id !== id);
@@ -761,7 +761,7 @@ class SettingsStore {
         this.saveFees();
     }
     async deleteFeeProfile(id: string): Promise<{ success: boolean; error?: string }> {
-        if (this.assets.some(a => a.default_fee_id === id)) return { success: false, error: "Este Perfil de Taxas é usado por Ativos." };
+        if (this.assets.some(a => a.default_fee_id === id)) return { success: false, error: "This Fee Profile is used by Assets." };
         await invoke("delete_fee", { id });
         this.fees = this.fees.filter(f => f.id !== id);
         return { success: true };
@@ -833,8 +833,8 @@ class SettingsStore {
     }
     async deleteTaxRule(id: string): Promise<{ success: boolean; error?: string }> {
         // Check usage in mappings or profiles (entries)
-        if (this.taxMappings.some(m => m.tax_rule_id === id)) return { success: false, error: "Esta regra é usada em Mapeamentos antigos." };
-        if (this.taxProfileEntries.some(e => e.tax_rule_id === id)) return { success: false, error: "Esta regra é usada em Perfis Fiscais." };
+        if (this.taxMappings.some(m => m.tax_rule_id === id)) return { success: false, error: "This rule is used in old Mappings." };
+        if (this.taxProfileEntries.some(e => e.tax_rule_id === id)) return { success: false, error: "This rule is used in Tax Profiles." };
 
         try {
             await invoke("delete_tax_rule", { id });
@@ -865,7 +865,7 @@ class SettingsStore {
 
     async deleteTaxProfile(id: string): Promise<{ success: boolean; error?: string }> {
         if (this.assetTypes.some(a => a.tax_profile_id === id)) {
-            return { success: false, error: "Este Perfil é usado por Tipos de Ativos." };
+            return { success: false, error: "This Profile is used by Asset Types." };
         }
         try {
             await invoke("delete_tax_profile", { id });
@@ -1164,8 +1164,8 @@ class SettingsStore {
     seedDatabase() {
         if (this.strategies.length === 0) {
             this.addStrategy({
-                name: "Setup Padrão (Seed)",
-                description: "Estratégia gerada automaticamente.",
+                name: "Default Setup (Seed)",
+                description: "Automatically generated strategy.",
                 market_ids: ["m1"],
                 timeframes: ["5m"],
                 asset_types: ["Futuros"],

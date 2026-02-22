@@ -254,7 +254,7 @@
     ]);
 
     let currencyOptions = $derived([
-        { value: "all", label: "Todas as Moedas" },
+        { value: "all", label: $t("finance.statement.allCurrencies") },
         ...settingsStore.currencies.map((c) => ({
             value: c.code,
             label: `${c.name} (${c.code})`,
@@ -393,7 +393,7 @@
                         <span class="truncate">
                             {currencyOptions.find(
                                 (o) => o.value === currencyFilter,
-                            )?.label ?? "Moeda"}
+                            )?.label ?? $t("general.currency")}
                         </span>
                     </div>
                 </Select.Trigger>
@@ -408,7 +408,7 @@
         <div class="flex items-center gap-3 w-full lg:w-auto mt-4 lg:mt-0">
             <span
                 class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest whitespace-nowrap"
-                >Mostrar</span
+                >{$t("general.show")}</span
             >
             <Select.Root
                 type="single"
@@ -418,15 +418,27 @@
                 <Select.Trigger
                     class="w-[100px] bg-zinc-950/50 border-zinc-800"
                 >
-                    <span class="truncate">{pageSize} meses</span>
+                    <span class="truncate"
+                        >{pageSize} {$t("general.time.months")}</span
+                    >
                 </Select.Trigger>
                 <Select.Content>
-                    <Select.Item value="1">1 mês</Select.Item>
-                    <Select.Item value="3">3 meses</Select.Item>
-                    <Select.Item value="6">6 meses</Select.Item>
-                    <Select.Item value="12">1 ano</Select.Item>
-                    <Select.Item value="24">2 anos</Select.Item>
-                    <Select.Item value="100">Tudo</Select.Item>
+                    <Select.Item value="1"
+                        >1 {$t("general.time.month")}</Select.Item
+                    >
+                    <Select.Item value="3"
+                        >3 {$t("general.time.months")}</Select.Item
+                    >
+                    <Select.Item value="6"
+                        >6 {$t("general.time.months")}</Select.Item
+                    >
+                    <Select.Item value="12"
+                        >1 {$t("general.time.year")}</Select.Item
+                    >
+                    <Select.Item value="24"
+                        >2 {$t("general.time.years")}</Select.Item
+                    >
+                    <Select.Item value="100">{$t("general.all")}</Select.Item>
                 </Select.Content>
             </Select.Root>
         </div>
@@ -464,7 +476,7 @@
                                 <div class="flex flex-col items-end">
                                     <span
                                         class="text-[9px] font-bold text-zinc-500 uppercase tracking-widest"
-                                        >Saldo {curr}</span
+                                        >{$t("general.balance")} {curr}</span
                                     >
                                     <span
                                         class="text-xs font-black {total >= 0
@@ -663,7 +675,9 @@
                                                                     <CalendarCheck
                                                                         class="w-3 h-3 mr-1"
                                                                     />
-                                                                    RESULTADO
+                                                                    {$t(
+                                                                        "finance.statement.types.result",
+                                                                    )}
                                                                 </div>
                                                             {:else}
                                                                 <div
@@ -672,7 +686,9 @@
                                                                     <RefreshCw
                                                                         class="w-3 h-3 mr-1"
                                                                     />
-                                                                    RESULTADO
+                                                                    {$t(
+                                                                        "finance.statement.types.result",
+                                                                    )}
                                                                 </div>
                                                             {/if}
                                                         </Table.Cell>
@@ -766,22 +782,9 @@
                                                                         <Tooltip.Content
                                                                             class="bg-zinc-950 border-zinc-800 text-[10px] max-w-[200px]"
                                                                         >
-                                                                            Esta
-                                                                            transação
-                                                                            foi
-                                                                            gerada
-                                                                            pelo
-                                                                            sistema
-                                                                            e só
-                                                                            pode
-                                                                            ser
-                                                                            alterada
-                                                                            no
-                                                                            módulo
-                                                                            de
-                                                                            origem
-                                                                            (ex:
-                                                                            IRPF).
+                                                                            {$t(
+                                                                                "finance.statement.messages.systemLinked",
+                                                                            )}
                                                                         </Tooltip.Content>
                                                                     </Tooltip.Root>
                                                                 {:else}
@@ -832,7 +835,7 @@
         <Dialog.Header>
             <Dialog.Title class="text-white flex items-center gap-2">
                 <Calendar class="w-5 h-5 text-primary" />
-                Resumo do Dia
+                {$t("finance.statement.summary.title")}
             </Dialog.Title>
             <Dialog.Description
                 class="text-zinc-500 font-mono text-[10px] uppercase tracking-widest"
@@ -853,7 +856,7 @@
                 >
                     <span
                         class="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-1"
-                        >Total Entradas</span
+                        >{$t("finance.statement.summary.totalDeposits")}</span
                     >
                     <span class="text-lg font-black text-emerald-400">
                         {formatCurrencyValue(
@@ -867,7 +870,9 @@
                 >
                     <span
                         class="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-1"
-                        >Total Saídas</span
+                        >{$t(
+                            "finance.statement.summary.totalWithdrawals",
+                        )}</span
                     >
                     <span class="text-lg font-black text-red-400">
                         {formatCurrencyValue(
@@ -882,7 +887,7 @@
                     <div>
                         <span
                             class="text-[10px] font-black text-primary uppercase tracking-widest block mb-1"
-                            >Resultado Líquido</span
+                            >{$t("finance.statement.summary.netResult")}</span
                         >
                         <span class="text-2xl font-black text-white">
                             {formatCurrencyValue(
@@ -894,7 +899,7 @@
                     <div class="text-right">
                         <span
                             class="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-1"
-                            >Lançamentos</span
+                            >{$t("finance.statement.entries")}</span
                         >
                         <span class="text-xl font-bold text-zinc-300"
                             >{dayDetailsStats.count}</span
@@ -907,7 +912,7 @@
                 <h4
                     class="text-[10px] font-black text-zinc-500 uppercase tracking-widest"
                 >
-                    Lançamentos do Período
+                    {$t("finance.statement.summary.periodEntries")}
                 </h4>
                 <div class="max-h-[300px] overflow-y-auto space-y-2 pr-1">
                     {#each dayDetailsStats.transactions as tx}
@@ -946,7 +951,7 @@
                 class="w-full"
                 onclick={() => (showDayDetailsDialog = false)}
             >
-                Fechar
+                {$t("general.close")}
             </Button>
         </Dialog.Footer>
     </Dialog.Content>
@@ -986,7 +991,7 @@
                     <div class="space-y-1">
                         <span
                             class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest"
-                            >Valor Total ({acc?.currency})</span
+                            >{$t("finance.transactionDialog.amount")} ({acc?.currency})</span
                         >
                         <div class="text-xl font-black text-white">
                             {formatCurrencyValue(

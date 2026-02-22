@@ -26,7 +26,30 @@
         "items": "Itens",
         "day": "Dia",
         "week": "Semana",
-        "month": "Mês"
+        "month": "Mês",
+        "origin": "Origem",
+        "destination": "Destino",
+        "balance": "Saldo",
+        "description": "Descrição",
+        "date": "Data",
+        "details": "Detalhes",
+        "status": "Status",
+        "type": "Tipo",
+        "value": "Valor",
+        "quantity": "Qtd",
+        "result": "Resultado",
+        "actions": "Ações",
+        "from": "De",
+        "to": "Para",
+        "show": "Mostrar",
+        "optional": "Opcional",
+        "close": "Fechar",
+        "time": {
+            "month": "mês",
+            "months": "meses",
+            "year": "ano",
+            "years": "anos"
+        }
     },
     "filters": {
         "date": {
@@ -77,6 +100,9 @@
                 "title": "Resumo do Dia",
                 "noTrades": "Nenhum trade realizado hoje.",
                 "chartPlaceholder": "Gráfico de Performance (Em breve)"
+            },
+            "messages": {
+                "noTrades": "Sem operações no período selecionado."
             },
             "charts": {
                 "equity": "Capital Líquido",
@@ -302,7 +328,8 @@
             "emotional_exit": "Emoção na Saída",
             "notes": "Notas da Operação",
             "no_notes": "Nenhuma nota registrada.",
-            "no_media": "Nenhuma imagem anexada."
+            "no_media": "Nenhuma imagem anexada.",
+            "no_records": "Nenhum registro"
         },
         "empty": {
             "title": "Histórico Vazio",
@@ -389,14 +416,22 @@
                 "signals": "Quais sinais o setup confirmou?",
                 "context": "Tendência, suportes/resistências, notícias relevantes...",
                 "improvements": "O que poderia ter sido melhor?",
-                "visual_desc": "Screenshots do gráfico e contexto (máx 5MB)."
+                "visual_desc": "Screenshots do gráfico e contexto (máx 5MB).",
+                "select_asset": "Selecione um ativo"
             },
             "messages": {
                 "select_asset": "Selecione um ativo",
                 "entry_price_required": "Informe o preço de entrada",
                 "save_success": "Trade salvo com sucesso!",
                 "save_error": "Erro ao salvar trade",
-                "no_status": "Nenhum estado"
+                "update_success": "Operação atualizada!",
+                "update_error": "Erro ao atualizar operação.",
+                "rtd_sync_success": "Preço e Horário atualizados ({symbol}): {price}",
+                "rtd_not_available": "Preço não disponível no RTD - Verifique o Profit",
+                "no_status": "Nenhum estado",
+                "required_fields": "Preencha os campos obrigatórios.",
+                "valid_asset_type": "Por favor, selecione um Tipo de Ativo válido.",
+                "asset_type_required": "Tipo de Ativo é obrigatório. Por favor, selecione um."
             },
             "tooltips": {
                 "risk": "Risco",
@@ -438,11 +473,23 @@
                 "calc_desc": "Descrição",
                 "calc_value": "Valor",
                 "save_btn": "SALVAR TRADE",
+                "saving": "Salvando...",
+                "save_trade": "Salvar Trade",
                 "recording": "Gravando Operação...",
                 "finish": "Finalizar Registro",
-                "next": "Continuar",
+                "next": "Próximo",
                 "prev": "Anterior",
-                "cancel": "Cancelar"
+                "cancel": "Cancelar",
+                "addition": "Adição",
+                "partial_exit": "Saída Parcial",
+                "final_exit": "Saída Final",
+                "fixed_fee": "Corretagem Fixa",
+                "variable_fee": "Taxa Variável",
+                "na": "N/A",
+                "yes": "Sim",
+                "no": "Não",
+                "s": "S",
+                "n": "N"
             },
             "partials": {
                 "executed_volume": "Volume Executado",
@@ -450,13 +497,63 @@
                 "add_partial": "Adicionar Parcial",
                 "no_partials": "Nenhuma parcial registrada",
                 "exit": "SAÍDA",
-                "entry": "ADIÇÃO"
+                "entry": "ADIÇÃO",
+                "type": "Tipo",
+                "date_time": "Data/Hora",
+                "price": "Preço",
+                "quantity": "Qtd",
+                "result": "Resultado",
+                "observation": "Obs"
             },
             "media": {
                 "drag_drop": "Arraste ou Clique",
                 "description": "Adicione prints do Profit, TradingView ou fotos do setup.",
                 "select_files": "Selecionar Arquivos",
-                "attachment": "Anexo #"
+                "attachment": "Anexo #",
+                "images": "Imagens"
+            },
+            "emotions": {
+                "light": "Leve",
+                "moderate": "Moderada",
+                "extreme": "Extrema",
+                "intense": "Intenso",
+                "intensity_label": "Intensidade Emocional",
+                "intensity_hint": "O quanto você estava sentindo essa emoção (0-10)"
+            },
+            "checklist": {
+                "sleep": "Dormi pelo menos 7h?",
+                "calm": "Estado emocional equilibrado?",
+                "plan": "Cenários de trade definidos?",
+                "distraction": "Foco total / Sem distrações?",
+                "risk": "Aceito o stop do dia?",
+                "ideal_condition": "Condição Ideal",
+                "ready": "PRONTO PARA O MERCADO!"
+            },
+            "auto_detection": {
+                "title": "Nova Execução Detectada!",
+                "source": "Via Profit RTD",
+                "ignore": "Ignorar",
+                "register": "Registrar Agora"
+            },
+            "charts": {
+                "equity": {
+                    "capital": "Capital",
+                    "drawdown": "Drawdown",
+                    "empty": "Sem operações no período"
+                },
+                "outcome": {
+                    "gain": "Gain",
+                    "loss": "Loss",
+                    "be": "BE",
+                    "empty": "Sem operações",
+                    "trades_label": "TRADES",
+                    "vazio": "Vazio"
+                }
+            },
+            "adherence": {
+                "title": "Aderência ao Plano",
+                "yes_msg": "Operação executada conforme a estratégia.",
+                "no_msg": "Houve desvio nas regras do setup."
             }
         }
     },
@@ -472,21 +569,35 @@
         },
         "statement": {
             "title": "Extrato de Movimentações",
-            "searchPlaceholder": "Buscar transações...",
+            "searchPlaceholder": "Buscar na descrição ou valor...",
             "allAccounts": "Todas as Contas",
+            "allCurrencies": "Todas as Moedas",
             "account": "Conta",
+            "entries": "Lançamentos",
             "noTransactions": "Nenhuma transação encontrada no período.",
             "columns": {
                 "date": "Data",
-                "type": "Tipo",
-                "description": "Descrição",
-                "account": "Conta",
-                "amount": "Valor"
+                "type": "TIPO",
+                "description": "DESCRIÇÃO",
+                "account": "CONTA",
+                "amount": "VALOR"
             },
             "types": {
                 "deposit": "Aporte",
                 "withdraw": "Retirada",
-                "adjustment": "Ajuste"
+                "adjustment": "Ajuste",
+                "transfer": "Transferência",
+                "result": "RESULTADO"
+            },
+            "summary": {
+                "title": "Resumo do Dia",
+                "totalDeposits": "Total Entradas",
+                "totalWithdrawals": "Total Saídas",
+                "netResult": "Resultado Líquido",
+                "periodEntries": "Lançamentos do Período"
+            },
+            "messages": {
+                "systemLinked": "Esta transação foi gerada pelo sistema e só pode ser alterada no módulo de origem (ex: IRPF)."
             }
         },
         "details": {
@@ -513,7 +624,10 @@
             "autoRate": "Câmbio Automático",
             "date": "Data da Transferência",
             "confirm": "Confirmar Transferência",
-            "success": "Transferência realizada com sucesso!"
+            "success": "Transferência realizada com sucesso!",
+            "errorDifferentAccounts": "As contas de origem e destino devem ser diferentes.",
+            "errorPositiveValue": "O valor deve ser maior que zero.",
+            "finalAmountHint": "Valor após taxas e conversão cambial"
         },
         "closureWizard": {
             "title": "Fechamento Diário",
@@ -562,7 +676,30 @@
             "description": "Descrição",
             "descriptionPlaceholder": "Ex: Aporte Mensal",
             "cancel": "Cancelar",
-            "confirm": "Confirmar Transação"
+            "confirm": "Confirmar",
+            "newOperation": "Nova Operação",
+            "operationShortDesc": "Registre aportes, retiradas ou transferências entre contas.",
+            "tabs": {
+                "transaction": "Transação",
+                "transfer": "Transferência"
+            },
+            "errors": {
+                "requiredFields": "Preencha os campos obrigatórios.",
+                "differentAccounts": "Contas devem ser diferentes.",
+                "saveError": "Erro ao salvar transação.",
+                "transferError": "Erro ao realizar transferência."
+            },
+            "defaults": {
+                "deposit": "Aporte Manual",
+                "withdraw": "Retirada Manual",
+                "adjustment": "Ajuste",
+                "transfer": "Transferência"
+            },
+            "labels": {
+                "amountWithCurrency": "Valor ({currency})",
+                "entryWithCurrency": "Entrada ({currency})",
+                "feePercent": "Taxa (%)"
+            }
         }
     },
     "psychology": {
@@ -1203,6 +1340,50 @@
                 },
                 "save": "Salvar Estratégia",
                 "cancel": "Cancelar"
+            }
+        },
+        "database": {
+            "title": "Gerenciar Banco de Dados",
+            "description": "Ferramentas para diagnosticar e gerenciar o banco de dados.",
+            "status": {
+                "title": "Verificar Status do Banco",
+                "description": "Veja quantos registros existem em cada tabela principal.",
+                "button": "Verificar Status",
+                "checking": "Verificando...",
+                "success": "Status verificado com sucesso!",
+                "error": "Erro ao verificar"
+            },
+            "defaults": {
+                "title": "Restaurar Padrões do Sistema",
+                "description": "Use esta opção caso note que opções como \"Tipos de Ativo\" ou \"Estados Emocionais\" estão faltando.",
+                "warning": "Seguro para uso: Esta ação verifica a integridade dos dados essenciais do sistema e recria apenas o que estiver faltando ou incorreto. Seus trades e contas NÃO serão apagados.",
+                "button": "Verificar e Restaurar Padrões",
+                "restoring": "Restaurando...",
+                "confirm": "Isso irá verificar e corrigir dados padrão faltantes (Moedas, Tipos de Ativo, etc.), sem apagar seus dados. Deseja continuar?"
+            },
+            "demo": {
+                "title": "Dados de Demonstração (Demo)",
+                "description": "Gere ou remova trades de exemplo para testar as funcionalidades.",
+                "cleanAll": "Limpar Todos os Dados Demo",
+                "cleaning": "Limpando...",
+                "generate": "Gerar Dados de Exemplo",
+                "generating": "Gerando...",
+                "delete": "Apagar Selecionados",
+                "deleting": "Apagando...",
+                "deleteWarning": "Atenção: Esta ação removerá permanentemente os trades das contas selecionadas.",
+                "confirmDeleteTitle": "Confirmar Exclusão",
+                "confirmDeleteDescription": "Tem certeza que deseja apagar os dados de demonstração? Esta ação não pode ser desfeita.",
+                "successGenerate": "Dados demo gerados com sucesso!",
+                "successClean": "Todos os trades demo foram removidos!",
+                "selectAccount": "Selecione pelo menos uma conta"
+            },
+            "danger": {
+                "title": "Zona de Perigo: Reset Total",
+                "description": "Apaga todos os dados e recria o banco do zero com dados de fábrica.",
+                "warning": "CUIDADO: Todos os seus trades, contas e personalizações serão perdidos.",
+                "button": "Resetar Banco de Dados (Completo)",
+                "resetting": "Resetando...",
+                "confirm": "ATENÇÃO: Isso apagará TODOS os dados (Trades, Contas, Configurações) e recriará o banco do zero com dados de exemplo. Tem certeza absoluta?"
             }
         },
         "markets": {

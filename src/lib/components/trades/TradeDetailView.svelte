@@ -209,7 +209,7 @@
                             variant="secondary"
                             class="bg-blue-500/10 text-blue-400 border-blue-500/20"
                         >
-                            {strategy?.name || "Sem Estratégia"}
+                            {strategy?.name || $t("trades.wizard.summary.na")}
                         </Badge>
                     </div>
                     <div class="flex justify-between items-center text-sm">
@@ -256,9 +256,7 @@
                                 </span>
                             </div>
                         {:else}
-                            <span class="text-sm text-muted-foreground"
-                                >Nenhum registro</span
-                            >
+                            {$t("trades.wizard.placeholders.no_states")}
                         {/if}
                     </div>
 
@@ -285,7 +283,9 @@
                             </div>
                         {:else}
                             <span class="text-sm text-muted-foreground"
-                                >Nenhum registro</span
+                                >{$t(
+                                    "trades.wizard.placeholders.no_states",
+                                )}</span
                             >
                         {/if}
                     </div>
@@ -298,18 +298,22 @@
                         class="flex items-center gap-2 mb-2 text-xs font-semibold uppercase text-muted-foreground"
                     >
                         <ArrowRightLeft class="w-3 h-3" />
-                        Aderência ao Plano
+                        {$t("trades.wizard.adherence.title")}
                     </div>
                     <div class="flex items-center gap-2">
                         {#if trade.followed_plan}
-                            <Badge class="bg-green-500 text-black">SIM</Badge>
+                            <Badge class="bg-green-500 text-black"
+                                >{$t("trades.wizard.summary.s")}</Badge
+                            >
                             <span class="text-sm text-green-500/80"
-                                >Operação executada conforme a estratégia.</span
+                                >{$t("trades.wizard.adherence.yes_msg")}</span
                             >
                         {:else}
-                            <Badge variant="destructive">NÃO</Badge>
+                            <Badge variant="destructive"
+                                >{$t("trades.wizard.summary.n")}</Badge
+                            >
                             <span class="text-sm text-red-500/80"
-                                >Houve desvio nas regras do setup.</span
+                                >{$t("trades.wizard.adherence.no_msg")}</span
                             >
                         {/if}
                     </div>

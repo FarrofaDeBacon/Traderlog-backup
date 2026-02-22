@@ -269,11 +269,26 @@
             settingsStore.timeframes.length > 0
                 ? [...settingsStore.timeframes]
                 : [
-                      { value: "1m", name: "1 Minuto" },
-                      { value: "5m", name: "5 Minutos" },
-                      { value: "15m", name: "15 Minutos" },
-                      { value: "60m", name: "60 Minutos" },
-                      { value: "D", name: "Diário" },
+                      {
+                          value: "1m",
+                          name: $t("trades.wizard.timeframe_options.1m"),
+                      },
+                      {
+                          value: "5m",
+                          name: $t("trades.wizard.timeframe_options.5m"),
+                      },
+                      {
+                          value: "15m",
+                          name: $t("trades.wizard.timeframe_options.15m"),
+                      },
+                      {
+                          value: "60m",
+                          name: $t("trades.wizard.timeframe_options.60m"),
+                      },
+                      {
+                          value: "D",
+                          name: $t("trades.wizard.timeframe_options.d"),
+                      },
                   ];
 
         console.log(
@@ -384,16 +399,23 @@
         );
 
         const futType =
-            settingsStore.assetTypes.find((t) =>
-                t.name.toLowerCase().includes("futuro"),
+            settingsStore.assetTypes.find(
+                (t) =>
+                    t.name.toLowerCase().includes("future") ||
+                    t.name.toLowerCase().includes("futuro"),
             )?.id || "";
         const indType =
-            settingsStore.assetTypes.find((t) =>
-                t.name.toLowerCase().includes("indice"),
+            settingsStore.assetTypes.find(
+                (t) =>
+                    t.name.toLowerCase().includes("index") ||
+                    t.name.toLowerCase().includes("indice"),
             )?.id || "";
         const stockType =
-            settingsStore.assetTypes.find((t) =>
-                t.name.toLowerCase().includes("aç"),
+            settingsStore.assetTypes.find(
+                (t) =>
+                    t.name.toLowerCase().includes("stock") ||
+                    t.name.toLowerCase().includes("ação") ||
+                    t.name.toLowerCase().includes("aç"),
             )?.id || "";
 
         return symbols
@@ -480,7 +502,7 @@
                 avgPrice = (avgPrice * runningQty + price * qty) / newQty;
                 runningQty = newQty;
                 memoryItems.push({
-                    label: `Adição (+${qty} ${assetType?.unit_label || "ctr"}) @ ${price}`,
+                    label: `${$t("trades.wizard.summary.addition")} (+${qty} ${assetType?.unit_label || "ctr"}) @ ${price}`,
                     result: 0,
                     type: "addition",
                 });
@@ -490,7 +512,7 @@
                 grossTotal += result;
                 runningQty -= qty;
                 memoryItems.push({
-                    label: `Saída Parcial (-${qty} ${assetType?.unit_label || "ctr"})`,
+                    label: `${$t("trades.wizard.summary.partial_exit")} (-${qty} ${assetType?.unit_label || "ctr"})`,
                     result,
                     type: "exit",
                 });
@@ -507,7 +529,7 @@
             const result = diff * remainingQty * pointValue * multiplier;
             grossTotal += result;
             memoryItems.push({
-                label: `Saída Final (-${remainingQty} ${assetType?.unit_label || "ctr"})`,
+                label: `${$t("trades.wizard.summary.final_exit")} (-${remainingQty} ${assetType?.unit_label || "ctr"})`,
                 result,
                 type: "exit",
             });
@@ -528,7 +550,7 @@
                 const fixed = feeProfile.fixed_fee * formData.quantity;
                 calculatedFees += fixed;
                 memoryItems.push({
-                    label: `Corretagem Fixa`,
+                    label: $t("trades.wizard.summary.fixed_fee"),
                     result: -fixed,
                 });
             }
@@ -538,7 +560,7 @@
                 const perc = entryValue * (feeProfile.percentage_fee / 100);
                 calculatedFees += perc;
                 memoryItems.push({
-                    label: `Taxa Variável (${feeProfile.percentage_fee}%)`,
+                    label: `${$t("trades.wizard.summary.variable_fee")} (${feeProfile.percentage_fee}%)`,
                     result: -perc,
                 });
             }
@@ -586,7 +608,7 @@
                 !formData.strategy_id ||
                 !formData.modality_id
             ) {
-                toast.error($t("trades.wizard.errors.required_fields"));
+                toast.error($t("trades.wizard.messages.required_fields"));
                 return;
             }
             if (formData.entry_price <= 0) {
@@ -632,15 +654,13 @@
                     selectedAssetTypeId,
                 );
             } else {
-                toast.error("Por favor, selecione um Tipo de Ativo válido.");
+                toast.error($t("trades.wizard.messages.valid_asset_type"));
                 return;
             }
         }
 
         if (!selectedAssetTypeId) {
-            toast.error(
-                "Tipo de Ativo é obrigatório. Por favor, selecione um.",
-            );
+            toast.error($t("trades.wizard.messages.asset_type_required"));
             return;
         }
 
@@ -711,10 +731,7 @@
                     tradeData,
                 );
                 if (result.success) {
-                    toast.success(
-                        $t("trades.wizard.messages.update_success") ||
-                            "Operação atualizada!",
-                    );
+                    toast.success($t("trades.wizard.messages.update_success"));
                     onsave();
                     close();
                 } else {
@@ -722,7 +739,10 @@
                         "[NewTradeWizard] Backend Update Error:",
                         result.error,
                     );
-                    toast.error(result.error || "Erro ao atualizar operação.");
+                    toast.error(
+                        result.error ||
+                            $t("trades.wizard.messages.update_error"),
+                    );
                 }
             } else {
                 console.log("[NewTradeWizard] Calling addTrade");
@@ -736,7 +756,9 @@
                         "[NewTradeWizard] Backend Save Error:",
                         result.error,
                     );
-                    toast.error(result.error || "Erro ao salvar operação.");
+                    toast.error(
+                        result.error || $t("trades.wizard.messages.save_error"),
+                    );
                 }
             }
         } catch (e) {
@@ -1204,11 +1226,21 @@
                                                                 getNowWithOffset();
 
                                                             toast.success(
-                                                                `Preço e Horário atualizados (${quote.symbol}): ${quote.last}`,
+                                                                $t(
+                                                                    "trades.wizard.messages.rtd_sync_success",
+                                                                    {
+                                                                        values: {
+                                                                            symbol: quote.symbol,
+                                                                            price: quote.last,
+                                                                        },
+                                                                    },
+                                                                ),
                                                             );
                                                         } else {
                                                             toast.error(
-                                                                "Preço não disponível no RTD - Verifique o Profit",
+                                                                $t(
+                                                                    "trades.wizard.messages.rtd_not_available",
+                                                                ),
                                                             );
                                                         }
                                                     }}
@@ -1485,12 +1517,12 @@
                                                 "trades.wizard.exit_reasons.manual",
                                             )}</Select.Item
                                         >
-                                        <Select.Item value="Tempo"
+                                        <Select.Item value="Time"
                                             >{$t(
                                                 "trades.wizard.exit_reasons.time",
                                             )}</Select.Item
                                         >
-                                        <Select.Item value="Estratégia"
+                                        <Select.Item value="Strategy"
                                             >{$t(
                                                 "trades.wizard.exit_reasons.strategy",
                                             )}</Select.Item
@@ -1567,7 +1599,11 @@
                                                 ? 'bg-emerald-500/10 text-emerald-500'
                                                 : 'bg-red-500/10 text-red-500'} uppercase"
                                         >
-                                            {formData.direction}
+                                            {formData.direction === "buy"
+                                                ? $t("trades.wizard.fields.buy")
+                                                : $t(
+                                                      "trades.wizard.fields.sell",
+                                                  )}
                                         </span>
                                     </div>
                                     <p
@@ -1689,13 +1725,16 @@
                                         <Brain
                                             class="w-3.5 h-3.5 text-primary"
                                         />
-                                        Intensidade Emocional
+                                        {$t(
+                                            "trades.wizard.emotions.intensity_label",
+                                        )}
                                     </Label>
                                     <p
                                         class="text-[10px] text-muted-foreground uppercase"
                                     >
-                                        O quanto você estava sentindo essa
-                                        emoção (0-10)
+                                        {$t(
+                                            "trades.wizard.emotions.intensity_hint",
+                                        )}
                                     </p>
                                 </div>
                                 <span
@@ -1714,9 +1753,18 @@
                             <div
                                 class="flex justify-between text-[8px] text-zinc-500 font-bold uppercase tracking-widest px-1"
                             >
-                                <span>Leve</span>
-                                <span>Moderada</span>
-                                <span>Extrema</span>
+                                <span>{$t("trades.wizard.emotions.light")}</span
+                                >
+                                <span
+                                    >{$t(
+                                        "trades.wizard.emotions.moderate",
+                                    )}</span
+                                >
+                                <span
+                                    >{$t(
+                                        "trades.wizard.emotions.extreme",
+                                    )}</span
+                                >
                             </div>
                         </div>
                     </section>
@@ -1792,7 +1840,13 @@
                                                     ? 'bg-emerald-500/20 text-emerald-400'
                                                     : 'bg-red-500/20 text-red-400'}"
                                             >
-                                                {formData.direction.toUpperCase()}
+                                                {formData.direction === "buy"
+                                                    ? $t(
+                                                          "trades.wizard.fields.buy",
+                                                      ).toUpperCase()
+                                                    : $t(
+                                                          "trades.wizard.fields.sell",
+                                                      ).toUpperCase()}
                                             </span>
                                         </div>
                                     </div>
@@ -1856,7 +1910,8 @@
                                                 (s) =>
                                                     s.id ===
                                                     formData.strategy_id,
-                                            )?.name || "N/A"}
+                                            )?.name ||
+                                                $t("trades.wizard.summary.na")}
                                         </p>
                                     </div>
                                 </div>
@@ -2021,7 +2076,9 @@
                                     >
                                         <span
                                             class="text-[9px] text-muted-foreground uppercase font-bold"
-                                            >Imagens</span
+                                            >{$t(
+                                                "trades.wizard.summary.images",
+                                            )}</span
                                         >
                                         <span
                                             class="text-lg font-black text-white"
@@ -2042,7 +2099,9 @@
                                                 ? 'bg-emerald-500/10 text-emerald-400'
                                                 : 'bg-red-500/10 text-red-400'} border border-white/5"
                                         >
-                                            {formData.followed_plan ? "S" : "N"}
+                                            {formData.followed_plan
+                                                ? $t("trades.wizard.summary.s")
+                                                : $t("trades.wizard.summary.n")}
                                         </span>
                                     </div>
                                     <button

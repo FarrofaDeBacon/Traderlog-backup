@@ -1,8 +1,9 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import { onMount } from "svelte";
     import { Checkbox } from "$lib/components/ui/checkbox";
     import { Label } from "$lib/components/ui/label";
-    import { Brain, CheckCircle2 } from "lucide-svelte";
+    import { CheckCircle2 } from "lucide-svelte";
 
     interface ChecklistItem {
         id: string;
@@ -11,15 +12,31 @@
     }
 
     let items = $state<ChecklistItem[]>([
-        { id: "sleep", label: "Dormi pelo menos 7h?", checked: false },
-        { id: "calm", label: "Estado emocional equilibrado?", checked: false },
-        { id: "plan", label: "Cenários de trade definidos?", checked: false },
         {
-            id: "distraction",
-            label: "Foco total / Sem distrações?",
+            id: "sleep",
+            label: $t("trades.wizard.checklist.sleep"),
             checked: false,
         },
-        { id: "risk", label: "Aceito o stop do dia?", checked: false },
+        {
+            id: "calm",
+            label: $t("trades.wizard.checklist.calm"),
+            checked: false,
+        },
+        {
+            id: "plan",
+            label: $t("trades.wizard.checklist.plan"),
+            checked: false,
+        },
+        {
+            id: "distraction",
+            label: $t("trades.wizard.checklist.distraction"),
+            checked: false,
+        },
+        {
+            id: "risk",
+            label: $t("trades.wizard.checklist.risk"),
+            checked: false,
+        },
     ]);
 
     const STORAGE_KEY = "traderlog_daily_checklist_v1";
@@ -29,7 +46,18 @@
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
-                if (Array.isArray(parsed)) items = parsed;
+                if (Array.isArray(parsed)) {
+                    // Update labels from translations while keeping checked state
+                    items = items.map((item) => {
+                        const savedItem = parsed.find(
+                            (p: any) => p.id === item.id,
+                        );
+                        return {
+                            ...item,
+                            checked: savedItem?.checked || false,
+                        };
+                    });
+                }
             } catch (e) {
                 console.error("Error loading checklist", e);
             }
@@ -84,10 +112,10 @@
                 <p
                     class="text-[10px] font-bold uppercase tracking-tighter text-primary"
                 >
-                    Condição Ideal
+                    {$t("trades.wizard.checklist.ideal_condition")}
                 </p>
                 <p class="text-xs font-bold text-foreground italic">
-                    PRONTO PARA O MERCADO!
+                    {$t("trades.wizard.checklist.ready")}
                 </p>
             </div>
         </div>

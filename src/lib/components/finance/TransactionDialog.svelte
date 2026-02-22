@@ -110,11 +110,15 @@
                 !transferAmount ||
                 parseFloat(transferAmount) <= 0
             ) {
-                toast.error("Preencha os campos obrigatórios.");
+                toast.error(
+                    $t("finance.transactionDialog.errors.requiredFields"),
+                );
                 return;
             }
             if (fromAccountId === toAccountId) {
-                toast.error("Contas devem ser diferentes.");
+                toast.error(
+                    $t("finance.transactionDialog.errors.differentAccounts"),
+                );
                 return;
             }
 
@@ -130,21 +134,26 @@
                 description:
                     description ||
                     (sameCurrency
-                        ? "Transferência"
+                        ? $t("finance.transactionDialog.defaults.transfer")
                         : `FX Rate: ${exchangeRate}`),
             });
 
             if (result.success) {
-                toast.success("Transferência realizada com sucesso!");
+                toast.success($t("finance.transferDialog.success"));
                 open = false;
                 resetForms();
             } else {
-                toast.error(result.error || "Erro ao realizar transferência.");
+                toast.error(
+                    result.error ||
+                        $t("finance.transactionDialog.errors.transferError"),
+                );
             }
         } else {
             // Standard Transaction
             if (!accountId || !amount || parseFloat(amount) <= 0) {
-                toast.error("Preencha os campos obrigatórios.");
+                toast.error(
+                    $t("finance.transactionDialog.errors.requiredFields"),
+                );
                 return;
             }
 
@@ -159,18 +168,23 @@
                 description:
                     description ||
                     (transactionType === "Deposit"
-                        ? "Aporte Manual"
+                        ? $t("finance.transactionDialog.defaults.deposit")
                         : transactionType === "Withdraw"
-                          ? "Retirada Manual"
-                          : "Ajuste"),
+                          ? $t("finance.transactionDialog.defaults.withdraw")
+                          : $t(
+                                "finance.transactionDialog.defaults.adjustment",
+                            )),
             });
 
             if (result.success) {
-                toast.success("Operação realizada com sucesso!");
+                toast.success($t("general.success"));
                 open = false;
                 resetForms();
             } else {
-                toast.error(result.error || "Erro ao salvar transação.");
+                toast.error(
+                    result.error ||
+                        $t("finance.transactionDialog.errors.saveError"),
+                );
             }
         }
     }
@@ -188,19 +202,23 @@
 <Dialog.Root bind:open>
     <Dialog.Content class="sm:max-w-[600px]">
         <Dialog.Header>
-            <Dialog.Title>Nova Operação</Dialog.Title>
+            <Dialog.Title
+                >{$t("finance.transactionDialog.newOperation")}</Dialog.Title
+            >
             <Dialog.Description>
-                Registre aportes, retiradas ou transferências entre contas.
+                {$t("finance.transactionDialog.operationShortDesc")}
             </Dialog.Description>
         </Dialog.Header>
 
         <Tabs.Root bind:value={activeTab} class="w-full">
             <Tabs.List class="grid w-full grid-cols-2">
                 <Tabs.Trigger value="transaction" class="gap-2">
-                    <Wallet class="w-4 h-4" /> Transação
+                    <Wallet class="w-4 h-4" />
+                    {$t("finance.transactionDialog.tabs.transaction")}
                 </Tabs.Trigger>
                 <Tabs.Trigger value="transfer" class="gap-2">
-                    <ArrowRightLeft class="w-4 h-4" /> Transferência
+                    <ArrowRightLeft class="w-4 h-4" />
+                    {$t("finance.transactionDialog.tabs.transfer")}
                 </Tabs.Trigger>
             </Tabs.List>
 
@@ -298,12 +316,12 @@
                     class="flex items-center gap-4 bg-muted/30 p-3 rounded-lg border"
                 >
                     <div class="flex-1 space-y-1">
-                        <Label class="text-xs">De</Label>
+                        <Label class="text-xs">{$t("general.from")}</Label>
                         <Select.Root type="single" bind:value={fromAccountId}>
                             <Select.Trigger class="bg-background h-9 w-full">
                                 {accountOptions.find(
                                     (a) => a.value === fromAccountId,
-                                )?.label ?? "Origem"}
+                                )?.label ?? $t("general.origin")}
                             </Select.Trigger>
                             <Select.Content>
                                 {#each accountOptions as acc}
@@ -321,12 +339,12 @@
                     <ArrowRight class="w-4 h-4 text-muted-foreground mt-5" />
 
                     <div class="flex-1 space-y-1">
-                        <Label class="text-xs">Para</Label>
+                        <Label class="text-xs">{$t("general.to")}</Label>
                         <Select.Root type="single" bind:value={toAccountId}>
                             <Select.Trigger class="bg-background h-9 w-full">
                                 {accountOptions.find(
                                     (a) => a.value === toAccountId,
-                                )?.label ?? "Destino"}
+                                )?.label ?? $t("general.destination")}
                             </Select.Trigger>
                             <Select.Content>
                                 {#each accountOptions as acc}
@@ -345,7 +363,14 @@
                 <div class="grid grid-cols-12 gap-3">
                     <div class="col-span-3 space-y-1">
                         <Label class="text-xs"
-                            >Valor ({fromAccount?.currency ?? ""})</Label
+                            >{$t(
+                                "finance.transactionDialog.labels.amountWithCurrency",
+                                {
+                                    values: {
+                                        currency: fromAccount?.currency ?? "",
+                                    },
+                                },
+                            )}</Label
                         >
                         <Input
                             type="number"
@@ -357,7 +382,11 @@
                     </div>
 
                     <div class="col-span-2 space-y-1">
-                        <Label class="text-xs">Taxa (%)</Label>
+                        <Label class="text-xs"
+                            >{$t(
+                                "finance.transactionDialog.labels.feePercent",
+                            )}</Label
+                        >
                         <div class="relative">
                             <Input
                                 type="number"
@@ -372,7 +401,14 @@
 
                     <div class="col-span-3 space-y-1">
                         <Label class="text-xs"
-                            >Entrada ({toAccount?.currency ?? ""})</Label
+                            >{$t(
+                                "finance.transactionDialog.labels.entryWithCurrency",
+                                {
+                                    values: {
+                                        currency: toAccount?.currency ?? "",
+                                    },
+                                },
+                            )}</Label
                         >
                         <Input
                             type="number"
@@ -388,7 +424,7 @@
                     </div>
 
                     <div class="col-span-4 space-y-1">
-                        <Label class="text-xs">Data</Label>
+                        <Label class="text-xs">{$t("general.date")}</Label>
                         <Input type="date" bind:value={date} />
                     </div>
                 </div>
@@ -411,10 +447,10 @@
                 {/if}
 
                 <div class="space-y-1">
-                    <Label class="text-xs">Detalhes</Label>
+                    <Label class="text-xs">{$t("general.details")}</Label>
                     <Input
                         class="h-9"
-                        placeholder="Opcional: Descrição da transferência..."
+                        placeholder={$t("general.optional")}
                         bind:value={description}
                     />
                 </div>
@@ -425,9 +461,7 @@
             <Button variant="outline" onclick={() => (open = false)}
                 >{$t("general.cancel")}</Button
             >
-            <Button onclick={save}
-                >{$t("finance.transactionDialog.confirm")}</Button
-            >
+            <Button onclick={save}>{$t("general.confirm")}</Button>
         </Dialog.Footer>
     </Dialog.Content>
 </Dialog.Root>

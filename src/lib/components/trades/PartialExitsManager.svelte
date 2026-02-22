@@ -11,7 +11,7 @@
         partials = $bindable([]),
         entryPrice = 0,
         totalQuantity = 0,
-        unitLabel = "contratos",
+        unitLabel = $t("trades.wizard.unit_labels.contracts"),
         resultSuffix = "pts",
         resultPrefix = "",
     } = $props<{
@@ -73,7 +73,9 @@
                 <p
                     class="text-[9px] font-bold uppercase tracking-widest text-muted-foreground"
                 >
-                    {$t("trades.wizard.sections.partial_management.volume_executed")}
+                    {$t(
+                        "trades.wizard.sections.partial_management.volume_executed",
+                    )}
                 </p>
                 <p
                     class="text-sm font-mono font-bold text-primary flex items-center gap-2"
@@ -148,27 +150,27 @@
                 <Table.Row class="hover:bg-transparent border-muted/50">
                     <Table.Head
                         class="w-[100px] h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground/80"
-                        >{$t("trades.wizard.sections.partial_management.type")}</Table.Head
+                        >{$t("trades.wizard.partials.type")}</Table.Head
                     >
                     <Table.Head
                         class="w-[160px] h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground/80"
-                        >{$t("trades.wizard.sections.partial_management.date_time")}</Table.Head
+                        >{$t("trades.wizard.partials.date_time")}</Table.Head
                     >
                     <Table.Head
                         class="w-[110px] h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground/80 text-right"
-                        >{$t("trades.wizard.sections.partial_management.price")}</Table.Head
+                        >{$t("trades.wizard.partials.price")}</Table.Head
                     >
                     <Table.Head
                         class="w-[80px] h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground/80 text-center"
-                        >{$t("trades.wizard.sections.partial_management.quantity")}</Table.Head
+                        >{$t("trades.wizard.partials.quantity")}</Table.Head
                     >
                     <Table.Head
                         class="w-[120px] h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground/80 text-right"
-                        >{$t("trades.wizard.sections.partial_management.result")}</Table.Head
+                        >{$t("trades.wizard.partials.result")}</Table.Head
                     >
                     <Table.Head
                         class="h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground/80"
-                        >{$t("trades.wizard.sections.partial_management.observation")}</Table.Head
+                        >{$t("trades.wizard.partials.observation")}</Table.Head
                     >
                     <Table.Head
                         class="w-[50px] h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground/80 text-right"
@@ -185,7 +187,9 @@
                                 <TrendingUp class="w-6 h-6" />
                                 <span
                                     class="text-[10px] uppercase font-bold tracking-widest"
-                                    >{$t("trades.wizard.sections.partial_management.no_partials")}</span
+                                    >{$t(
+                                        "trades.wizard.sections.partial_management.no_partials",
+                                    )}</span
                                 >
                             </div>
                         </Table.Cell>
@@ -208,8 +212,12 @@
                                         : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.2)]'}"
                                 >
                                     {partial.type === "exit"
-                                        ? $t("trades.wizard.sections.partial_management.exit")
-                                        : $t("trades.wizard.sections.partial_management.addition")}
+                                        ? $t(
+                                              "trades.wizard.sections.partial_management.exit",
+                                          )
+                                        : $t(
+                                              "trades.wizard.sections.partial_management.addition",
+                                          )}
                                 </button>
                             </Table.Cell>
                             <Table.Cell class="py-1">

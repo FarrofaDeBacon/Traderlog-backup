@@ -70,12 +70,12 @@
 
     async function handleSubmit() {
         if (!fromAccountId || !toAccountId || fromAccountId === toAccountId) {
-            toast.error("Selecione contas de origem e destino diferentes.");
+            toast.error($t("finance.transferDialog.errorDifferentAccounts"));
             return;
         }
 
         if (sourceAmount <= 0) {
-            toast.error("O valor deve ser maior que zero.");
+            toast.error($t("finance.transferDialog.errorPositiveValue"));
             return;
         }
 
@@ -94,7 +94,7 @@
         });
 
         if (result.success) {
-            toast.success("Transferência realizada com sucesso!");
+            toast.success($t("finance.transferDialog.success"));
             open = false;
             resetForm();
         } else {
@@ -128,10 +128,10 @@
                     >
                         <ArrowRightLeft class="w-5 h-5 text-primary" />
                     </div>
-                    Nova Transferência
+                    {$t("finance.transferDialog.title")}
                 </Dialog.Title>
                 <Dialog.Description class="text-zinc-500 text-xs">
-                    Transfira fundos entre suas contas com conversão automática.
+                    {$t("finance.transferDialog.description")}
                 </Dialog.Description>
             </Dialog.Header>
         </div>
@@ -146,14 +146,14 @@
                 <div class="space-y-2">
                     <Label
                         class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1"
-                        >Origem</Label
+                        >{$t("general.origin")}</Label
                     >
                     <Select.Root type="single" bind:value={fromAccountId}>
                         <Select.Trigger
                             class="w-full bg-zinc-900 border-zinc-800 h-10"
                         >
                             <span class="truncate">
-                                {fromAccount?.nickname ?? "Origem"}
+                                {fromAccount?.nickname ?? $t("general.origin")}
                             </span>
                         </Select.Trigger>
                         <Select.Content class="bg-zinc-900 border-zinc-800">
@@ -179,14 +179,15 @@
                 <div class="space-y-2">
                     <Label
                         class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1 text-right block"
-                        >Destino</Label
+                        >{$t("general.destination")}</Label
                     >
                     <Select.Root type="single" bind:value={toAccountId}>
                         <Select.Trigger
                             class="w-full bg-zinc-900 border-zinc-800 h-10"
                         >
                             <span class="truncate">
-                                {toAccount?.nickname ?? "Destino"}
+                                {toAccount?.nickname ??
+                                    $t("general.destination")}
                             </span>
                         </Select.Trigger>
                         <Select.Content class="bg-zinc-900 border-zinc-800">
@@ -208,7 +209,7 @@
                     <div class="space-y-2">
                         <Label
                             class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1"
-                            >Valor Total na Origem</Label
+                            >{$t("finance.transferDialog.amount")}</Label
                         >
                         <div class="relative">
                             <div
@@ -228,7 +229,7 @@
                     <div class="space-y-2">
                         <Label
                             class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1"
-                            >Taxas / Custos</Label
+                            >{$t("finance.transferDialog.fee")}</Label
                         >
                         <div class="relative">
                             <div
@@ -256,7 +257,7 @@
                                 class="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-wider"
                             >
                                 <Info class="w-3 h-3" />
-                                Taxa de Câmbio
+                                {$t("finance.transferDialog.rate")}
                             </div>
                             <div class="text-[10px] text-zinc-500 font-mono">
                                 1 {fromAccount.currency} = {exchangeRate.toFixed(
@@ -286,7 +287,7 @@
                 <div class="space-y-2">
                     <Label
                         class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1"
-                        >Valor Final Creditado</Label
+                        >{$t("finance.transferDialog.finalAmount")}</Label
                     >
                     <div class="relative">
                         <div
@@ -303,7 +304,7 @@
                         />
                     </div>
                     <p class="text-[10px] text-zinc-600 italic px-1">
-                        Valor após taxas e conversão cambial
+                        {$t("finance.transferDialog.finalAmountHint")}
                     </p>
                 </div>
             </div>
@@ -313,7 +314,7 @@
                 <div class="space-y-2">
                     <Label
                         class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1"
-                        >Data</Label
+                        >{$t("general.date")}</Label
                     >
                     <Input
                         type="date"
@@ -324,10 +325,10 @@
                 <div class="space-y-2">
                     <Label
                         class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1"
-                        >Descrição</Label
+                        >{$t("general.description")}</Label
                     >
                     <Input
-                        placeholder="Opcional"
+                        placeholder={$t("general.optional")}
                         class="bg-zinc-950/50 border-zinc-800 h-10"
                         bind:value={description}
                     />
@@ -348,7 +349,7 @@
             <Button
                 variant="ghost"
                 onclick={() => (open = false)}
-                class="text-zinc-500">Cancelar</Button
+                class="text-zinc-500">{$t("general.cancel")}</Button
             >
             <Button
                 class="px-8 shadow-lg shadow-primary/20"
@@ -358,7 +359,7 @@
                     fromAccountId === toAccountId ||
                     sourceAmount <= 0}
             >
-                Confirmar Transferência
+                {$t("finance.transferDialog.confirm")}
             </Button>
         </Dialog.Footer>
     </Dialog.Content>
