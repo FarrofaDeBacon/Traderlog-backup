@@ -22,22 +22,15 @@
     let isDialogOpen = $state(false);
     let isSyncing = $state(false);
     let editingId = $state<string | null>(null);
-    let searchTerm = $state("");
 
     // Delete Modal State
     let isDeleteOpen = $state(false);
     let deleteId = $state<string | null>(null);
 
     let filteredItems = $derived(
-        settingsStore.currencies
-            .filter(
-                (item) =>
-                    item.code
-                        .toLowerCase()
-                        .includes(searchTerm.toLowerCase()) ||
-                    item.name.toLowerCase().includes(searchTerm.toLowerCase()),
-            )
-            .sort((a, b) => a.code.localeCompare(b.code)),
+        [...settingsStore.currencies].sort((a, b) =>
+            a.code.localeCompare(b.code),
+        ),
     );
 
     let formData = $state<Omit<Currency, "id">>({
@@ -102,28 +95,8 @@
 </script>
 
 <div class="space-y-6">
-    <div class="flex items-center justify-between">
-        <div class="space-y-0.5">
-            <h3 class="text-2xl font-bold tracking-tight">
-                {$t("settings.currencies.title")}
-            </h3>
-            <p class="text-muted-foreground">
-                {$t("settings.currencies.description")}
-            </p>
-        </div>
-    </div>
-
     <div class="flex items-center justify-between gap-4">
-        <div class="relative flex-1 max-w-md">
-            <Search
-                class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground"
-            />
-            <Input
-                placeholder={$t("settings.currencies.searchPlaceholder")}
-                bind:value={searchTerm}
-                class="pl-8"
-            />
-        </div>
+        <div></div>
         <div class="flex flex-wrap gap-2">
             <Button
                 variant="outline"

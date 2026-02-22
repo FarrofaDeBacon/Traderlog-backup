@@ -17,18 +17,15 @@
         name: "",
         description: "",
     });
-    let searchTerm = $state("");
 
     // Delete Modal State
     let isDeleteOpen = $state(false);
     let deleteId = $state<string | null>(null);
 
     let filteredItems = $derived(
-        settingsStore.modalities
-            .filter((item) =>
-                item.name.toLowerCase().includes(searchTerm.toLowerCase()),
-            )
-            .sort((a, b) => a.name.localeCompare(b.name)),
+        [...settingsStore.modalities].sort((a, b) =>
+            a.name.localeCompare(b.name),
+        ),
     );
 
     function openNew() {
@@ -71,28 +68,8 @@
 </script>
 
 <div class="space-y-6">
-    <div class="flex items-center justify-between">
-        <div class="space-y-0.5">
-            <h3 class="text-2xl font-bold tracking-tight">
-                {$t("settings.modalities.title")}
-            </h3>
-            <p class="text-muted-foreground">
-                {$t("settings.modalities.description")}
-            </p>
-        </div>
-    </div>
-
     <div class="flex items-center justify-between gap-4">
-        <div class="relative flex-1 max-w-md">
-            <Search
-                class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground"
-            />
-            <Input
-                placeholder={$t("settings.modalities.searchPlaceholder")}
-                bind:value={searchTerm}
-                class="pl-8"
-            />
-        </div>
+        <div></div>
         <Button onclick={openNew}>
             <Plus class="w-4 h-4 mr-2" />
             {$t("settings.modalities.new")}

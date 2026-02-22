@@ -56,18 +56,11 @@
         return { icon: Layers, color: "text-muted-foreground", bg: "bg-muted" };
     }
 
-    // Filter and Sort indicators
-    let searchTerm = $state("");
+    // Sort indicators
     let filteredIndicators = $derived(
-        settingsStore.indicators
-            .filter(
-                (i) =>
-                    i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    (i.category ?? "")
-                        .toLowerCase()
-                        .includes(searchTerm.toLowerCase()),
-            )
-            .sort((a, b) => a.name.localeCompare(b.name)),
+        [...settingsStore.indicators].sort((a, b) =>
+            a.name.localeCompare(b.name),
+        ),
     );
 
     // Group indicators by category
@@ -145,19 +138,6 @@
         </Button>
     </div>
     <Separator />
-
-    <!-- Control Bar -->
-    <div class="flex items-center gap-2 max-w-sm">
-        <!-- Assuming Search icon is imported, if not I need to add it -->
-        <!-- Checking imports... Activity is there. Search needs to be added to imports -->
-        <div class="relative w-full">
-            <input
-                class="flex h-8 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder={$t("settings.indicators.searchPlaceholder")}
-                bind:value={searchTerm}
-            />
-        </div>
-    </div>
 
     <div class="space-y-8">
         {#each Object.entries(groupedIndicators) as [category, items]}

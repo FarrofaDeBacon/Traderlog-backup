@@ -21,18 +21,15 @@
 
     let isDialogOpen = $state(false);
     let editingItem = $state<ChartType | undefined>(undefined);
-    let searchTerm = $state("");
 
     // Delete Modal State
     let isDeleteOpen = $state(false);
     let deleteId = $state<string | null>(null);
 
     let filteredItems = $derived(
-        settingsStore.chartTypes
-            .filter((item) =>
-                item.name.toLowerCase().includes(searchTerm.toLowerCase()),
-            )
-            .sort((a, b) => a.name.localeCompare(b.name)),
+        [...settingsStore.chartTypes].sort((a, b) =>
+            a.name.localeCompare(b.name),
+        ),
     );
 
     // Group indicators by category
@@ -129,16 +126,6 @@
         </Button>
     </div>
     <Separator />
-
-    <!-- Control Bar -->
-    <div class="flex items-center gap-2 max-w-sm">
-        <Search class="w-4 h-4 text-muted-foreground" />
-        <Input
-            placeholder={$t("settings.chartTypes.searchPlaceholder")}
-            bind:value={searchTerm}
-            class="h-8"
-        />
-    </div>
 
     <div class="space-y-8">
         {#each Object.entries(groupedChartTypes) as [baseType, items]}

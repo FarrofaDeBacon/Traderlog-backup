@@ -29,7 +29,6 @@
     let isDialogOpen = $state(false);
     let isImportOpen = $state(false);
     let editingId = $state<string | null>(null);
-    let searchTerm = $state("");
 
     // Delete Modal State
     let isDeleteOpen = $state(false);
@@ -83,19 +82,11 @@
         }; // Default
     }
 
-    // Filter and Sort assets
+    // Sort assets
     let filteredAssets = $derived(
-        settingsStore.assets
-            .filter(
-                (a) =>
-                    a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    a.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    settingsStore
-                        .getAssetTypeCode(a.asset_type_id)
-                        .toLowerCase()
-                        .includes(searchTerm.toLowerCase()),
-            )
-            .sort((a, b) => a.symbol.localeCompare(b.symbol)),
+        [...settingsStore.assets].sort((a, b) =>
+            a.symbol.localeCompare(b.symbol),
+        ),
     );
 
     // Group assets by type
@@ -212,16 +203,6 @@
     <Separator />
 
     <RTDImportDialog bind:open={isImportOpen} />
-
-    <!-- Control Bar -->
-    <div class="flex items-center gap-2 max-w-sm">
-        <Search class="w-4 h-4 text-muted-foreground" />
-        <Input
-            placeholder={$t("settings.assets.searchPlaceholder")}
-            bind:value={searchTerm}
-            class="h-8"
-        />
-    </div>
 
     <!-- Grouped Clickable List Cards -->
     <div class="space-y-6">

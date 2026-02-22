@@ -12,18 +12,15 @@
 
     let isDialogOpen = $state(false);
     let editingItem = $state<Timeframe | undefined>(undefined);
-    let searchTerm = $state("");
 
     // Delete Modal State
     let isDeleteOpen = $state(false);
     let deleteId = $state<string | null>(null);
 
     let filteredItems = $derived(
-        settingsStore.timeframes
-            .filter((item) =>
-                item.name.toLowerCase().includes(searchTerm.toLowerCase()),
-            )
-            .sort((a, b) => a.name.localeCompare(b.name)), // Basic sort, ideally sort by duration but string parsing is complex here
+        [...settingsStore.timeframes].sort((a, b) =>
+            a.name.localeCompare(b.name),
+        ), // Basic sort
     );
 
     function openNew() {
@@ -64,28 +61,8 @@
 </script>
 
 <div class="space-y-6">
-    <div class="flex items-center justify-between">
-        <div class="space-y-0.5">
-            <h3 class="text-2xl font-bold tracking-tight">
-                {$t("settings.timeframes.title")}
-            </h3>
-            <p class="text-muted-foreground">
-                {$t("settings.timeframes.description")}
-            </p>
-        </div>
-    </div>
-
     <div class="flex items-center justify-between gap-4">
-        <div class="relative flex-1 max-w-md">
-            <Search
-                class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground"
-            />
-            <Input
-                placeholder={$t("settings.timeframes.searchPlaceholder")}
-                bind:value={searchTerm}
-                class="pl-8"
-            />
-        </div>
+        <div></div>
         <Button onclick={openNew}>
             <Plus class="w-4 h-4 mr-2" />
             {$t("settings.timeframes.new")}

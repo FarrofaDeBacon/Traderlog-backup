@@ -50,12 +50,10 @@
                 {$t("strategy.list.description")}
             </p>
         </div>
-
-            <Button href="/settings/strategies">
-                <Plus class="w-4 h-4 mr-2" />
-                {$t("strategy.list.new")}
-            </Button>
-        </div>
+        <Button href="/settings/strategies">
+            <Plus class="w-4 h-4 mr-2" />
+            {$t("strategy.list.new")}
+        </Button>
     </div>
 
     <Separator />

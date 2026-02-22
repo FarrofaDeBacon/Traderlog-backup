@@ -7,7 +7,6 @@
         Link as LinkIcon,
         RefreshCw,
         Save,
-        Search,
         Key,
         Globe,
         ExternalLink,
@@ -137,15 +136,11 @@
         toast.success($t("settings.api.integrations.serviceMapping.success"));
     }
 
-    let searchTerm = $state("");
-
-    // Filtered configs
+    // All configs
     let filteredConfigs = $derived(
-        settingsStore.apiConfigs
-            .filter((c) =>
-                c.provider.toLowerCase().includes(searchTerm.toLowerCase()),
-            )
-            .sort((a, b) => a.provider.localeCompare(b.provider)),
+        [...settingsStore.apiConfigs].sort((a, b) =>
+            a.provider.localeCompare(b.provider),
+        ),
     );
 
     async function handleSync() {
@@ -353,7 +348,7 @@
     </Card.Root>
 
     <div class="space-y-4">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-4">
             <div class="space-y-0.5">
                 <h3
                     class="flex items-center gap-2 text-2xl font-bold tracking-tight"
@@ -364,28 +359,13 @@
                     {$t("settings.api.integrations.keys.description")}
                 </p>
             </div>
-
-            <div class="flex items-center gap-2">
-                <div class="relative w-64">
-                    <Search
-                        class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground"
-                    />
-                    <Input
-                        placeholder={$t(
-                            "settings.api.integrations.keys.searchPlaceholder",
-                        )}
-                        bind:value={searchTerm}
-                        class="pl-8 bg-background"
-                    />
-                </div>
-                <Button
-                    onclick={openNew}
-                    class="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
-                >
-                    <Plus class="w-4 h-4 mr-2" />
-                    {$t("settings.api.integrations.keys.newItem")}
-                </Button>
-            </div>
+            <Button
+                onclick={openNew}
+                class="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
+            >
+                <Plus class="w-4 h-4 mr-2" />
+                {$t("settings.api.integrations.keys.newItem")}
+            </Button>
         </div>
 
         <div

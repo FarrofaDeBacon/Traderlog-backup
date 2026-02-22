@@ -20,18 +20,11 @@
     let isDeleteOpen = $state(false);
     let deleteId = $state<string | null>(null);
 
-    // Filter and Sort
-    let searchTerm = $state("");
+    // Sort
     let filteredStates = $derived(
-        settingsStore.emotionalStates
-            .filter(
-                (i) =>
-                    i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    i.description
-                        .toLowerCase()
-                        .includes(searchTerm.toLowerCase()),
-            )
-            .sort((a, b) => a.name.localeCompare(b.name)),
+        [...settingsStore.emotionalStates].sort((a, b) =>
+            a.name.localeCompare(b.name),
+        ),
     );
 
     // Group by Impact
@@ -121,17 +114,6 @@
         </Button>
     </div>
     <Separator />
-
-    <!-- Control Bar -->
-    <div class="flex items-center gap-2 max-w-sm">
-        <div class="relative w-full">
-            <input
-                class="flex h-8 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder={$t("settings.emotionalStates.searchPlaceholder")}
-                bind:value={searchTerm}
-            />
-        </div>
-    </div>
 
     <div class="space-y-6">
         {#each Object.entries(groupedStates) as [impact, items]}

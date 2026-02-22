@@ -7,7 +7,6 @@
         Building2,
         Hash,
         Upload,
-        Search,
     } from "lucide-svelte";
     import * as Card from "$lib/components/ui/card";
     import { Button } from "$lib/components/ui/button";
@@ -26,7 +25,6 @@
 
     let isDialogOpen = $state(false);
     let editingId = $state<string | null>(null);
-    let searchTerm = $state("");
 
     // Delete Modal State
     let isDeleteOpen = $state(false);
@@ -34,17 +32,9 @@
     let isProcessing = $state(false);
 
     let filteredItems = $derived(
-        settingsStore.accounts
-            .filter(
-                (item) =>
-                    item.nickname
-                        .toLowerCase()
-                        .includes(searchTerm.toLowerCase()) ||
-                    item.broker
-                        .toLowerCase()
-                        .includes(searchTerm.toLowerCase()),
-            )
-            .sort((a, b) => a.nickname.localeCompare(b.nickname)),
+        [...settingsStore.accounts].sort((a, b) =>
+            a.nickname.localeCompare(b.nickname),
+        ),
     );
 
     let groupedAccounts = $derived(
@@ -161,40 +151,22 @@
 </script>
 
 <div class="space-y-8">
-    <div class="flex items-center justify-between">
-        <div class="space-y-0.5">
-            <h3 class="text-2xl font-bold tracking-tight">
-                {$t("settings.accounts.title")}
-            </h3>
-            <p class="text-muted-foreground">
-                {$t("settings.accounts.description")}
-            </p>
-        </div>
-    </div>
-
     <div class="flex items-center justify-between gap-4">
-        <div class="relative flex-1 max-w-md">
-            <Search
-                class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground"
-            />
-            <Input
-                placeholder={$t("settings.accounts.searchPlaceholder")}
-                bind:value={searchTerm}
-                class="pl-8"
-            />
+        <div></div>
+        <div class="flex items-center gap-2">
+            <Button onclick={openNew}>
+                <Plus class="w-4 h-4 mr-2" />
+                {$t("settings.accounts.new")}
+            </Button>
+            <Button
+                variant="outline"
+                onclick={handleDeduplicate}
+                disabled={isProcessing}
+            >
+                <Trash2 class="w-4 h-4 mr-2" />
+                Remover Duplicadas
+            </Button>
         </div>
-        <Button onclick={openNew}>
-            <Plus class="w-4 h-4 mr-2" />
-            {$t("settings.accounts.new")}
-        </Button>
-        <Button
-            variant="outline"
-            onclick={handleDeduplicate}
-            disabled={isProcessing}
-        >
-            <Trash2 class="w-4 h-4 mr-2" />
-            Remover Duplicadas
-        </Button>
     </div>
 
     {#if filteredItems.length === 0}
