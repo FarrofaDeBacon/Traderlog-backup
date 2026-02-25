@@ -144,8 +144,8 @@ pub fn run() {
                 println!("[STARTUP] Initializing Database...");
                 match db::init_db(&db_handle).await {
                     Ok(db) => {
-                        println!("[STARTUP] Database initialized. Running Minimal Seeds...");
-                        if let Err(e) = seed::run_minimal_seeds(&db).await {
+                        println!("[STARTUP] Database initialized. Running All Seeds (UPSERT mode)...");
+                        if let Err(e) = seed::run_all_seeds(&db).await {
                              println!("[STARTUP] SEED ERROR: {}", e);
                         }
                         
@@ -248,6 +248,7 @@ pub fn run() {
             commands::irpf::reset_irpf_data,
             commands::irpf::delete_tax_loss,
             commands::irpf::get_darf_by_transaction,
+            commands::irpf::get_darf_by_id,
             // Tax Rules & Mappings
             commands::irpf::get_tax_rules,
             commands::irpf::save_tax_rule,
@@ -265,7 +266,8 @@ pub fn run() {
             commands::irpf::diagnostic_dump_darfs,
             commands::irpf::get_appraisal_by_id,
             commands::diagnostic_dump_users,
-
+            commands::diagnostic_dump_trades,
+            commands::diagnostic_closure_dump,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

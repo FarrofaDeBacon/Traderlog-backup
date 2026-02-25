@@ -46,10 +46,11 @@ pub async fn get_user_profile(db: State<'_, DbState>) -> Result<Option<UserProfi
         .await
         .map_err(|e| e.to_string())?;
     
-    let raw_json: Vec<serde_json::Value> = result.take(0).map_err(|e| e.to_string())?;
-    println!("[DEBUG] Raw Profile JSON from DB: {:?}", raw_json);
+    let mut profiles: Vec<UserProfile> = result.take(0).map_err(|e| {
+        println!("[ERROR] get_user_profile deserialization failure: {}", e);
+        e.to_string()
+    })?;
     
-    let mut profiles: Vec<UserProfile> = serde_json::from_value(serde_json::Value::Array(raw_json)).map_err(|e| e.to_string())?;
     let profile = profiles.pop();
     println!("[COMMAND] get_user_profile returning: {:?}", profile.is_some());
     Ok(profile)
@@ -97,27 +98,12 @@ pub async fn save_api_config(db: State<'_, DbState>, config: ApiConfig) -> Resul
 pub async fn get_accounts(db: State<'_, DbState>) -> Result<Vec<Account>, String> {
     println!("[COMMAND] get_accounts called");
 
-    // DEBUG: Check count
-    let count_res = db.0.query("SELECT count() FROM account GROUP ALL").await;
-    println!("[DEBUG] Count Result: {:?}", count_res);
-
-    // DEBUG: Check Info
-    let info_res = db.0.query("INFO FOR DB").await;
-    println!("[DEBUG] Info Result: {:?}", info_res);
-
-    // DEBUG: Raw JSON
-    let mut raw_res = db.0.query("SELECT * FROM account").await.map_err(|e| e.to_string())?;
-    let raw_json: Vec<serde_json::Value> = raw_res.take(0).unwrap_or_default();
-    println!("[DEBUG] Raw Account JSON: {:?}", raw_json);
-
-    // DEBUG: Direct Fetch
-    let mut direct_res = db.0.query("SELECT * FROM account:demo_forex").await.map_err(|e| e.to_string())?;
-    let direct_json: Option<serde_json::Value> = direct_res.take(0).unwrap_or(None);
-    println!("[DEBUG] Direct Fetch demo_forex: {:?}", direct_json);
-
     // Explicitly cast ID to string - Original Logic
     let mut result = db.0.query("SELECT *, type::string(id) as id FROM account").await.map_err(|e| e.to_string())?;
-    let accounts: Vec<Account> = result.take(0).map_err(|e| e.to_string())?;
+    let accounts: Vec<Account> = result.take(0).map_err(|e| {
+        println!("[ERROR] get_accounts deserialization failure: {}", e);
+        e.to_string()
+    })?;
     println!("[COMMAND] get_accounts returning {} accounts", accounts.len());
     Ok(accounts)
 }
@@ -144,7 +130,10 @@ pub async fn delete_account(db: State<'_, DbState>, id: String) -> Result<(), St
 #[tauri::command]
 pub async fn get_currencies(db: State<'_, DbState>) -> Result<Vec<Currency>, String> {
     let mut result = db.0.query("SELECT *, type::string(id) as id FROM currency").await.map_err(|e| e.to_string())?;
-    let currencies: Vec<Currency> = result.take(0).map_err(|e| e.to_string())?;
+    let currencies: Vec<Currency> = result.take(0).map_err(|e| {
+        println!("[ERROR] get_currencies deserialization failure: {}", e);
+        e.to_string()
+    })?;
     Ok(currencies)
 }
 
@@ -168,7 +157,10 @@ pub async fn delete_currency(db: State<'_, DbState>, id: String) -> Result<(), S
 #[tauri::command]
 pub async fn get_markets(db: State<'_, DbState>) -> Result<Vec<Market>, String> {
     let mut result = db.0.query("SELECT *, type::string(id) as id FROM market").await.map_err(|e| e.to_string())?;
-    let markets: Vec<Market> = result.take(0).map_err(|e| e.to_string())?;
+    let markets: Vec<Market> = result.take(0).map_err(|e| {
+        println!("[ERROR] get_markets deserialization failure: {}", e);
+        e.to_string()
+    })?;
     Ok(markets)
 }
 
@@ -192,7 +184,10 @@ pub async fn delete_market(db: State<'_, DbState>, id: String) -> Result<(), Str
 #[tauri::command]
 pub async fn get_asset_types(db: State<'_, DbState>) -> Result<Vec<AssetType>, String> {
     let mut result = db.0.query("SELECT *, type::string(id) as id FROM asset_type").await.map_err(|e| e.to_string())?;
-    let types: Vec<AssetType> = result.take(0).map_err(|e| e.to_string())?;
+    let types: Vec<AssetType> = result.take(0).map_err(|e| {
+        println!("[ERROR] get_asset_types deserialization failure: {}", e);
+        e.to_string()
+    })?;
     Ok(types)
 }
 
@@ -216,7 +211,10 @@ pub async fn delete_asset_type(db: State<'_, DbState>, id: String) -> Result<(),
 #[tauri::command]
 pub async fn get_assets(db: State<'_, DbState>) -> Result<Vec<Asset>, String> {
     let mut result = db.0.query("SELECT *, type::string(id) as id FROM asset").await.map_err(|e| e.to_string())?;
-    let assets: Vec<Asset> = result.take(0).map_err(|e| e.to_string())?;
+    let assets: Vec<Asset> = result.take(0).map_err(|e| {
+        println!("[ERROR] get_assets deserialization failure: {}", e);
+        e.to_string()
+    })?;
     Ok(assets)
 }
 
@@ -289,15 +287,28 @@ pub async fn delete_strategy(db: State<'_, DbState>, id: String) -> Result<(), S
 pub async fn get_trades(db: State<'_, DbState>) -> Result<Vec<Trade>, String> {
     println!("[COMMAND] get_trades called");
     
-    let sql = "SELECT *, type::string(id) as id FROM trade ORDER BY date DESC";
+    // Explicitly cast ALL ID fields to string for frontend/JSON portability.
+    // This avoids the "{ String: '...' }" or Thing object issues once and for all.
+    let sql = "SELECT *, 
+            type::string(id) as id, 
+            type::string(account_id) as account_id,
+            type::string(asset_type_id) as asset_type_id,
+            type::string(strategy_id) as strategy_id,
+            (IF entry_emotional_state_id THEN type::string(entry_emotional_state_id) ELSE null END) as entry_emotional_state_id,
+            (IF exit_emotional_state_id THEN type::string(exit_emotional_state_id) ELSE null END) as exit_emotional_state_id,
+            (IF modality_id THEN type::string(modality_id) ELSE null END) as modality_id,
+            (IF asset_id THEN type::string(asset_id) ELSE null END) as asset_id
+        FROM trade ORDER BY date DESC";
+    
     let mut response = db.0.query(sql).await.map_err(|e| e.to_string())?;
     
     let trades: Vec<Trade> = response.take(0).map_err(|e| {
-        eprintln!("[COMMAND] get_trades error: {}", e);
+        eprintln!("[COMMAND] get_trades deserialization error: {}", e);
         e.to_string()
     })?;
     
     println!("[COMMAND] get_trades returning {} trades", trades.len());
+    
     Ok(trades)
 }
 
@@ -348,17 +359,62 @@ pub async fn get_cash_transactions(db: State<'_, DbState>) -> Result<Vec<CashTra
     // Order by date DESC (primary) and ID DESC (stable creation proxy in SurrealDB)
     let sql = "SELECT *, type::string(id) as id FROM cash_transaction ORDER BY date DESC, id DESC";
     let mut result = db.0.query(sql).await.map_err(|e| e.to_string())?;
-    let transactions: Vec<CashTransaction> = result.take(0).map_err(|e| e.to_string())?;
+    let transactions: Vec<CashTransaction> = result.take(0).map_err(|e| {
+        println!("[ERROR] get_cash_transactions deserialization failure: {}", e);
+        e.to_string()
+    })?;
     Ok(transactions)
 }
 
 #[tauri::command]
 pub async fn save_cash_transaction(db: State<'_, DbState>, transaction: CashTransaction) -> Result<(), String> {
+    println!("[COMMAND] save_cash_transaction START for ID: {}", transaction.id);
     let id = transaction.id.clone();
     let mut json = serde_json::to_value(&transaction).map_err(|e| e.to_string())?;
     if let Some(obj) = json.as_object_mut() { obj.remove("id"); }
     let clean_id = id.split(':').last().unwrap_or(&id);
-    upsert_record(&db.0, "cash_transaction", clean_id, json).await
+    let res = upsert_record(&db.0, "cash_transaction", clean_id, json).await;
+    match &res {
+        Ok(_) => println!("[COMMAND] save_cash_transaction SUCCESS for id: {}", clean_id),
+        Err(e) => eprintln!("[COMMAND] save_cash_transaction ERROR for id {}: {}", clean_id, e),
+    }
+    res
+}
+
+#[tauri::command]
+pub async fn diagnostic_closure_dump(db: State<'_, DbState>) -> Result<(), String> {
+    println!("--- [DIAGNOSTIC DUMP: CLOSURE] ---");
+    
+    // 1. Inspect Trades
+    println!("\n[TRADES]");
+    let query = "SELECT type::string(id) as id, type::string(date) as date, (IF exit_date != NONE THEN type::string(exit_date) ELSE null END) as exit_date, type::float(result) as result, type::float(exit_price) as exit_price, type::string(account_id) as account_id FROM trade ORDER BY date DESC LIMIT 1";
+    let mut res = db.0.query(query).await.map_err(|e| e.to_string())?;
+    let all_fields_trades: Vec<serde_json::Value> = res.take(0).map_err(|e| e.to_string())?;
+    if let Some(t) = all_fields_trades.first() {
+        println!("SAMPLE TRADE DATA: {}", serde_json::to_string_pretty(t).unwrap_or_default());
+    }
+
+    // 2. Inspect Transactions
+    println!("\n[CASH TRANSACTIONS]");
+    let query_tx = "SELECT type::string(id) as id, date, amount, description, account_id, system_linked FROM cash_transaction ORDER BY date DESC LIMIT 20";
+    let mut res_tx = db.0.query(query_tx).await.map_err(|e| e.to_string())?;
+    let txs: Vec<serde_json::Value> = res_tx.take(0).map_err(|e| e.to_string())?;
+    for tx in txs {
+        println!("Tx: id={}, date={:?}, amt={:?}, desc={:?}, acc={:?}, linked={:?}", 
+            tx["id"], tx["date"], tx["amount"], tx["description"], tx["account_id"], tx["system_linked"]);
+    }
+
+    // 3. Inspect Accounts
+    println!("\n[ACCOUNTS]");
+    let query_acc = "SELECT type::string(id) as id, nickname, balance FROM account";
+    let mut res_acc = db.0.query(query_acc).await.map_err(|e| e.to_string())?;
+    let accs: Vec<serde_json::Value> = res_acc.take(0).map_err(|e| e.to_string())?;
+    for a in accs {
+        println!("Account: id={}, name={:?}, bal={:?}", a["id"], a["nickname"], a["balance"]);
+    }
+
+    println!("\n--- [DUMP END] ---");
+    Ok(())
 }
 
 #[tauri::command]
@@ -421,7 +477,10 @@ pub async fn delete_journal_entry(db: State<'_, DbState>, id: String) -> Result<
 pub async fn get_fees(db: State<'_, DbState>) -> Result<Vec<FeeProfile>, String> {
     println!("[COMMAND] get_fees called");
     let mut result = db.0.query("SELECT *, type::string(id) as id FROM fee_profile").await.map_err(|e| e.to_string())?;
-    let fees: Vec<FeeProfile> = result.take(0).map_err(|e| e.to_string())?;
+    let fees: Vec<FeeProfile> = result.take(0).map_err(|e| {
+        println!("[ERROR] get_fees deserialization failure: {}", e);
+        e.to_string()
+    })?;
     println!("[COMMAND] get_fees returning {} items", fees.len());
     Ok(fees)
 }

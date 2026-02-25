@@ -8,59 +8,119 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 struct IrpfTrade {
-    #[serde(deserialize_with = "crate::models::deserialize_id")]
+    #[serde(default)]
     pub id: String,
+    #[serde(default)]
     pub date: String,
+    #[serde(default)]
+    pub asset_symbol: String,
+    #[serde(default)]
     pub exit_date: Option<String>,
+    #[serde(default)]
     pub result: Option<f64>,
+    #[serde(default)]
     pub fee_total: Option<f64>,
+    #[serde(default)]
     pub quantity: Option<f64>,
+    #[serde(default)]
     pub exit_price: Option<f64>,
-    #[serde(default, deserialize_with = "crate::models::deserialize_id_opt")]
-    pub asset_id: Option<String>,
-    #[serde(default, deserialize_with = "crate::models::deserialize_id_opt")]
-    pub asset_type_id: Option<String>,
-    #[serde(default, deserialize_with = "crate::models::deserialize_id_opt")]
+    #[serde(default)]
     pub modality_id: Option<String>,
+    #[serde(default)]
+    pub asset_id: Option<String>,
+    #[serde(default)]
+    pub asset_type_id: Option<String>,
+    #[serde(default)]
+    pub point_value: Option<f64>,
 }
 
 use crate::models::{TaxRule, TaxProfile, TaxProfileEntry, Asset, AssetType, TaxMapping, Modality};
 
-/// Calculates monthly tax using Dynamic Rules Engine (Profile-based)
 #[tauri::command]
 pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16) -> Result<Vec<TaxAppraisal>, String> {
-    println!("DEBUG: calculate_monthly_tax (Profile-Based) called for {}/{}", month, year);
+    println!(">>> ENTRY: calculate_monthly_tax(month={}, year={})", month, year);
     
-    // Trades (Fetch all and filter in memory to avoid format quirks in SurrealDB)
+    // TEMPORARY: Force diagnostic dump
+    if let Err(e) = crate::commands::diagnostic_closure_dump(db.clone()).await {
+        println!("[IRPF] diagnostic dump failed: {}", e);
+    }
+    
+    // 1. Fetch data with subqueries for completeness
     let query_trades = "SELECT 
             type::string(id) as id,
-            type::string(date) as date, 
-            (IF exit_date != NONE AND exit_date != '' THEN type::string(exit_date) ELSE null END) as exit_date, 
-            result, 
-            fee_total, 
-            quantity, 
-            exit_price,
-            (IF asset_id THEN type::string(asset_id) ELSE null END) as asset_id,
-            (IF asset_type_id THEN type::string(asset_type_id) ELSE null END) as asset_type_id,
-            (IF modality_id THEN type::string(modality_id) ELSE null END) as modality_id
-         FROM trade WHERE 
-         exit_date IS NOT NONE AND
-         exit_date != '' AND
-         result IS NOT NONE";
-         
-    // 1. Fetch data
-    let mut trade_res = db.0.query(query_trades).await.map_err(|e| e.to_string())?;
-    let all_trades: Vec<IrpfTrade> = trade_res.take(0).map_err(|e| e.to_string())?;
+            type::string(date) as date,
+            (IF exit_date != NONE THEN type::string(exit_date) ELSE null END) as exit_date,
+            (IF account_id != NONE THEN type::string(account_id) ELSE null END) as account_id,
+            (IF asset_id != NONE THEN type::string(asset_id) ELSE null END) as asset_id,
+            (IF modality_id != NONE THEN type::string(modality_id) ELSE null END) as modality_id,
+            type::string(asset_type_id) as trade_asset_type_id,
+            type::float(result) as result,
+            type::float(fee_total) as fee_total,
+            type::float(quantity) as quantity,
+            type::float(exit_price) as exit_price,
+            (SELECT VALUE type::string(symbol) FROM asset WHERE id = $parent.asset_id LIMIT 1)[0] as asset_symbol,
+            (SELECT VALUE (IF asset_type_id != NONE THEN type::string(asset_type_id) ELSE null END) FROM asset WHERE id = $parent.asset_id LIMIT 1)[0] as linked_asset_type_id,
+            (SELECT VALUE type::float(point_value) FROM asset WHERE id = $parent.asset_id LIMIT 1)[0] as point_value
+         FROM trade WHERE (exit_date IS NOT NONE) AND (result IS NOT NONE)";
     
+    let mut trade_res = db.0.query(query_trades).await.map_err(|e| e.to_string())?;
+    println!("DEBUG: Query executed, taking raw results...");
+    
+    let raw_trades: Vec<serde_json::Value> = trade_res.take(0).map_err(|e| {
+        let err_msg = format!("RAW DESERIALIZATION ERROR: {}", e);
+        println!("{}", err_msg);
+        err_msg
+    })?;
+    
+    println!("[IRPF] Found {} raw trades in DB.", raw_trades.len());
+
+    let mut all_trades = Vec::new();
+    for rt in raw_trades {
+        let id_str = rt["id"].as_str().unwrap_or("").to_string();
+        let date_str = rt["date"].as_str().unwrap_or("").to_string();
+        let exit_date_str = rt["exit_date"].as_str().map(|s| s.to_string());
+        let res_val = rt["result"].as_f64();
+        let fee_val = rt["fee_total"].as_f64().or_else(|| rt["fees"].as_f64());
+        let qty_val = rt["quantity"].as_f64();
+        let exit_p = rt["exit_price"].as_f64();
+        let mod_id = rt["modality_id"].as_str().map(|s| s.to_string());
+        let asset_id = rt["asset_id"].as_str().map(|s| s.to_string());
+        let linked_at_id = rt["linked_asset_type_id"].as_str().map(|s| s.to_string());
+        let trade_at_id = rt["trade_asset_type_id"].as_str().map(|s| s.to_string());
+        let at_id = linked_at_id.or(trade_at_id);
+
+        let symbol = rt["asset_symbol"].as_str().unwrap_or("").to_string();
+        let pv = rt["point_value"].as_f64();
+
+        all_trades.push(IrpfTrade {
+            id: id_str,
+            date: date_str,
+            asset_symbol: symbol,
+            exit_date: exit_date_str,
+            result: res_val,
+            fee_total: fee_val,
+            quantity: qty_val,
+            exit_price: exit_p,
+            modality_id: mod_id,
+            asset_id,
+            asset_type_id: at_id,
+            point_value: pv,
+        });
+    }
+
     // In-memory format agnostic filter by month/year
     let prefix = format!("{}-{:02}-", year, month);
+    println!("[IRPF] Filtering {} trades with prefix: '{}'", all_trades.len(), prefix);
+    
     let trades_for_period: Vec<IrpfTrade> = all_trades.into_iter().filter(|t| {
-        if let Some(ed) = &t.exit_date {
-            ed.starts_with(&prefix)
-        } else {
-            false
+        let date_to_use = t.exit_date.as_ref().unwrap_or(&t.date);
+        let matches = date_to_use.starts_with(&prefix);
+        if matches {
+            println!("[IRPF] Trade {} MATCHED period prefix {}", t.id, prefix);
         }
+        matches
     }).collect();
+    println!("[IRPF] Trades matching period {}/{}: {}", month, year, trades_for_period.len());
 
     // Existing Appraisals (needed for preservation and incremental logic)
     let exist_query = "SELECT *, type::string(id) as id FROM tax_appraisal WHERE period_month = $month AND period_year = $year";
@@ -81,9 +141,18 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
 
     // Filter out already appraised trades
     let trades: Vec<IrpfTrade> = if !already_appraised_ids.is_empty() {
-        println!("[IRPF] Excluding {} trades already appraised (Paid/Ok)", already_appraised_ids.len());
-        trades_for_period.into_iter().filter(|t| !already_appraised_ids.contains(&t.id)).collect()
+        println!("[IRPF] Already appraised IDs found: {:?}", already_appraised_ids);
+        let final_list: Vec<IrpfTrade> = trades_for_period.into_iter().filter(|t| {
+            let is_excluded = already_appraised_ids.contains(&t.id);
+            if is_excluded {
+                println!("[IRPF] Excluding trade {} - already appraised", t.id);
+            }
+            !is_excluded
+        }).collect();
+        println!("[IRPF] After exclusion, {} trades remain", final_list.len());
+        final_list
     } else {
+        println!("[IRPF] No existing 'Paid'/'Ok' appraisals found. All {} trades from period will be processed.", trades_for_period.len());
         trades_for_period
     };
     
@@ -95,26 +164,60 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
     println!("[IRPF] Total de trades a processar (novos): {}", trades.len());
 
     // Assets & Asset Types
-    let mut asset_res = db.0.query("SELECT id, symbol, name, asset_type_id, point_value, default_fee_id, type::string(id) as id, (IF asset_type_id THEN type::string(asset_type_id) ELSE null END) as asset_type_id FROM asset").await.map_err(|e| e.to_string())?;
+    let mut asset_res = db.0.query("SELECT 
+        type::string(id) as id, 
+        symbol, 
+        name, 
+        type::string(asset_type_id) as asset_type_id, 
+        type::float(point_value) as point_value,
+        (IF default_fee_id != NONE THEN type::string(default_fee_id) ELSE null END) as default_fee_id,
+        (IF tax_profile_id != NONE THEN type::string(tax_profile_id) ELSE null END) as tax_profile_id 
+        FROM asset").await.map_err(|e| e.to_string())?;
     let assets: Vec<Asset> = asset_res.take(0).map_err(|e| e.to_string())?;
+    println!("[IRPF] Loaded {} assets", assets.len());
 
-    let mut at_res = db.0.query("SELECT id, name, code, market_id, default_fee_id, tax_profile_id, unit_label, result_type, type::string(id) as id, (IF tax_profile_id THEN type::string(tax_profile_id) ELSE null END) as tax_profile_id FROM asset_type").await.map_err(|e| e.to_string())?;
-    let asset_types: Vec<AssetType> = at_res.take(0).map_err(|e| e.to_string())?;
+    let mut at_res = db.0.query("SELECT 
+        type::string(id) as id, 
+        name, 
+        code, 
+        type::string(market_id) as market_id, 
+        unit_label, 
+        result_type,
+        (IF default_fee_id != NONE THEN type::string(default_fee_id) ELSE null END) as default_fee_id,
+        (IF tax_profile_id != NONE THEN type::string(tax_profile_id) ELSE null END) as tax_profile_id 
+        FROM asset_type").await.map_err(|e| e.to_string())?;
+    let mut asset_types: Vec<AssetType> = at_res.take(0).map_err(|e| e.to_string())?;
+    println!("[IRPF] Loaded {} asset_types", asset_types.len());
+
+    // AUTO-HEALING: If standard asset types lack profiles, fix them in-memory
+    for at in asset_types.iter_mut() {
+        if at.tax_profile_id.is_none() {
+            let clean_id = at.id.split(':').last().unwrap_or(&at.id);
+            if clean_id == "at1" { 
+                at.tax_profile_id = Some("tax_profile:tp_acoes".to_string());
+                println!("[IRPF] Auto-healing: Linked at1 to tp_acoes");
+            } else if clean_id == "at2" {
+                at.tax_profile_id = Some("tax_profile:tp_futuros".to_string());
+                println!("[IRPF] Auto-healing: Linked at2 to tp_futuros");
+            }
+        }
+        println!("[IRPF] ASSET_TYPE: id={}, name={}, tax_profile_id={:?}", at.id, at.name, at.tax_profile_id);
+    }
 
     // Modalities
-    let mut mod_res = db.0.query("SELECT *, type::string(id) as id FROM modality").await.map_err(|e| e.to_string())?;
+    let mut mod_res = db.0.query("SELECT type::string(id) as id, name, type::string(description ?? '') as description FROM modality").await.map_err(|e| e.to_string())?;
     let modalities: Vec<Modality> = mod_res.take(0).map_err(|e| e.to_string())?;
 
     // Tax Profiles
-    let mut entry_res = db.0.query("SELECT id, tax_profile_id, modality_id, tax_rule_id, type::string(id) as id, (IF tax_profile_id THEN type::string(tax_profile_id) ELSE null END) as tax_profile_id, (IF modality_id THEN type::string(modality_id) ELSE null END) as modality_id, (IF tax_rule_id THEN type::string(tax_rule_id) ELSE null END) as tax_rule_id FROM tax_profile_entry").await.map_err(|e| e.to_string())?;
+    let mut entry_res = db.0.query("SELECT type::string(id) as id, type::string(tax_profile_id) as tax_profile_id, type::string(modality_id) as modality_id, type::string(tax_rule_id) as tax_rule_id FROM tax_profile_entry").await.map_err(|e| e.to_string())?;
     let profile_entries: Vec<TaxProfileEntry> = entry_res.take(0).map_err(|e| e.to_string())?;
     
     // Tax Rules
-    let mut rule_res = db.0.query("SELECT *, type::string(id) as id FROM tax_rule").await.map_err(|e| e.to_string())?;
+    let mut rule_res = db.0.query("SELECT type::string(id) as id, name, trade_type, revenue_code, tax_rate, withholding_rate, withholding_basis, exemption_threshold, cumulative_losses, basis FROM tax_rule").await.map_err(|e| e.to_string())?;
     let rules: Vec<TaxRule> = rule_res.take(0).map_err(|e| e.to_string())?;
 
     // Accumulated Losses
-    let mut loss_res = db.0.query("SELECT *, type::string(id) as id FROM tax_loss WHERE balance > 0").await.map_err(|e| e.to_string())?;
+    let mut loss_res = db.0.query("SELECT type::string(id) as id, trade_type, amount, balance, origin_date FROM tax_loss WHERE balance > 0").await.map_err(|e| e.to_string())?;
     let losses: Vec<TaxLoss> = loss_res.take(0).map_err(|e| e.to_string())?;
 
     println!("[IRPF] DEBUG: Loaded {} profile_entries", profile_entries.len());
@@ -125,6 +228,7 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
     // 2. Processing Buckets
     struct RuleBucket {
         rule: TaxRule,
+        modality_id: String,
         gross_profit: f64,
         gross_loss: f64,
         sales_total: f64,
@@ -133,55 +237,48 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
     
     // NOTE: Tax Profile resolution logic is inlined in the trade processing loop below.
 
-    // Helper: Find modality name for ID
-    let get_modality_name = |mid: &str| -> Option<String> {
-        let clean_mid = mid.split(':').last().unwrap_or(mid);
-        modalities.iter().find(|m| {
-            let curr_m_id = m.id.split(':').last().unwrap_or(&m.id);
-            curr_m_id == clean_mid
-        }).map(|m| m.name.clone())
+    // Helper: Robust ID normalization (extracts clean ID from 'table:id' or '{String: "id"}')
+    let normalize_id = |label: &str, s: &str| -> String {
+        let mut clean = s.to_string();
+        if clean.contains("String:") {
+            clean = clean.split("String:").last().unwrap_or(&clean).to_string();
+        }
+        clean = clean.replace(['{', '}', '"', '\'', ' ', '`'], "");
+        let res = clean.split(':').last().unwrap_or(clean.as_str()).to_string();
+        if !s.is_empty() {
+            println!("[IRPF] normalize_id({}): '{}' -> '{}'", label, s, res);
+        }
+        res
     };
 
-    // Helper: Find Rule for (Profile + Modality)
-    let find_rule = |profile_id: &str, is_day_trade: bool| -> Option<TaxRule> {
-        let modality_name = if is_day_trade { "DayTrade" } else { "SwingTrade" };
-        
-        let clean_pid = profile_id.split(':').last().unwrap_or(profile_id).trim_matches('`');
+    // Helper: Find Rule for (Profile + Modality ID)
+    let find_rule = |profile_id: &str, target_mod_id: &str| -> Option<TaxRule> {
+        let clean_pid = normalize_id("ProfileParam", profile_id);
+        let clean_target_mid = normalize_id("ModalityParam", target_mod_id);
+
+        println!("[IRPF] find_rule looking for clean_pid='{}' and clean_target_mid='{}'", clean_pid, clean_target_mid);
 
         let entry = profile_entries.iter().find(|e| {
-            let e_pid = e.tax_profile_id.split(':').last().unwrap_or(&e.tax_profile_id).trim_matches('`');
-            let e_mid = e.modality_id.split(':').last().unwrap_or(&e.modality_id).trim_matches('`');
+            let e_pid = normalize_id("EntryProfile", &e.tax_profile_id);
+            let e_mid = normalize_id("EntryModality", &e.modality_id);
             
-            // Resolve modality name from ID
-            let e_mname = get_modality_name(e_mid).unwrap_or_else(|| "".to_string());
-            
-            let match_pid = e_pid == clean_pid;
-            
-            // Robust space-insensitive match
-            let mname_clean = e_mname.to_lowercase().replace(" ", "");
-            let target_clean = modality_name.to_lowercase().replace(" ", "");
-            let match_mid = mname_clean.contains(&target_clean);
-            
-            // println!("[IRPF] DEBUG: Comparing (pid: {} == {}, mname: {} >= {}) -> {}, {}", e_pid, clean_pid, e_mname, modality_name, match_pid, match_mid);
-            
-            match_pid && match_mid
+            e_pid == clean_pid && e_mid == clean_target_mid
         });
 
         if let Some(e) = entry {
-            let r_id = e.tax_rule_id.split(':').last().unwrap_or(&e.tax_rule_id).trim_matches('`');
+            let clean_rule_id = normalize_id("EntryRule", &e.tax_rule_id);
             let rule = rules.iter().find(|r| {
-                let curr_r_id = r.id.split(':').last().unwrap_or(&r.id).trim_matches('`');
-                curr_r_id == r_id
+                normalize_id("RuleTableId", &r.id) == clean_rule_id
             }).cloned();
             
             if rule.is_none() {
                 println!("[IRPF] Found entry for Profile {}, but Rule ID {} not found in total {} rules.", clean_pid, e.tax_rule_id, rules.len());
             } else {
-                println!("[IRPF] Successfully matched Rule {} for Profile {} and Modality {}", r_id, clean_pid, modality_name);
+                println!("[IRPF] Successfully matched Rule {} for Profile {} and Modality {}", clean_rule_id, clean_pid, clean_target_mid);
             }
             rule
         } else {
-            println!("[IRPF] No Tax Profile Entry found for Profile {} and Modality {}", clean_pid, modality_name);
+            println!("[IRPF] No Tax Profile Entry found for Profile {} and Modality {}", clean_pid, clean_target_mid);
             None
         }
     };
@@ -190,38 +287,39 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
     use std::collections::HashMap;
     let mut buckets: HashMap<String, RuleBucket> = HashMap::new();
 
-    println!("[IRPF] Total de trades encontrados no banco: {}", trades.len());
+    println!("[IRPF] Total de trades a processar no loop final: {}", trades.len());
     for trade in &trades {
-        println!("[IRPF] Processando Trade: id={}, date={}, asset_type_id={:?}", trade.id, trade.date, trade.asset_type_id);
+        let mut trade_mod_id = trade.modality_id.as_deref().unwrap_or("").to_string();
         
-        // Determine Day Trade: prefer modality_id from trade, fallback to date comparison
-        let is_day_trade = if let Some(ref mid) = trade.modality_id {
-            let clean_mid = mid.split(':').last().unwrap_or(mid).trim_matches('`');
-            let mname = get_modality_name(clean_mid).unwrap_or_default();
-            let is_dt = mname.to_lowercase().contains("day");
-            println!("[IRPF] Trade {} modality_id={} name='{}' -> looks like DayTrade? {}", trade.id, mid, mname, is_dt);
-            is_dt
-        } else {
-            let entry_date = NaiveDate::parse_from_str(&trade.date[0..10], "%Y-%m-%d").unwrap_or_default();
-            let exit_date_str = trade.exit_date.as_ref().unwrap();
-            let exit_date = NaiveDate::parse_from_str(&exit_date_str[0..10], "%Y-%m-%d").unwrap_or_default();
-            let is_dt = entry_date == exit_date;
-            println!("[IRPF] Trade {} no modality_id, fallback dating match? {}", trade.id, is_dt);
-            is_dt
-        };
+        // AUTO-MODALITY DETECTION: If missing, compare entry and exit dates
+        if trade_mod_id.is_empty() || trade_mod_id == "null" {
+            let entry_date = trade.date.split('T').next().unwrap_or("");
+            let exit_date = trade.exit_date.as_deref().unwrap_or("").split('T').next().unwrap_or("");
+            
+            if !entry_date.is_empty() && entry_date == exit_date {
+                trade_mod_id = "mod1".to_string(); // Day Trade
+                println!("[IRPF] Auto-detected modality for trade {}: mod1 (Day Trade)", trade.id);
+            } else {
+                trade_mod_id = "mod2".to_string(); // Swing Trade
+                println!("[IRPF] Auto-detected modality for trade {}: mod2 (Swing Trade)", trade.id);
+            }
+        }
 
-        let result_val = trade.result.unwrap_or(0.0) - trade.fee_total.unwrap_or(0.0);
+        println!("[IRPF] Processando Trade: id={}, modality_id={}, asset_type_id={:?}", trade.id, trade_mod_id, trade.asset_type_id);
+        
+        // We will determine result_val after finding the rule to check for trade_type robustly
+        let initial_result = trade.result.unwrap_or(0.0) - trade.fee_total.unwrap_or(0.0);
         
         // RESOLUTION LOGIC: Asset -> AssetType fallback
         let mut final_profile_id = None;
 
         // 1. Try Asset Specific Profile
         if let Some(aid) = &trade.asset_id {
-            if let Some(asset) = assets.iter().find(|a| a.id == *aid || a.id.ends_with(aid) || aid.ends_with(&a.id)) {
-                let atid = &asset.asset_type_id;
-                if let Some(at) = asset_types.iter().find(|t| t.id == *atid || t.id.ends_with(atid) || atid.ends_with(&t.id)) {
-                    final_profile_id = at.tax_profile_id.clone();
-                    println!("[IRPF] Trade {} -> Tax Profile {} resolvido via Ativo", trade.id, final_profile_id.as_deref().unwrap_or("None"));
+            let clean_aid = normalize_id("TradeAssetParam", aid);
+            if let Some(asset) = assets.iter().find(|a| normalize_id("AssetTableId", &a.id) == clean_aid || a.symbol == trade.asset_symbol) {
+                if let Some(pid) = &asset.tax_profile_id {
+                    final_profile_id = Some(pid.clone());
+                    println!("[IRPF] Trade {} -> Tax Profile {} resolvido via Ativo", trade.id, normalize_id("ResolvedProfile", pid));
                 }
             }
         }
@@ -229,36 +327,40 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
         // 2. Fallback to Trade's AssetType directly if still None
         if final_profile_id.is_none() {
             if let Some(atid) = &trade.asset_type_id {
-                if let Some(at) = asset_types.iter().find(|t| t.id == *atid || t.id.ends_with(atid) || atid.ends_with(&t.id)) {
+                let clean_atid = normalize_id("TradeAssetTypeParam", atid);
+                if let Some(at) = asset_types.iter().find(|t| normalize_id("AssetTypeTableId", &t.id) == clean_atid) {
                     final_profile_id = at.tax_profile_id.clone();
-                    println!("[IRPF] Trade {} -> Tax Profile {} resolvido via Tipo de Ativo", trade.id, final_profile_id.as_deref().unwrap_or("None"));
+                    println!("[IRPF] Trade {} -> Tax Profile {} resolvido via Tipo de Ativo", trade.id, final_profile_id.as_deref().map(|pid| normalize_id("ResolvedProfileFallback", pid)).unwrap_or("None".to_string()));
                 }
             }
         }
 
         if let Some(profile_id) = final_profile_id {
-             if let Some(rule) = find_rule(&profile_id, is_day_trade) {
+             if let Some(rule) = find_rule(&profile_id, &trade_mod_id) {
                  println!("[IRPF] Trade {} -> Regra Fiscal {} encontrada", trade.id, rule.id);
-                 let entry = buckets.entry(rule.id.clone()).or_insert(RuleBucket {
+                 let bucket_key = format!("{}:{}", rule.id, trade_mod_id);
+                 let entry = buckets.entry(bucket_key).or_insert(RuleBucket {
                      rule: rule.clone(),
+                     modality_id: trade_mod_id.to_string(),
                      gross_profit: 0.0,
                      gross_loss: 0.0,
                      sales_total: 0.0,
                      trade_ids: Vec::new(),
                  });
                  
-                 if result_val > 0.0 {
-                     entry.gross_profit += result_val;
-                 } else {
-                     entry.gross_loss += result_val.abs();
-                 }
-                 
-                 if !is_day_trade { 
-                     if let (Some(price), Some(qty)) = (trade.exit_price, trade.quantity) {
-                         entry.sales_total += price * qty;
-                     }
-                 }
-                 entry.trade_ids.push(trade.id.clone());
+                  if initial_result > 0.0 {
+                      entry.gross_profit += initial_result;
+                  } else {
+                      entry.gross_loss += initial_result.abs();
+                  }
+                  
+                   if rule.trade_type != "DayTrade" { 
+                       if let (Some(price), Some(qty)) = (trade.exit_price, trade.quantity) {
+                           let pv = trade.point_value.unwrap_or(1.0);
+                           entry.sales_total += price * qty * pv;
+                       }
+                   }
+                   entry.trade_ids.push(trade.id.clone());
              }
         } else {
             println!("[IRPF] Trade {} skipped: No Tax Profile found (Asset: {:?}, Type: {:?})", trade.id, trade.asset_id, trade.asset_type_id);
@@ -268,7 +370,7 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
     println!("[IRPF] Distribution finished. Buckets: {}", buckets.len());
 
     // 3. Calculate Appraisal per Bucket
-    let calculation_date = chrono::Utc::now().to_rfc3339();
+    // 1. Resolve Rules (Process all buckets regardless of profit/loss to ensure we have trade_ids)
     let mut appraisals = Vec::new();
 
     for (rule_id, bucket) in buckets {
@@ -285,16 +387,22 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
         let is_exempt = threshold > 0.0 && bucket.sales_total < threshold && net_profit > 0.0;
         
         // 3.3 Compensation Logic
-        // HEURISTIC: Use Rule Name to detect "Day" vs "Swing" to map to legacy TaxLoss buckets.
-        let loss_category = if rule.name.contains("Day") { "DayTrade" } else { "SwingTrade" };
+        let loss_category = rule.trade_type.clone(); // Use robust field
         
         let mut compensated_loss = 0.0;
         let mut calculation_basis;
         
-        if is_exempt {
-            calculation_basis = 0.0;
+        let basis_profit = if rule.basis == "GrossProfit" {
+            // Unlikely in B3 but allowed by rule config
+            gross_profit
         } else {
-            if net_profit > 0.0 {
+            net_profit
+        };
+
+        if is_exempt || !rule.cumulative_losses {
+            calculation_basis = if is_exempt { 0.0 } else { basis_profit };
+        } else {
+            if basis_profit > 0.0 {
                 // Try to compensate
                 let current_month_start = format!("{}-{:02}-01", year, month);
                 let available_loss: f64 = losses.iter()
@@ -302,22 +410,19 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
                     .map(|l| l.balance)
                     .sum();
                 
-                println!("[IRPF] Balanço: {} lucro, {} prejuízo acumulado disponível (antes de {})", net_profit, available_loss, current_month_start);
-                    
                 if available_loss > 0.0 {
-                    if available_loss >= net_profit {
-                        compensated_loss = net_profit;
+                    if available_loss >= basis_profit {
+                        compensated_loss = basis_profit;
                         calculation_basis = 0.0;
                     } else {
                         compensated_loss = available_loss;
-                        calculation_basis = net_profit - available_loss;
+                        calculation_basis = basis_profit - available_loss;
                     }
                 } else {
-                    calculation_basis = net_profit;
+                    calculation_basis = basis_profit;
                 }
             } else {
                 calculation_basis = 0.0;
-                // Loss will be accumulated
             }
         }
         
@@ -327,34 +432,66 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
         let tax_due = calculation_basis * rate_decimal;
         
         // Withholding (Dedo-duro)
-        // Day Trade: withholding_rate (1.0%) on Profit
-        // Swing Trade: withholding_rate (0.005%) on SALES volume (bucket.sales_total)
         let withheld_rate_decimal = rule.withholding_rate / 100.0;
-        let is_day_trade_rule = rule.name.to_lowercase().contains("day");
-        let total_irrf = if is_day_trade_rule {
-            if calculation_basis > 0.0 { calculation_basis * withheld_rate_decimal } else { 0.0 }
+        let total_irrf = if rule.withholding_basis == "Profit" {
+            // Withholding on Profit (typically Day Trade)
+            if net_profit > 0.0 { net_profit * withheld_rate_decimal } else { 0.0 }
         } else {
-            // Swing Trade withholding is on Sales, but only if there's a profit (simplified check) 
-            // and NOT exempt. If exempt, it might still have withheld tax that can be used as credit, 
-            // but for simplicity here we usually only subtract if calculation_basis > 0.
-            if bucket.sales_total > 0.0 && calculation_basis >= 0.0 { bucket.sales_total * withheld_rate_decimal } else { 0.0 }
+            // Withholding on Sales volume (typically Swing Trade Stocks)
+            if bucket.sales_total > 0.0 { bucket.sales_total * withheld_rate_decimal } else { 0.0 }
         };
         
         println!("[IRPF] Rule: {} | Rate: {}% | W.Rate: {}% | Base: {} | Due: {} | Withheld: {}", 
                  rule.name, rule.tax_rate, rule.withholding_rate, calculation_basis, tax_due, total_irrf);
 
-        let mut tax_payable = tax_due - total_irrf;
-        if tax_payable < 0.0 { tax_payable = 0.0; } // Ensure it doesn't go negative for the DARF
+        // 3.5 IRRF Credit Carryover Logic
+        // Fetch latest appraisal credit
+        let credit_query = "SELECT type::float(withholding_credit_remaining) as withholding_credit_remaining, `period_year`, `period_month` FROM tax_appraisal WHERE trade_type = $type AND (`period_year` < $year OR (`period_year` = $year AND `period_month` < $month)) ORDER BY `period_year` DESC, `period_month` DESC LIMIT 1";
+        let mut credit_res = db.0.query(credit_query)
+            .bind(("type", rule.trade_type.clone()))
+            .bind(("year", year))
+            .bind(("month", month))
+            .await.map_err(|e| e.to_string())?;
+        
+        let prev_credit_vec: Vec<serde_json::Value> = credit_res.take(0).map_err(|e| e.to_string())?;
+        let previous_credit = if let Some(v) = prev_credit_vec.first() {
+            v.get("withholding_credit_remaining").and_then(|t| t.as_f64()).unwrap_or(0.0)
+        } else {
+            0.0
+        };
+
+        let total_deduction_available = total_irrf + previous_credit;
+        let mut withholding_credit_used = 0.0;
+        let mut tax_after_irrf = 0.0;
+        let mut withholding_credit_remaining = 0.0;
+
+        if tax_due > 0.0 {
+            if total_deduction_available >= tax_due {
+                withholding_credit_used = tax_due;
+                tax_after_irrf = 0.0;
+                withholding_credit_remaining = total_deduction_available - tax_due;
+            } else {
+                withholding_credit_used = total_deduction_available;
+                tax_after_irrf = tax_due - total_deduction_available;
+                withholding_credit_remaining = 0.0;
+            }
+        } else {
+            // No tax due, all IRRF (this month + previous) is carried forward
+            withholding_credit_used = 0.0;
+            tax_after_irrf = 0.0;
+            withholding_credit_remaining = total_deduction_available;
+        }
+
+        let mut tax_payable = tax_after_irrf;
+        if tax_payable < 0.0 { tax_payable = 0.0; } // Safety
 
         // 3.5 Accumulation Logic (< R$ 10)
-        let trade_type_cat = if rule.name.to_lowercase().contains("day") { "DayTrade" } else { "SwingTrade" };
-        
         // Find latest pending appraisal for this category that was below 10
-        let accum_query = "SELECT *, type::string(id) as id FROM tax_appraisal WHERE trade_type = $type AND status = 'Pending' AND total_payable < 10.0 AND (period_year < $year OR (period_year = $year AND period_month < $month)) ORDER BY period_year DESC, period_month DESC LIMIT 1";
+        let accum_query = "SELECT *, type::string(id) as id, type::string(tax_rule_id) as tax_rule_id, type::float(total_payable) as total_payable, `period_year`, `period_month` FROM tax_appraisal WHERE trade_type = $type AND status = 'Pending' AND total_payable < 10.0 AND (`period_year` < $year OR (`period_year` = $year AND `period_month` < $month)) ORDER BY `period_year` DESC, `period_month` DESC LIMIT 1";
         println!("DEBUG: Running accumulation query: {}", accum_query);
             
         let mut accum_res = db.0.query(accum_query)
-            .bind(("type", trade_type_cat))
+            .bind(("type", rule.trade_type.clone()))
             .bind(("year", year))
             .bind(("month", month))
             .await.map_err(|e| e.to_string())?;
@@ -367,15 +504,15 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
         };
 
         let total_payable = tax_payable + tax_accumulated;
-        let revenue_code = if is_day_trade_rule { "6015" } else { "3317" };
+        let revenue_code = rule.revenue_code.clone();
         
         appraisals.push(TaxAppraisal {
             id: None, // Will be generated or matched in save
             period_month: month,
             period_year: year,
-            trade_type: trade_type_cat.to_string(),
+            trade_type: rule.trade_type.clone(),
             tax_rule_id: rule_id,
-            revenue_code: revenue_code.to_string(),
+            revenue_code: revenue_code.clone(),
             gross_profit,
             loss: gross_loss,
             net_profit,
@@ -384,6 +521,8 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
             tax_rate: rule.tax_rate,
             tax_due,
             withheld_tax: total_irrf,
+            withholding_credit_used,
+            withholding_credit_remaining,
             tax_payable,
             tax_accumulated,
             total_payable,
@@ -411,13 +550,22 @@ pub async fn get_appraisals(db: State<'_, DbState>, year: Option<u16>) -> Result
     }
 
     let query = if let Some(y) = year {
-        format!("SELECT *, type::string(id) as id FROM tax_appraisal WHERE period_year = {} OR status = 'Pending' ORDER BY period_year DESC, period_month DESC", y)
+        format!("SELECT *, \
+            type::string(id) as id, \
+            (IF tax_rule_id != NONE THEN type::string(tax_rule_id) ELSE null END) as tax_rule_id \
+            FROM tax_appraisal WHERE `period_year` = {} OR status = 'Pending' ORDER BY `period_year` DESC, `period_month` DESC", y)
     } else {
-        "SELECT *, type::string(id) as id FROM tax_appraisal ORDER BY period_year DESC, period_month DESC".to_string()
+        "SELECT *, \
+            type::string(id) as id, \
+            (IF tax_rule_id != NONE THEN type::string(tax_rule_id) ELSE null END) as tax_rule_id \
+            FROM tax_appraisal ORDER BY `period_year` DESC, `period_month` DESC".to_string()
     };
     
     let mut result = db.0.query(query).await.map_err(|e| e.to_string())?;
-    let appraisals: Vec<TaxAppraisal> = result.take(0).map_err(|e| e.to_string())?;
+    let appraisals: Vec<TaxAppraisal> = result.take(0).map_err(|e| {
+        println!("[ERROR] get_appraisals (irpf) deserialization failure: {}", e);
+        e.to_string()
+    })?;
     
     Ok(appraisals)
 }
@@ -557,7 +705,7 @@ pub async fn save_appraisal(db: State<'_, DbState>, data: TaxAppraisal) -> Resul
 
     // 2. If no ID, check if one exists for this Month/Year/Type to avoid duplicates
     // CRITICAL: Only match PENDING appraisals. If a PAID one exists, we create a COMPLEMENTARY record.
-    let query = "SELECT *, type::string(id) as id FROM tax_appraisal WHERE period_month = $month AND period_year = $year AND trade_type = $type AND status = 'Pending'";
+    let query = "SELECT *, type::string(id) as id FROM tax_appraisal WHERE `period_month` = $month AND `period_year` = $year AND trade_type = $type AND status = 'Pending'";
     let mut result = db.0.query(query)
         .bind(("month", data.period_month))
         .bind(("year", data.period_year))
@@ -604,8 +752,7 @@ pub async fn save_appraisal(db: State<'_, DbState>, data: TaxAppraisal) -> Resul
 /// Fetches accumulated losses by type
 #[tauri::command]
 pub async fn get_accumulated_losses(db: State<'_, DbState>) -> Result<Vec<TaxLoss>, String> {
-    let mut result = db.0
-        .query("SELECT *, type::string(id) as id FROM tax_loss WHERE balance > 0 ORDER BY origin_date ASC")
+    let mut result = db.0.query("SELECT *, type::string(id) as id FROM tax_loss ORDER BY origin_date ASC")
         .await
         .map_err(|e| e.to_string())?;
     
@@ -655,7 +802,7 @@ pub async fn delete_appraisal(db: State<'_, DbState>, id: String) -> Result<(), 
             }
         }
         
-        // 3. Delete associated DARFs to prevent orphans
+        // 3. Delete associated DARFs to prevent orphans (but block if any is Paid)
         let darf_query = "SELECT *, type::string(id) as id FROM tax_darf WHERE appraisal_id = $id";
         let mut darf_result = db.0.query(darf_query)
             .bind(("id", id.clone()))
@@ -664,6 +811,11 @@ pub async fn delete_appraisal(db: State<'_, DbState>, id: String) -> Result<(), 
             
         let darfs: Vec<TaxDarf> = darf_result.take(0).map_err(|e| e.to_string())?;
         
+        // CHECK: If any DARF is paid, block appraisal deletion
+        if darfs.iter().any(|d| d.status == "Paid") {
+            return Err("Não é possível excluir uma apuração que possui DARF marcada como Paga. Estorne o pagamento primeiro.".to_string());
+        }
+
         for darf in darfs {
             if let Some(did) = darf.id {
                  let parts: Vec<&str> = did.split(':').collect();
@@ -728,7 +880,12 @@ pub async fn generate_darf(db: State<'_, DbState>, appraisal_id: String) -> Resu
 
     println!("DEBUG: Checking existing DARFs for this Appraisal ID...");
     // Identify if a DARF already exists for THIS appraisal
-    let check_query = "SELECT * FROM tax_darf WHERE appraisal_id = $appraisal_id";
+    let check_query = "SELECT *, \
+        type::string(id) as id, \
+        (IF appraisal_id != NONE THEN type::string(appraisal_id) ELSE null END) as appraisal_id, \
+        (IF account_id != NONE THEN type::string(account_id) ELSE null END) as account_id, \
+        (IF transaction_id != NONE THEN type::string(transaction_id) ELSE null END) as transaction_id \
+        FROM tax_darf WHERE (IF appraisal_id != NONE THEN type::string(appraisal_id) ELSE '' END) = $appraisal_id";
     let mut check_result = db.0.query(check_query)
         .bind(("appraisal_id", appraisal_id.clone()))
         .await
@@ -761,7 +918,7 @@ pub async fn generate_darf(db: State<'_, DbState>, appraisal_id: String) -> Resu
         .unwrap()
         .pred_opt()
         .unwrap(); // Last day of next month
-      let period = format!("{:02}/{}", appraisal.period_month, appraisal.period_year);
+    // period already defined above
 
     let darf = TaxDarf {
         id: None,
@@ -784,7 +941,14 @@ pub async fn generate_darf(db: State<'_, DbState>, appraisal_id: String) -> Resu
         .create("tax_darf")
         .content(darf)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| {
+            println!("DEBUG: Failed to create DARF: {}", e);
+            e.to_string()
+        })?;
+
+    if let Some(ref d) = created {
+        println!("DEBUG: DARF generated successfully with ID: {:?}", d.id);
+    }
 
     created.ok_or_else(|| "Failed to generate DARF".to_string())
 }
@@ -792,16 +956,31 @@ pub async fn generate_darf(db: State<'_, DbState>, appraisal_id: String) -> Resu
 /// Lists DARFs
 #[tauri::command]
 pub async fn get_darfs(db: State<'_, DbState>, year: Option<u16>) -> Result<Vec<TaxDarf>, String> {
+    println!("DEBUG: get_darfs called for year: {:?}", year);
     let query = if let Some(y) = year {
         // ALWAYS fetch Pending DARFs to ensure they don't disappear when filtering by history year
-        format!("SELECT *, type::string(id) as id FROM tax_darf WHERE string::ends_with(period, '{}') OR status = 'Pending' ORDER BY due_date DESC", y)
+        format!("SELECT *, \
+            type::string(id) as id, \
+            (IF appraisal_id != NONE THEN type::string(appraisal_id) ELSE null END) as appraisal_id, \
+            (IF account_id != NONE THEN type::string(account_id) ELSE null END) as account_id, \
+            (IF transaction_id != NONE THEN type::string(transaction_id) ELSE null END) as transaction_id \
+            FROM tax_darf WHERE string::ends_with(period, '{}') OR status = 'Pending' ORDER BY due_date DESC", y)
     } else {
-        "SELECT *, type::string(id) as id FROM tax_darf ORDER BY due_date DESC".to_string()
+        "SELECT *, \
+            type::string(id) as id, \
+            (IF appraisal_id != NONE THEN type::string(appraisal_id) ELSE null END) as appraisal_id, \
+            (IF account_id != NONE THEN type::string(account_id) ELSE null END) as account_id, \
+            (IF transaction_id != NONE THEN type::string(transaction_id) ELSE null END) as transaction_id \
+            FROM tax_darf ORDER BY due_date DESC".to_string()
     };
     
     let mut result = db.0.query(query).await.map_err(|e| e.to_string())?;
-    let darfs: Vec<TaxDarf> = result.take(0).map_err(|e| e.to_string())?;
+    let darfs: Vec<TaxDarf> = result.take(0).map_err(|e| {
+        println!("[ERROR] get_darfs (irpf) deserialization failure: {}", e);
+        e.to_string()
+    })?;
     
+    println!("DEBUG: Found {} DARFs", darfs.len());
     Ok(darfs)
 }
 
@@ -892,7 +1071,7 @@ pub async fn mark_darf_paid(
 
              // 3. Mark all PREVIOUS PENDING appraisals of the same type as PAID (Accumulation Clear)
              let trade_type_inner = appraisal.trade_type.clone();
-             let clear_query = "UPDATE tax_appraisal SET status = 'Paid' WHERE trade_type = $type AND status = 'Pending' AND (period_year < $year OR (period_year = $year AND period_month < $month))";
+             let clear_query = "UPDATE tax_appraisal SET status = 'Paid' WHERE trade_type = $type AND status = 'Pending' AND (`period_year` < $year OR (`period_year` = $year AND `period_month` < $month))";
              
              let _: surrealdb::Response = db.0.query(clear_query)
                 .bind(("type", trade_type_inner))
@@ -970,10 +1149,30 @@ pub async fn diagnostic_dump_darfs(db: State<'_, DbState>) -> Result<(), String>
 #[tauri::command]
 pub async fn get_appraisal_by_id(db: State<'_, DbState>, id: String) -> Result<Option<TaxAppraisal>, String> {
     let clean_id = id.split(':').last().unwrap_or(&id).to_string();
-    let appraisal: Option<TaxAppraisal> = db.0.select(("tax_appraisal", &clean_id))
+    let query = "SELECT *, type::string(id) as id, type::string(tax_rule_id) as tax_rule_id FROM tax_appraisal WHERE type::string(id) = $id LIMIT 1";
+    let mut result = db.0.query(query)
+        .bind(("id", format!("tax_appraisal:{}", clean_id)))
         .await
         .map_err(|e| e.to_string())?;
-    Ok(appraisal)
+    
+    Ok(result.take(0).map_err(|e| e.to_string())?)
+}
+
+#[tauri::command]
+pub async fn get_darf_by_id(db: State<'_, DbState>, id: String) -> Result<Option<TaxDarf>, String> {
+    let clean_id = id.split(':').last().unwrap_or(&id).to_string();
+    let query = "SELECT *, \
+        type::string(id) as id, \
+        (IF appraisal_id != NONE THEN type::string(appraisal_id) ELSE null END) as appraisal_id, \
+        (IF account_id != NONE THEN type::string(account_id) ELSE null END) as account_id, \
+        (IF transaction_id != NONE THEN type::string(transaction_id) ELSE null END) as transaction_id \
+        FROM tax_darf WHERE type::string(id) = $id LIMIT 1";
+    let mut result = db.0.query(query)
+        .bind(("id", format!("tax_darf:{}", clean_id)))
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    Ok(result.take(0).map_err(|e| e.to_string())?)
 }
 
 #[tauri::command]
@@ -981,10 +1180,15 @@ pub async fn get_darf_by_transaction(db: State<'_, DbState>, transaction_id: Str
     println!("[DARF LOOKUP] Looking for DARF with transaction_id: {}", transaction_id);
     
     // 1. Try Direct Lookup (Normal way)
-    let clean_id = transaction_id.split(':').last().unwrap_or(&transaction_id).to_string();
+    let clean_id = transaction_id.split(':').last().unwrap_or(&transaction_id).trim_matches('`').to_string();
     let prefixed_id = format!("cash_transaction:{}", clean_id);
     
-    let query = "SELECT *, type::string(id) as id FROM tax_darf WHERE type::string(transaction_id) = $clean OR type::string(transaction_id) = $prefixed LIMIT 1";
+    let query = "SELECT *, \
+        type::string(id) as id, \
+        (IF appraisal_id != NONE THEN type::string(appraisal_id) ELSE null END) as appraisal_id, \
+        (IF account_id != NONE THEN type::string(account_id) ELSE null END) as account_id, \
+        (IF transaction_id != NONE THEN type::string(transaction_id) ELSE null END) as transaction_id \
+        FROM tax_darf WHERE type::string(transaction_id) = $clean OR type::string(transaction_id) = $prefixed LIMIT 1";
     let mut result = db.0.query(query)
         .bind(("clean", clean_id.clone()))
         .bind(("prefixed", prefixed_id))
@@ -1005,16 +1209,24 @@ pub async fn get_darf_by_transaction(db: State<'_, DbState>, transaction_id: Str
     if let Some(tx) = tx_res {
         if let Some(desc) = tx.get("description").and_then(|v| v.as_str()) {
             println!("[DARF LOOKUP] Fallback: Parsing description '{}'", desc);
-            // Expected format: "Pagamento DARF MM/YYYY (CODE)"
-            if desc.contains("Pagamento DARF") {
-                let parts: Vec<&str> = desc.split_whitespace().collect();
-                // parts[0]="Pagamento", parts[1]="DARF", parts[2]="MM/YYYY", parts[3]="(CODE)"
-                if parts.len() >= 4 {
-                    let period = parts[2].to_string();
-                    let code = parts[3].trim_matches('(').trim_matches(')').to_string();
-                    
+            
+            // Expected patterns: "Pagamento DARF MM/YYYY (CODE)" OR "Estorno - Pagamento DARF MM/YYYY (CODE)"
+            if desc.contains("DARF") {
+                // Find period (MM/YYYY) - Convert to String to fix borrowing error
+                let period_match = desc.split_whitespace().find(|s| s.contains('/') && s.len() >= 7).map(|s| s.to_string());
+                // Find code (numbers inside parentheses or as a 4-digit token)
+                let code_match = desc.split_whitespace()
+                    .find(|s| s.len() >= 4 && s.chars().all(|c| c.is_numeric() || c == '(' || c == ')'))
+                    .map(|s| s.trim_matches('(').trim_matches(')').to_string());
+
+                if let (Some(period), Some(code)) = (period_match, code_match) {
                     println!("[DARF LOOKUP] Fallback: Searching for period={} code={}", period, code);
-                    let fallback_query = "SELECT *, type::string(id) as id FROM tax_darf WHERE period = $period AND revenue_code = $code LIMIT 1";
+                    let fallback_query = "SELECT *, \
+                        type::string(id) as id, \
+                        (IF appraisal_id != NONE THEN type::string(appraisal_id) ELSE null END) as appraisal_id, \
+                        (IF account_id != NONE THEN type::string(account_id) ELSE null END) as account_id, \
+                        (IF transaction_id != NONE THEN type::string(transaction_id) ELSE null END) as transaction_id \
+                        FROM tax_darf WHERE period = $period AND revenue_code = $code LIMIT 1";
                     let mut fb_result = db.0.query(fallback_query)
                         .bind(("period", period))
                         .bind(("code", code))
@@ -1022,7 +1234,7 @@ pub async fn get_darf_by_transaction(db: State<'_, DbState>, transaction_id: Str
                         .map_err(|e| e.to_string())?;
                         
                     if let Ok(Some(darf)) = fb_result.take::<Option<TaxDarf>>(0) {
-                        println!("[DARF LOOKUP] Found via description fallback!");
+                        println!("[DARF LOOKUP] Found via description fallback patterns");
                         return Ok(Some(darf));
                     }
                 }

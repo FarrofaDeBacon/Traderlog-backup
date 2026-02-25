@@ -478,6 +478,8 @@ pub struct Asset {
     pub point_value: f64,
     #[serde(default, deserialize_with = "deserialize_id_opt")]
     pub default_fee_id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_id_opt")]
+    pub tax_profile_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -551,10 +553,15 @@ pub struct JournalEntry {
     pub content: String,
     #[serde(default, deserialize_with = "deserialize_id_opt")]
     pub emotional_state_id: Option<String>,
+    #[serde(default)]
     pub intensity: i32,
+    #[serde(default)]
     pub followed_plan: bool,
+    #[serde(default)]
     pub risk_accepted: bool,
+    #[serde(default)]
     pub market_context: String,
+    #[serde(default)]
     pub daily_score: i32,
 }
 
@@ -702,6 +709,40 @@ pub struct RiskProfile {
     pub growth_plan_enabled: bool,
     pub current_phase_index: i32,
     pub growth_phases: Vec<GrowthPhase>,
+    #[serde(default)]
+    pub psychological_coupling_enabled: bool,
+    #[serde(default)]
+    pub outlier_regression_enabled: bool,
+    #[serde(default)]
+    pub sniper_mode_enabled: bool,
+    #[serde(default)]
+    pub sniper_mode_selectivity: i32,
+    #[serde(default = "default_psyc_lookback")]
+    pub psychological_lookback_count: i32,
+    #[serde(default = "default_outlier_lookback")]
+    pub outlier_lookback_count: i32,
+    #[serde(default = "default_psyc_threshold")]
+    pub psychological_threshold: i32,
+    #[serde(default = "default_lot_reduction")]
+    pub lot_reduction_multiplier: f64,
+    #[serde(default = "default_psyc_strategy")]
+    pub psychological_search_strategy: String, // "Strict" | "Sequence"
+}
+
+fn default_psyc_lookback() -> i32 {
+    10
+}
+fn default_outlier_lookback() -> i32 {
+    20
+}
+fn default_psyc_threshold() -> i32 {
+    -2
+}
+fn default_lot_reduction() -> f64 {
+    0.5
+}
+fn default_psyc_strategy() -> String {
+    "Strict".to_string()
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -765,6 +806,19 @@ pub struct TaxRule {
     pub exemption_threshold: f64,
     pub basis: String, // "NetProfit" | "GrossProfit"
     pub cumulative_losses: bool,
+    #[serde(default = "default_trade_type")]
+    pub trade_type: String, // "DayTrade" | "SwingTrade"
+    #[serde(default = "default_withholding_basis")]
+    pub withholding_basis: String, // "Profit" | "SalesVolume"
+    #[serde(default)]
+    pub revenue_code: String, // e.g., "6015", "3317"
+}
+
+fn default_trade_type() -> String {
+    "SwingTrade".to_string()
+}
+fn default_withholding_basis() -> String {
+    "Profit".to_string()
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

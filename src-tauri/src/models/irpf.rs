@@ -13,8 +13,9 @@ pub struct TaxAppraisal {
     pub period_month: u8,
     #[serde(rename = "period_year", alias = "year", alias = "appraisal_year")]
     pub period_year: u16,
-    pub trade_type: String,   // "DayTrade" or "SwingTrade" (Category)
-    pub tax_rule_id: String,  // Link to the specific rule used
+    pub trade_type: String, // "DayTrade" or "SwingTrade" (Category)
+    #[serde(deserialize_with = "deserialize_id")]
+    pub tax_rule_id: String, // Link to the specific rule used
     pub revenue_code: String, // "6015" or "3317"
     pub gross_profit: f64,
     pub loss: f64,
@@ -24,6 +25,10 @@ pub struct TaxAppraisal {
     pub tax_rate: f64,
     pub tax_due: f64,
     pub withheld_tax: f64,
+    #[serde(default)]
+    pub withholding_credit_used: f64,
+    #[serde(default)]
+    pub withholding_credit_remaining: f64,
     pub tax_payable: f64,
     #[serde(default)]
     pub tax_accumulated: f64,
