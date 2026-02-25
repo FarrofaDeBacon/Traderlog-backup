@@ -104,6 +104,7 @@ pub async fn get_accounts(db: State<'_, DbState>) -> Result<Vec<Account>, String
         println!("[ERROR] get_accounts deserialization failure: {}", e);
         e.to_string()
     })?;
+    
     println!("[COMMAND] get_accounts returning {} accounts", accounts.len());
     Ok(accounts)
 }
@@ -363,6 +364,14 @@ pub async fn get_cash_transactions(db: State<'_, DbState>) -> Result<Vec<CashTra
         println!("[ERROR] get_cash_transactions deserialization failure: {}", e);
         e.to_string()
     })?;
+    
+    // Diagnostic: Print the last 10 transactions to check if the refund is present
+    println!("[DEBUG] get_cash_transactions returning {} items. Last 10:", transactions.len());
+    for tx in transactions.iter().take(10) {
+        println!("  - id: {}, date: {}, type: {:?}, desc: {}, amt: {}, acc: {}, cat: {:?}", 
+            tx.id, tx.date, tx.r#type, tx.description, tx.amount, tx.account_id, tx.category);
+    }
+
     Ok(transactions)
 }
 

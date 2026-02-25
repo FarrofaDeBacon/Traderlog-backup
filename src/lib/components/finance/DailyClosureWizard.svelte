@@ -13,7 +13,7 @@
     import * as Select from "$lib/components/ui/select";
     import { Textarea } from "$lib/components/ui/textarea";
     import Slider from "$lib/components/ui/slider/slider.svelte";
-    import { getLocalDatePart } from "$lib/utils";
+    import { getLocalDatePart, formatLocalISO } from "$lib/utils";
 
     let { open = $bindable(false) } = $props();
 
@@ -131,7 +131,7 @@
 
                     const txResult = await settingsStore.addCashTransaction({
                         id: `daily_closure_${data.account_id.replace(/:/g, "_")}_${selectedDate.replace(/-/g, "_")}`,
-                        date: selectedDate,
+                        date: formatLocalISO(selectedDate),
                         amount: data.result,
                         type: data.result >= 0 ? "Deposit" : "Withdraw",
                         description: `${$t("finance.dailyClosure")} (${data.trades_count} trades)`,

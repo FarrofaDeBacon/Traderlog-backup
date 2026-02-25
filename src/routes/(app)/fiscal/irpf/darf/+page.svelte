@@ -20,6 +20,7 @@
     import { settingsStore } from "$lib/stores/settings.svelte"; // Import settingsStore
     import * as Select from "$lib/components/ui/select";
     import DarfDetailsDialog from "$lib/components/finance/DarfDetailsDialog.svelte";
+    import { formatLocalISO } from "$lib/utils";
     // Use centralized year from irpfStore
     let selectedYear = $state(irpfStore.selectedYear);
 
@@ -82,11 +83,15 @@
         }
         try {
             const idStr = irpfStore.getId(paymentData.id);
+
+            // Append current time with high precision for chronological sorting
+            const fullIsoDate = formatLocalISO(paymentData.date);
+
             await irpfStore.markDarfPaid(
                 idStr,
-                paymentData.date,
+                fullIsoDate,
                 paymentData.total,
-                paymentData.accountId, // Pass accountId
+                paymentData.accountId,
                 paymentData.fine,
                 paymentData.interest,
             );

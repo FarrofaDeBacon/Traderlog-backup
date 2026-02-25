@@ -63,7 +63,7 @@
         // 1. Filter and group transactions by day
         settingsStore.cashTransactions
             .filter((tx) => {
-                const txDateStr = tx.date;
+                const txDateStr = tx.date.substring(0, 10);
                 const txDate = new Date(txDateStr + "T00:00:00");
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
@@ -124,7 +124,8 @@
             })
             .filter(
                 (tx) =>
-                    accountFilter === "all" || tx.account_id === accountFilter,
+                    accountFilter === "all" ||
+                    String(tx.account_id) === String(accountFilter),
             )
             .filter((tx) => {
                 if (currencyFilter === "all") return true;
@@ -146,9 +147,14 @@
                 dayGroups[dateKey].push(tx);
             });
 
-        // 1.5 Sort transactions within each day by ID descending (proxy for latest first)
+        // 1.5 Sort transactions within each day by date descending (strict chronological order)
+        // Tie-breaker: id descending
         Object.values(dayGroups).forEach((group) => {
-            group.sort((a, b) => b.id.localeCompare(a.id));
+            group.sort((a, b) => {
+                const dateSort = b.date.localeCompare(a.date);
+                if (dateSort !== 0) return dateSort;
+                return b.id.localeCompare(a.id);
+            });
         });
 
         // 2. Aggregate into Months
@@ -830,10 +836,15 @@
                 class="text-zinc-500 font-mono text-[10px] uppercase tracking-widest"
             >
                 {selectedDay
-                    ? new Date(selectedDay + "T12:00:00").toLocaleDateString(
-                          $locale || "pt-BR",
-                          { weekday: "long", day: "numeric", month: "long" },
-                      )
+                    ? new Date(
+                          selectedDay.includes("T")
+                              ? selectedDay
+                              : selectedDay + "T12:00:00",
+                      ).toLocaleDateString($locale || "pt-BR", {
+                          weekday: "long",
+                          day: "numeric",
+                          month: "long",
+                      })
                     : ""}
             </Dialog.Description>
         </Dialog.Header>
@@ -964,7 +975,9 @@
                         >
                         <div class="text-zinc-200 font-medium font-mono">
                             {new Date(
-                                selectedTransaction.date + "T12:00:00",
+                                selectedTransaction.date.includes("T")
+                                    ? selectedTransaction.date
+                                    : selectedTransaction.date + "T12:00:00",
                             ).toLocaleDateString()}
                         </div>
                     </div>

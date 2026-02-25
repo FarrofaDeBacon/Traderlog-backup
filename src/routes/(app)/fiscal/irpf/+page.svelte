@@ -47,30 +47,45 @@
     let selectedMonth = $state<number | null>(null); // null = "Todos"
 
     let taxEvolutionData = $derived.by(() => {
-        const data = [];
+        const result = [];
+        const currentYear = Number(irpfStore.selectedYear);
+        const apps = irpfStore.appraisals || [];
+        const darfs = irpfStore.darfs || [];
+
         for (let i = 1; i <= 12; i++) {
-            // Sum Tax Due from Appraisals (Primary source for "What is owed")
-            const taxDue = irpfStore.appraisals
-                .filter(
-                    (a) =>
-                        a.period_month === i &&
-                        a.period_year === irpfStore.selectedYear,
-                )
-                .reduce((acc, a) => acc + a.total_payable, 0);
+            // Find appraisals for this month and year
+            const monthApps = apps.filter(
+                (a) =>
+                    Number(a.period_month) === i &&
+                    Number(a.period_year) === currentYear,
+            );
 
-            // Sum Tax Paid from DARFs (Primary source for "What was actually paid")
-            const monthStr = `${String(i).padStart(2, "0")}/${irpfStore.selectedYear}`;
-            const taxPaid = irpfStore.darfs
-                .filter((d) => d.period === monthStr && d.status === "Paid")
-                .reduce((acc, d) => acc + d.total_value, 0);
+            // Find paid darfs for this month and year
+            const monthPaid = darfs.filter((d) => {
+                const parts = (d.period || "").split("/");
+                if (parts.length < 2) return false;
+                const m = Number(parts[0]);
+                const y = Number(parts[1]);
+                return m === i && y === currentYear && d.status === "Paid";
+            });
 
-            data.push({
+            const taxDueValue = monthApps.reduce((acc, a) => {
+                const val = Number(a.total_payable || 0);
+                return acc + (isNaN(val) ? 0 : val);
+            }, 0);
+
+            const taxPaidValue = monthPaid.reduce((acc, d) => {
+                const val = Number(d.total_value || 0);
+                return acc + (isNaN(val) ? 0 : val);
+            }, 0);
+
+            result.push({
                 month: months.find((m) => m.val === i)?.label || String(i),
-                taxDue,
-                taxPaid,
+                taxDue: taxDueValue,
+                taxPaid: taxPaidValue,
             });
         }
-        return data;
+        return result;
     });
 
     const months = [
@@ -93,9 +108,11 @@
         (selectedMonth === null
             ? irpfStore.appraisals
             : irpfStore.appraisals.filter(
-                  (a) => a.period_month === selectedMonth,
+                  (a) => Number(a.period_month) === selectedMonth,
               )
-        ).filter((a) => a.status !== "Paid"),
+        ).filter(
+            (a) => Number(a.period_year) === Number(irpfStore.selectedYear),
+        ),
     );
 
     onMount(() => {
@@ -322,7 +339,32 @@
                 >
             </Card.Header>
             <Card.Content class="h-[300px]">
-                <TaxEvolutionChart data={taxEvolutionData} />
+                {#key irpfStore.selectedYear}
+                    <TaxEvolutionChart data={taxEvolutionData} />
+                {/key}
+                <div
+                    class="mt-2 text-[10px] text-muted-foreground flex justify-between px-2 italic"
+                >
+                    <span>
+                        Diagnostic: {irpfStore.appraisals.filter(
+                            (a) =>
+                                Number(a.period_year) == irpfStore.selectedYear,
+                        ).length} apurações /
+                        {irpfStore.darfs.filter((d) =>
+                            d.period.includes(
+                                irpfStore.selectedYear.toString(),
+                            ),
+                        ).length} DARFs encontradas
+                    </span>
+                    <span
+                        >Mod: {Number(
+                            taxEvolutionData.reduce(
+                                (acc, curr) => acc + curr.taxDue,
+                                0,
+                            ),
+                        ).toFixed(2)} total due chart</span
+                    >
+                </div>
             </Card.Content>
         </Card.Root>
 
@@ -471,7 +513,7 @@
                                 {@const revenueCode =
                                     item.trade_type === "DayTrade"
                                         ? "6015"
-                                        : "3317"}
+                                        : "6015"}
                                 {@const period = `${String(item.period_month).padStart(2, "0")}/${item.period_year}`}
                                 {@const existingDarf = irpfStore.darfs.find(
                                     (d) =>

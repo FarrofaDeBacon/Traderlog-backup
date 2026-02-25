@@ -15,7 +15,7 @@
     } from "lucide-svelte";
     import { t } from "svelte-i18n";
     import { toast } from "svelte-sonner";
-    import { cn } from "$lib/utils";
+    import { cn, formatLocalISO } from "$lib/utils";
 
     let { open = $bindable(false) } = $props();
 
@@ -79,6 +79,8 @@
             return;
         }
 
+        const fullIsoDate = formatLocalISO(date);
+
         const result = await settingsStore.transferFunds({
             fromAccountId,
             toAccountId,
@@ -87,7 +89,7 @@
                 fee: fee,
                 destAmount: destAmount,
             },
-            date,
+            date: fullIsoDate,
             description:
                 description ||
                 `Transf: ${fromAccount?.currency} -> ${toAccount?.currency} (Rate: ${exchangeRate.toFixed(4)})`,

@@ -143,14 +143,18 @@
                 <div class="flex items-center gap-2">
                     {#if profile.lock_on_loss}
                         <Ban class="w-4 h-4 text-red-500" />
-                        <span class="font-medium text-red-500"
-                            >{$t("general.yes") || "Sim"}</span
-                        >
+                        <span class="font-medium text-red-500">
+                            {$t("general.yes").includes("general.yes")
+                                ? "Sim"
+                                : $t("general.yes")}
+                        </span>
                     {:else}
                         <CheckCircle2 class="w-4 h-4 text-muted-foreground" />
-                        <span class="font-medium text-muted-foreground"
-                            >{$t("general.no") || "Não"}</span
-                        >
+                        <span class="font-medium text-muted-foreground">
+                            {$t("general.no").includes("general.no")
+                                ? "Não"
+                                : $t("general.no")}
+                        </span>
                     {/if}
                 </div>
             </div>

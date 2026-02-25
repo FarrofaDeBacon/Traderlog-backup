@@ -8,6 +8,7 @@
     import { settingsStore } from "$lib/stores/settings.svelte";
     import { toast } from "svelte-sonner";
     import { t } from "svelte-i18n";
+    import { formatLocalISO } from "$lib/utils";
     import {
         ArrowRight,
         ArrowRightLeft,
@@ -122,6 +123,8 @@
                 return;
             }
 
+            const fullIsoDate = formatLocalISO(date);
+
             const result = await settingsStore.transferFunds({
                 fromAccountId,
                 toAccountId,
@@ -130,7 +133,7 @@
                     fee: feeAmount,
                     destAmount: parseFloat(destAmount) || 0,
                 },
-                date,
+                date: fullIsoDate,
                 description:
                     description ||
                     (sameCurrency
@@ -159,11 +162,12 @@
 
             const value = parseFloat(amount);
             const finalAmount = transactionType === "Withdraw" ? -value : value;
+            const fullIsoDate = formatLocalISO(date);
 
             const result = await settingsStore.addCashTransaction({
                 account_id: accountId,
                 amount: finalAmount,
-                date: date,
+                date: fullIsoDate,
                 type: transactionType as any,
                 description:
                     description ||

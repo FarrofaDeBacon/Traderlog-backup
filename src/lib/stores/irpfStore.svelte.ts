@@ -20,9 +20,12 @@ export interface TaxAppraisal {
     tax_payable: number;
     tax_accumulated: number;
     total_payable: number;
+    withholding_credit_used: number;
+    withholding_credit_remaining: number;
     is_exempt: boolean;
     calculation_date: string;
     status: "Pending" | "Paid" | "Ok";
+    trade_ids: string[];
 }
 
 export interface TaxLoss {
@@ -74,11 +77,21 @@ class IrpfStore {
             .reduce((acc, d) => acc + d.total_value, 0),
     );
 
-    pendingGuiasCount = $derived(this.darfs.filter((d) => d.status === "Pending").length);
+    pendingGuiasCount = $derived(
+        this.darfs.filter((d) => {
+            const parts = d.period.split("/");
+            const y = parts.length > 1 ? parseInt(parts[1]) : 0;
+            return y === this.selectedYear && d.status === "Pending";
+        }).length,
+    );
 
     pendingAmount = $derived(
         this.darfs
-            .filter((d) => d.status === "Pending")
+            .filter((d) => {
+                const parts = d.period.split("/");
+                const y = parts.length > 1 ? parseInt(parts[1]) : 0;
+                return y === this.selectedYear && d.status === "Pending";
+            })
             .reduce((acc, d) => acc + d.total_value, 0) +
         this.appraisals
             .filter(
@@ -323,6 +336,7 @@ class IrpfStore {
             // Refresh appraisals
             const year = parseInt(updated.period.split('/')[1]);
             this.loadAppraisals(year);
+            this.loadDarfs(year);
 
             // REFRESH FINANCE HUB
             settingsStore.loadData();

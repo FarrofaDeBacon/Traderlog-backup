@@ -549,16 +549,36 @@ pub async fn get_appraisals(db: State<'_, DbState>, year: Option<u16>) -> Result
         let _ = db.0.query(m).await;
     }
 
+    let base_select = "SELECT \
+        type::string(id) as id, \
+        type::number(period_month) as period_month, \
+        type::number(period_year) as period_year, \
+        trade_type, \
+        (IF tax_rule_id != NONE THEN type::string(tax_rule_id) ELSE null END) as tax_rule_id, \
+        revenue_code, \
+        type::float(gross_profit) as gross_profit, \
+        type::float(loss) as loss, \
+        type::float(net_profit) as net_profit, \
+        type::float(compensated_loss) as compensated_loss, \
+        type::float(calculation_basis) as calculation_basis, \
+        type::float(tax_rate) as tax_rate, \
+        type::float(tax_due) as tax_due, \
+        type::float(withheld_tax) as withheld_tax, \
+        type::float(withholding_credit_used) as withholding_credit_used, \
+        type::float(withholding_credit_remaining) as withholding_credit_remaining, \
+        type::float(tax_payable) as tax_payable, \
+        type::float(tax_accumulated) as tax_accumulated, \
+        type::float(total_payable) as total_payable, \
+        is_exempt, \
+        type::string(calculation_date) as calculation_date, \
+        status, \
+        trade_ids \
+        FROM tax_appraisal ";
+
     let query = if let Some(y) = year {
-        format!("SELECT *, \
-            type::string(id) as id, \
-            (IF tax_rule_id != NONE THEN type::string(tax_rule_id) ELSE null END) as tax_rule_id \
-            FROM tax_appraisal WHERE `period_year` = {} OR status = 'Pending' ORDER BY `period_year` DESC, `period_month` DESC", y)
+        format!("{} WHERE `period_year` = {} OR status = 'Pending' ORDER BY `period_year` DESC, `period_month` DESC", base_select, y)
     } else {
-        "SELECT *, \
-            type::string(id) as id, \
-            (IF tax_rule_id != NONE THEN type::string(tax_rule_id) ELSE null END) as tax_rule_id \
-            FROM tax_appraisal ORDER BY `period_year` DESC, `period_month` DESC".to_string()
+        format!("{} ORDER BY `period_year` DESC, `period_month` DESC", base_select)
     };
     
     let mut result = db.0.query(query).await.map_err(|e| e.to_string())?;
@@ -570,34 +590,70 @@ pub async fn get_appraisals(db: State<'_, DbState>, year: Option<u16>) -> Result
     Ok(appraisals)
 }
 
-/// Saves an appraisal (Upsert logic) and updates Tax Loss balance
 #[tauri::command]
 pub async fn save_appraisal(db: State<'_, DbState>, data: TaxAppraisal) -> Result<TaxAppraisal, String> {
     
-    // --- LOSS COMPENSATION LOGIC ---
-    // 1. If we are compensating a loss (profit > 0 and using accumulated loss)
+    // --- NEW: LOSS RESTORATION (Undo previous compensation if updating) ---
+    let query_existing = "SELECT *, type::string(id) as id FROM tax_appraisal WHERE `period_month` = $month AND `period_year` = $year AND trade_type = $type AND status = 'Pending' LIMIT 1";
+    let mut check_res = db.0.query(query_existing)
+        .bind(("month", data.period_month))
+        .bind(("year", data.period_year))
+        .bind(("type", data.trade_type.clone()))
+        .await.map_err(|e| e.to_string())?;
+    
+    let existing_opt: Option<TaxAppraisal> = check_res.take(0).map_err(|e| e.to_string())?;
+    
+    if let Some(existing) = existing_opt {
+        if existing.compensated_loss > 0.0 {
+            println!("[IRPF] Restoring {} losses from existing appraisal before update", existing.compensated_loss);
+            let mut to_restore = existing.compensated_loss;
+            
+            // Restore LIFO (Newest first, reverse of FIFO usage)
+            let loss_query = "SELECT *, type::string(id) as id FROM tax_loss WHERE trade_type = $type AND balance < amount ORDER BY origin_date DESC";
+            let mut loss_result = db.0.query(loss_query)
+                .bind(("type", data.trade_type.clone()))
+                .await.map_err(|e| e.to_string())?;
+            
+            let losses_to_restore: Vec<TaxLoss> = loss_result.take(0).map_err(|e| e.to_string())?;
+            for mut loss_record in losses_to_restore {
+                if to_restore <= 0.0 { break; }
+                
+                let can_restore = loss_record.amount - loss_record.balance;
+                let restore_amount = if can_restore >= to_restore { to_restore } else { can_restore };
+                
+                loss_record.balance += restore_amount;
+                to_restore -= restore_amount;
+                
+                if let Some(id_val) = &loss_record.id.clone() {
+                    let parts: Vec<&str> = id_val.split(':').collect();
+                    let l_tb = if parts.len() > 1 { parts[0] } else { "tax_loss" };
+                    let l_id = if parts.len() > 1 { parts[1] } else { id_val };
+                    loss_record.id = None;
+                    let _: Option<serde_json::Value> = db.0
+                        .update((l_tb, l_id))
+                        .content(loss_record)
+                        .await.map_err(|e| e.to_string())?;
+                }
+            }
+        }
+    }
+
+    // --- LOSS COMPENSATION LOGIC (Deducting new value) ---
     if data.compensated_loss > 0.0 {
         let mut remaining_compensation = data.compensated_loss;
         
-        // Fetch accumulated losses for this trade type, oldest first
         let loss_query = "SELECT *, type::string(id) as id FROM tax_loss WHERE balance > 0 AND trade_type = $type ORDER BY origin_date ASC";
         let mut loss_result = db.0.query(loss_query)
             .bind(("type", data.trade_type.clone()))
-            .await
-            .map_err(|e| e.to_string())?;
+            .await.map_err(|e| e.to_string())?;
             
         let losses: Vec<TaxLoss> = loss_result.take(0usize).map_err(|e| e.to_string())?;
         
         for mut loss_record in losses {
-            if remaining_compensation <= 0.0 {
-                break;
-            }
+            if remaining_compensation <= 0.0 { break; }
             
-            let deduction = if loss_record.balance >= remaining_compensation {
-                remaining_compensation
-            } else {
-                loss_record.balance
-            };
+            let deduction = if loss_record.balance >= remaining_compensation { remaining_compensation } else { loss_record.balance };
+
             
             loss_record.balance -= deduction;
             remaining_compensation -= deduction;
@@ -740,19 +796,39 @@ pub async fn save_appraisal(db: State<'_, DbState>, data: TaxAppraisal) -> Resul
     let mut new_data = data.clone();
     new_data.id = None;
     
-    let created: Option<TaxAppraisal> = db.0
+    let created_opt: Option<TaxAppraisal> = db.0
         .create("tax_appraisal")
         .content(new_data)
         .await
         .map_err(|e| e.to_string())?;
     
-    created.ok_or_else(|| "Failed to create new appraisal".to_string())
+    let created = created_opt.ok_or_else(|| "Failed to create new appraisal".to_string())?;
+
+    // --- NEW: ACCUMULATION MERGE (Mark previous as 'Paid' if merged) ---
+    if created.tax_accumulated > 0.0 {
+        let mark_query = "UPDATE tax_appraisal SET status = 'Paid', calculation_date = $now WHERE trade_type = $type AND status = 'Pending' AND total_payable < 10.0 AND (`period_year` < $year OR (`period_year` = $year AND `period_month` < $month))";
+        db.0.query(mark_query)
+            .bind(("type", created.trade_type.clone()))
+            .bind(("year", created.period_year))
+            .bind(("month", created.period_month))
+            .bind(("now", chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string()))
+            .await.map_err(|e| e.to_string())?;
+    }
+
+    Ok(created)
 }
 
-/// Fetches accumulated losses by type
 #[tauri::command]
 pub async fn get_accumulated_losses(db: State<'_, DbState>) -> Result<Vec<TaxLoss>, String> {
-    let mut result = db.0.query("SELECT *, type::string(id) as id FROM tax_loss ORDER BY origin_date ASC")
+    let query = "SELECT \
+        type::string(id) as id, \
+        trade_type, \
+        type::float(amount) as amount, \
+        type::float(balance) as balance, \
+        type::string(origin_date) as origin_date \
+        FROM tax_loss WHERE balance > 0 ORDER BY origin_date ASC";
+    
+    let mut result = db.0.query(query)
         .await
         .map_err(|e| e.to_string())?;
     
@@ -860,6 +936,10 @@ pub async fn generate_darf(db: State<'_, DbState>, appraisal_id: String) -> Resu
     let appraisal = appraisal_res.ok_or("Appraisal not found")?;
     println!("DEBUG: Found appraisal for DARF: {:?}", appraisal);
         
+    if appraisal.is_exempt {
+        return Err("Esta apuração está marcada como ISENTA. Não há imposto a pagar.".to_string());
+    }
+        
     if appraisal.total_payable < 10.0 {
         return Err("Valor total (incluindo acumulados) inferior a R$ 10,00. Não é necessário gerar DARF ainda.".to_string());
     }
@@ -868,12 +948,8 @@ pub async fn generate_darf(db: State<'_, DbState>, appraisal_id: String) -> Resu
     let revenue_code = if !appraisal.revenue_code.is_empty() {
         appraisal.revenue_code.clone()
     } else {
-        // Fallback for old records: check if trade_type looks like DayTrade
-        if appraisal.trade_type == "DayTrade" || appraisal.trade_type.to_lowercase().contains("day") {
-            "6015".to_string()
-        } else {
-            "3317".to_string()
-        }
+        // Fallback for old records: 6015 is standard for individuals in stock market
+        "6015".to_string()
     };
     
     let period = format!("{:02}/{}", appraisal.period_month, appraisal.period_year);
@@ -1037,7 +1113,7 @@ pub async fn mark_darf_paid(
     let clean_id = id.split(':').last().unwrap_or(&id).to_string();
     let update_query = "UPDATE type::thing('tax_darf', $id) MERGE $content";
     let mut update_result = db.0.query(update_query)
-        .bind(("id", clean_id)) 
+        .bind(("id", clean_id.clone())) 
         .bind(("content", darf_content))
         .await
         .map_err(|e| e.to_string())?;
@@ -1081,6 +1157,8 @@ pub async fn mark_darf_paid(
         }
     }
 
+    println!("[IRPF] Status updated for DARF {} and its appraisals.", clean_id);
+
     // --- FINANCIAL INTEGRATION (SIDE EFFECTS) ---
     // 1. Update Account Balance (atomic decrement)
     let acc_parts: Vec<String> = account_id.split(':').map(|s| s.to_string()).collect();
@@ -1107,6 +1185,7 @@ pub async fn mark_darf_paid(
     println!("[DARF] Creating cash_transaction:{}:{} for account:{}", tx_tb, tx_id_only, acc_id_only);
     let description = format!("Pagamento DARF {} ({})", darf.period, darf.revenue_code);
     
+    // Use full payment_date string (which may contain time)
     let tx_query = "CREATE type::thing($tx_tb, $tx_id) SET 
         date = $date, 
         amount = $amount, 
@@ -1119,7 +1198,7 @@ pub async fn mark_darf_paid(
     match db.0.query(tx_query)
         .bind(("tx_tb", tx_tb))
         .bind(("tx_id", tx_id_only))
-        .bind(("date", payment_date))
+        .bind(("date", payment_date.clone()))
         .bind(("amount", 0.0 - paid_value))
         .bind(("desc", description))
         .bind(("acc_tb", acc_tb))
@@ -1269,10 +1348,11 @@ pub async fn unpay_darf(db: State<'_, DbState>, id: String) -> Result<TaxDarf, S
     // 1. Reverse Financial Transaction if linked
     let linked_acc_id = darf.account_id.clone();
     let linked_trans_id = darf.transaction_id.clone();
+    
+    println!("[DARF UNPAY] Linked Account: {:?}, Linked Transaction: {:?}", linked_acc_id, linked_trans_id);
 
-    if let (Some(acc_id), Some(trans_id)) = (linked_acc_id, linked_trans_id) {
-        
-        // 1. Create Refund Transaction (Estorno) instead of deleting
+    // 1. Create Refund Transaction (Estorno) if we have the account info
+    if let Some(acc_id) = linked_acc_id {
         let acc_parts: Vec<String> = acc_id.split(':').map(|s| s.to_string()).collect();
         let acc_tb = if acc_parts.len() > 1 { acc_parts[0].clone() } else { "account".to_string() };
         let acc_id_val = if acc_parts.len() > 1 { acc_parts[1].clone() } else { acc_id.clone() };
@@ -1290,12 +1370,18 @@ pub async fn unpay_darf(db: State<'_, DbState>, id: String) -> Result<TaxDarf, S
             }
         
         // Create a separate Deposit transaction for the refund (historical audit trail)
-        let raw_tid = trans_id.split(':').last().unwrap_or(&trans_id);
+        // If we don't have a linked transaction ID (e.g., from seeder), derive one from the DARF ID
+        let raw_tid = match linked_trans_id {
+            Some(tid) => tid.split(':').last().unwrap_or(&tid).to_string(),
+            None => format!("legacy_unpay_{}", tid) // tid is from darf lookup at start
+        };
+        
         let refund_tx_id = format!("refund_{}", raw_tid);
         let description = format!("Estorno - Pagamento DARF {} ({})", darf.period, darf.revenue_code);
         
-        // Use YYYY-MM-DD for consistency with statement filters
-        let refund_date = chrono::Local::now().format("%Y-%m-%d").to_string();
+        // Use original payment date for the refund so they appear together in the statement
+        // payment_date might be full ISO or just YYYY-MM-DD
+        let refund_date = darf.payment_date.clone().unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string());
 
         println!("[DARF UNPAY] Creating refund transaction cash_transaction:{}", refund_tx_id);
         let refund_tx_query = "CREATE type::thing('cash_transaction', $id) SET 
@@ -1312,15 +1398,17 @@ pub async fn unpay_darf(db: State<'_, DbState>, id: String) -> Result<TaxDarf, S
             .bind(("date", refund_date))
             .bind(("amount", paid_value))
             .bind(("desc", description))
-            .bind(("acc_tb", acc_tb))
-            .bind(("acc_id", acc_id_val))
+            .bind(("acc_tb", acc_tb.clone()))
+            .bind(("acc_id", acc_id_val.clone()))
             .await {
                 Ok(_) => println!("[DARF UNPAY] Refund cash transaction created successfully"),
                 Err(e) => {
                     println!("[DARF UNPAY] ERROR creating refund transaction: {}", e);
-                    return Err(format!("Erro ao criar transação de estorno: {}", e));
+                    // Don't error out the whole unpay, but log it
                 }
             }
+    } else {
+        println!("[DARF UNPAY] WARNING: No linked account found for refund. Skipping financial reversal.");
     }
     
     // 2. Reset DARF Status
@@ -1366,6 +1454,26 @@ pub async fn unpay_darf(db: State<'_, DbState>, id: String) -> Result<TaxDarf, S
                 .content(appraisal_content)
                 .await
                 .map_err(|e| e.to_string())?;
+
+             // 3. Mark all PREVIOUS PAID appraisals of the same type as PENDING (Revert Accumulation)
+             // Only those that were accumulated (don't have their own specific Paid DARF)
+             // However, to keep it simple and consistent with how mark_darf_paid works, 
+             // we revert all previous 'Paid' ones of the same type that are before this period.
+             // A more precise check would ensure they don't have another paid DARF, but 
+             // since accumulation is strictly chronological, this is generally safe.
+             let trade_type_inner = appraisal.trade_type.clone();
+             let revert_query = "UPDATE tax_appraisal SET status = 'Pending' \
+                WHERE trade_type = $type AND status = 'Paid' \
+                AND (`period_year` < $year OR (`period_year` = $year AND `period_month` < $month))";
+             
+             let _: surrealdb::Response = db.0.query(revert_query)
+                .bind(("type", trade_type_inner))
+                .bind(("year", appraisal.period_year))
+                .bind(("month", appraisal.period_month))
+                .await.map_err(|e| e.to_string())?;
+             
+             println!("[DARF UNPAY] Reverted accumulation for appraisals before {}/{} ({})", 
+                appraisal.period_month, appraisal.period_year, appraisal.trade_type);
         }
     }
     

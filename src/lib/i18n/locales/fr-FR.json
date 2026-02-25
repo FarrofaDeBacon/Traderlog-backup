@@ -44,6 +44,8 @@
         "show": "Afficher",
         "optional": "Optionnel",
         "close": "Fermer",
+        "yes": "Oui",
+        "no": "Non",
         "time": {
             "month": "mois",
             "months": "mois",

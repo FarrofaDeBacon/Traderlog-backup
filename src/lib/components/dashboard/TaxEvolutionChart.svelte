@@ -35,11 +35,28 @@
 
     function initChart() {
         if (!chartContainer) return;
-        chartInstance = echarts.init(chartContainer); // Removed "dark" explicitly to rely on option styling
+        chartInstance = echarts.init(chartContainer);
         updateChart();
+        // Force a resize after a short delay because some containers in Svelte 5
+        // might not have full height during onMount/init
+        setTimeout(() => {
+            chartInstance?.resize();
+        }, 100);
     }
 
     function updateChart() {
+        if (data.length > 0) {
+            const hasData = data.some((d) => d.taxDue > 0 || d.taxPaid > 0);
+            console.log(
+                `[TAX_CHART] Updating with ${data.length} items. Has positive values: ${hasData}`,
+            );
+            if (hasData) {
+                console.table(
+                    data.filter((d) => d.taxDue > 0 || d.taxPaid > 0),
+                );
+            }
+        }
+
         const option = {
             backgroundColor: "transparent",
             tooltip: {
@@ -108,7 +125,9 @@
                 },
             ],
         };
-        chartInstance.setOption(option);
+        if (chartInstance) {
+            chartInstance.setOption(option, true);
+        }
     }
 </script>
 
