@@ -55,6 +55,53 @@ class IrpfStore {
     losses = $state<TaxLoss[]>([]);
     darfs = $state<TaxDarf[]>([]);
     loading = $state(false);
+    selectedYear = $state(new Date().getFullYear());
+
+    // Computed KPIs for the selected year
+    totalDue = $derived(
+        this.appraisals
+            .filter((a) => a.period_year === this.selectedYear)
+            .reduce((acc, a) => acc + a.total_payable, 0),
+    );
+
+    totalPaid = $derived(
+        this.darfs
+            .filter((d) => {
+                const parts = d.period.split("/");
+                const y = parts.length > 1 ? parseInt(parts[1]) : 0;
+                return y === this.selectedYear && d.status === "Paid";
+            })
+            .reduce((acc, d) => acc + d.total_value, 0),
+    );
+
+    pendingGuiasCount = $derived(this.darfs.filter((d) => d.status === "Pending").length);
+
+    pendingAmount = $derived(
+        this.darfs
+            .filter((d) => d.status === "Pending")
+            .reduce((acc, d) => acc + d.total_value, 0) +
+        this.appraisals
+            .filter(
+                (a) =>
+                    a.status === "Pending" &&
+                    a.period_year === this.selectedYear &&
+                    !this.darfs.some(
+                        (d) => this.getId(d.appraisal_id) === this.getId(a.id),
+                    ),
+            )
+            .reduce((acc, a) => acc + a.total_payable, 0),
+    );
+
+    async loadAllData(year?: number) {
+        const y = year || this.selectedYear;
+        if (year) this.selectedYear = year;
+
+        await Promise.all([
+            this.loadAppraisals(y),
+            this.loadDarfs(y),
+            this.loadAccumulatedLosses()
+        ]);
+    }
 
     async loadAppraisals(year: number) {
         this.loading = true;
@@ -69,9 +116,12 @@ class IrpfStore {
     }
 
     async calculateMonthlyTax(month: number, year: number) {
+        console.log(`[IRPF_STORE] calculateMonthlyTax called for month=${month}, year=${year}`);
         this.loading = true;
         try {
+            console.log(`[IRPF_STORE] Invoking calculate_monthly_tax...`);
             const results = await invoke<TaxAppraisal[]>("calculate_monthly_tax", { month, year });
+            console.log(`[IRPF_STORE] Received results:`, results);
             if (results.length === 0) {
                 toast.info("Nenhuma operação encontrada para este período.");
             } else {
@@ -215,6 +265,15 @@ class IrpfStore {
             return await invoke<TaxDarf | null>("get_darf_by_transaction", { transactionId });
         } catch (error) {
             console.error("Failed to fetch DARF by transaction:", error);
+            return null;
+        }
+    }
+
+    async getDarfById(id: string): Promise<TaxDarf | null> {
+        try {
+            return await invoke<TaxDarf | null>("get_darf_by_id", { id });
+        } catch (error) {
+            console.error("Failed to fetch DARF by ID:", error);
             return null;
         }
     }

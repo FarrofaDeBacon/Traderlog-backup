@@ -5,8 +5,11 @@ import type { Trade, Account, Currency, UserProfile } from "$lib/types";
 
 class TradesStore {
     trades = $state<Trade[]>([]);
+    isLoading = $state<boolean>(false);
 
     async loadTrades() {
+        if (this.isLoading) return;
+        this.isLoading = true;
         try {
             console.log("[TradesStore] Calling get_trades...");
             const trades = await invoke("get_trades") as Trade[];
@@ -16,6 +19,8 @@ class TradesStore {
             this.trades = trades || [];
         } catch (e) {
             console.error("[TradesStore] Error loading trades:", e);
+        } finally {
+            this.isLoading = false;
         }
     }
 
@@ -66,15 +71,50 @@ class TradesStore {
 
     getDailyResultByAccount(date: string, accounts: Account[]) {
         const normalizedTargetDate = getLocalDatePart(date);
+        console.log(`[TradesStore] getDailyResultByAccount for date: ${date} (normalized: ${normalizedTargetDate})`);
+
+        // Helper to normalize IDs for comparison (extracts clean ID from 'table:id' or '{String: "id"}' or {String: "id"})
+        const normalizeId = (id: any) => {
+            if (!id) return "";
+
+            // Handle if it's already an object (Tauri/Serde can return this)
+            if (typeof id === 'object') {
+                if (id.String) return normalizeId(id.String);
+                if (id.id) return normalizeId(id.id);
+            }
+
+            let str = id.toString();
+            // Handle Rust/SurrealDB stringified object-like representations if they leak
+            if (str.includes("String:")) {
+                str = str.split("String:").pop() || str;
+            }
+            // Remove brackets, quotes and whitespace
+            str = str.replace(/[{}\"\'\s]/g, "");
+            // Take the last part of a prefixed ID
+            return str.split(":").pop();
+        };
+
         return accounts.map(acc => {
+            const accCleanId = normalizeId(acc.id);
             const accountTrades = this.trades.filter(t => {
                 const isClosed = t.exit_price !== null && t.exit_price !== undefined;
                 if (!isClosed) return false;
 
                 const dateToUse = getLocalDatePart(t.exit_date || t.date);
-                return t.account_id === acc.id && dateToUse === normalizedTargetDate;
+
+                const tAccId = normalizeId(t.account_id);
+                console.log(`[TradesStore] Filtering Trade ${t.id}: AccID(${t.account_id}) -> ${tAccId} vs Account(${acc.nickname}) -> ${accCleanId}. Date: ${dateToUse} vs ${normalizedTargetDate}`);
+
+                const match = tAccId === accCleanId && dateToUse === normalizedTargetDate;
+
+                if (match) {
+                    console.log(`[TradesStore] MATCH FOUND! Trade ${t.id} for account ${acc.nickname}`);
+                }
+
+                return match;
             });
             const totalResult = accountTrades.reduce((sum, t) => sum + (Number(t.result) || 0), 0);
+            console.log(`[TradesStore] Account ${acc.nickname} result: ${totalResult} (${accountTrades.length} trades)`);
             return {
                 account_id: acc.id,
                 account_name: acc.nickname,
@@ -215,6 +255,11 @@ class TradesStore {
         };
     }
 
+    constructor() {
+        if (typeof window !== "undefined") {
+            this.loadTrades();
+        }
+    }
 }
 
 export const tradesStore = new TradesStore();

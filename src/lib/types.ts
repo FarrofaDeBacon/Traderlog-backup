@@ -34,6 +34,9 @@ export type TaxRule = {
     exemption_threshold: number; // 0 for none, 20000 for Stocks
     basis: string; // "NetProfit" | "GrossProfit"
     cumulative_losses: boolean; // Can offset past losses? (True for most)
+    trade_type: string; // "DayTrade" | "SwingTrade"
+    withholding_basis: string; // "Profit" | "SalesVolume"
+    revenue_code: string; // e.g., "6015", "3317"
 };
 
 export type TaxProfile = {
@@ -272,6 +275,32 @@ export type FeeProfile = {
     notes: string;
 };
 
+export type TaxAppraisal = {
+    id: string;
+    name: string;
+    broker: string;
+    tax_rate: number;
+    tax_due: number;
+    withheld_tax: number;
+    withholding_credit_used: number;
+    withholding_credit_remaining: number;
+    tax_payable: number;
+    tax_accumulated: number;
+    total_payable: number;
+    is_exempt: boolean;
+    calculation_date: string;
+    status: "Pending" | "Paid" | "Ok";
+    trade_ids: string[];
+};
+
+export type TaxLoss = {
+    id?: string;
+    trade_type: string;
+    amount: number;
+    origin_date: string;
+    balance: number;
+};
+
 export type GrowthPhase = {
     id: string;
     name: string;
@@ -301,6 +330,15 @@ export type RiskProfile = {
     growth_plan_enabled: boolean;
     current_phase_index: number;
     growth_phases: GrowthPhase[];
+    psychological_coupling_enabled: boolean;
+    outlier_regression_enabled: boolean;
+    sniper_mode_enabled: boolean;
+    sniper_mode_selectivity: number;
+    psychological_lookback_count: number;
+    outlier_lookback_count: number;
+    psychological_threshold: number;
+    lot_reduction_multiplier: number;
+    psychological_search_strategy: 'Strict' | 'Sequence';
 };
 
 

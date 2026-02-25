@@ -175,126 +175,107 @@ class SettingsStore {
         };
 
         try {
-            // User Profile
-            const profile = await safeInvoke<UserProfile>("get_user_profile", "User Profile");
-            console.log("[SettingsStore] Received profile from backend:", profile);
+            // Parallel fetch all independent data
+            const [
+                profile,
+                hwid,
+                apiConfigsRes,
+                accountsRes,
+                currenciesRes,
+                marketsRes,
+                assetTypesRes,
+                assetsRes,
+                emotionalStatesRes,
+                strategiesRes,
+                transactionsRes,
+                journalEntriesRes,
+                feesRes,
+                riskProfilesRes,
+                modalitiesRes,
+                tagsRes,
+                indicatorsRes,
+                timeframesRes,
+                chartTypesRes,
+                taxRulesRes,
+                taxMappingsRes,
+                taxProfilesRes,
+                taxProfileEntriesRes
+            ] = await Promise.all([
+                safeInvoke<UserProfile>("get_user_profile", "User Profile"),
+                safeInvoke<string>("get_machine_id_cmd", "Hardware ID"),
+                safeInvoke<ApiConfig[]>("get_api_configs", "API Configs"),
+                safeInvoke<Account[]>("get_accounts", "Accounts"),
+                safeInvoke<Currency[]>("get_currencies", "Currencies"),
+                safeInvoke<Market[]>("get_markets", "Markets"),
+                safeInvoke<AssetType[]>("get_asset_types", "Asset Types"),
+                safeInvoke<Asset[]>("get_assets", "Assets"),
+                safeInvoke<EmotionalState[]>("get_emotional_states", "Emotional States"),
+                safeInvoke<Strategy[]>("get_strategies", "Strategies"),
+                safeInvoke<CashTransaction[]>("get_cash_transactions", "Cash Transactions"),
+                safeInvoke<JournalEntry[]>("get_journal_entries", "Journal Entries"),
+                safeInvoke<FeeProfile[]>("get_fees", "Fees"),
+                safeInvoke<RiskProfile[]>("get_risk_profiles", "Risk Profiles"),
+                safeInvoke<Modality[]>("get_modalities", "Modalities"),
+                safeInvoke<Tag[]>("get_tags", "Tags"),
+                safeInvoke<Indicator[]>("get_indicators", "Indicators"),
+                safeInvoke<Timeframe[]>("get_timeframes", "Timeframes"),
+                safeInvoke<ChartType[]>("get_chart_types", "Chart Types"),
+                safeInvoke<TaxRule[]>("get_tax_rules", "Tax Rules"),
+                safeInvoke<TaxMapping[]>("get_tax_mappings", "Tax Mappings"),
+                safeInvoke<TaxProfile[]>("get_tax_profiles", "Tax Profiles"),
+                safeInvoke<TaxProfileEntry[]>("get_tax_profile_entries", "Tax Profile Entries")
+            ]);
+
+            // Process results
             if (profile) {
                 this.userProfile = { ...this.userProfile, ...profile };
-                console.log("[SettingsStore] userProfile updated to:", $state.snapshot(this.userProfile));
-
-                // Initialize trial if first run
                 if (!this.userProfile.trial_start_date && this.userProfile.onboarding_completed) {
                     this.userProfile.trial_start_date = new Date().toISOString();
                     this.saveUserProfile();
                 }
             }
-
-            // Hardware ID
-            const hwid = await safeInvoke<string>("get_machine_id_cmd", "Hardware ID");
             if (hwid) this.hardwareId = hwid;
+            if (apiConfigsRes) this.apiConfigs = apiConfigsRes;
+            if (accountsRes) this.accounts = accountsRes;
+            if (currenciesRes) this.currencies = currenciesRes;
+            if (marketsRes) this.markets = marketsRes;
+            if (assetTypesRes) this.assetTypes = assetTypesRes;
+            if (assetsRes) this.assets = assetsRes;
+            if (emotionalStatesRes) this.emotionalStates = emotionalStatesRes;
+            if (strategiesRes) this.strategies = strategiesRes;
+            if (transactionsRes) this.cashTransactions = transactionsRes;
+            if (journalEntriesRes) this.journalEntries = journalEntriesRes;
+            if (feesRes) this.fees = feesRes;
+            if (riskProfilesRes) this.riskProfiles = riskProfilesRes;
+            if (modalitiesRes) this.modalities = modalitiesRes;
+            if (tagsRes) this.tags = tagsRes;
+            if (indicatorsRes) this.indicators = indicatorsRes;
+            if (timeframesRes) this.timeframes = timeframesRes;
+            if (chartTypesRes) this.chartTypes = chartTypesRes;
 
-            // API Configs
-            const apiConfigs = await safeInvoke<ApiConfig[]>("get_api_configs", "API Configs");
-            if (apiConfigs && apiConfigs.length > 0) this.apiConfigs = apiConfigs;
-
-            // Accounts
-            const accounts = await safeInvoke<Account[]>("get_accounts", "Accounts");
-            if (accounts && accounts.length > 0) this.accounts = accounts;
-
-            // Currencies
-            const currencies = await safeInvoke<Currency[]>("get_currencies", "Currencies");
-            if (currencies && currencies.length > 0) this.currencies = currencies;
-
-            // Markets
-            const markets = await safeInvoke<Market[]>("get_markets", "Markets");
-            if (markets && markets.length > 0) this.markets = markets;
-
-            // Asset Types
-            const assetTypes = await safeInvoke<AssetType[]>("get_asset_types", "Asset Types");
-            if (assetTypes && assetTypes.length > 0) this.assetTypes = assetTypes;
-
-            // Assets
-            const assets = await safeInvoke<Asset[]>("get_assets", "Assets");
-            if (assets && assets.length > 0) this.assets = assets;
-
-            // Emotional States
-            const emotionalStates = await safeInvoke<EmotionalState[]>("get_emotional_states", "Emotional States");
-            if (emotionalStates && emotionalStates.length > 0) this.emotionalStates = emotionalStates;
-
-            // Strategies
-            const strategies = await safeInvoke<Strategy[]>("get_strategies", "Strategies");
-            if (strategies && strategies.length > 0) this.strategies = strategies;
-
-            // Trades loading is now handled by TradesStore
-
-
-            // Cash Transactions
-            const transactions = await safeInvoke<CashTransaction[]>("get_cash_transactions", "Cash Transactions");
-            if (transactions && transactions.length > 0) this.cashTransactions = transactions;
-
-            // Journal Entries
-            const journalEntries = await safeInvoke<JournalEntry[]>("get_journal_entries", "Journal Entries");
-            if (journalEntries && journalEntries.length > 0) this.journalEntries = journalEntries;
-
-            // Fees
-            const fees = await safeInvoke<FeeProfile[]>("get_fees", "Fees");
-            if (fees && fees.length > 0) this.fees = fees;
-
-            // Risk Profiles
-            const riskProfiles = await safeInvoke<RiskProfile[]>("get_risk_profiles", "Risk Profiles");
-            if (riskProfiles && riskProfiles.length > 0) this.riskProfiles = riskProfiles;
-
-            // Modalities
-            const modalities = await safeInvoke<Modality[]>("get_modalities", "Modalities");
-            if (modalities && modalities.length > 0) this.modalities = modalities;
-
-            // Tags
-            const tags = await safeInvoke<Tag[]>("get_tags", "Tags");
-            if (tags && tags.length > 0) this.tags = tags;
-
-            // Indicators
-            const indicators = await safeInvoke<Indicator[]>("get_indicators", "Indicators");
-            if (indicators && indicators.length > 0) this.indicators = indicators;
-
-            // Timeframes
-            const timeframes = await safeInvoke<Timeframe[]>("get_timeframes", "Timeframes");
-            if (timeframes && timeframes.length > 0) this.timeframes = timeframes;
-
-            // Chart Types
-            const chartTypes = await safeInvoke<ChartType[]>("get_chart_types", "Chart Types");
-            if (chartTypes && chartTypes.length > 0) this.chartTypes = chartTypes;
-
-            // Tax Rules
-            const taxRules = await safeInvoke<TaxRule[]>("get_tax_rules", "Tax Rules");
-            if (taxRules && taxRules.length > 0) {
-                const validRules = taxRules.filter(r => r.name && r.name.trim() !== "");
-                const ghostRules = taxRules.filter(r => !r.name || r.name.trim() === "");
+            if (taxRulesRes) {
+                const validRules = taxRulesRes.filter(r => r.name && r.name.trim() !== "");
+                const ghostRules = taxRulesRes.filter(r => !r.name || r.name.trim() === "");
                 for (const ghost of ghostRules) {
                     await invoke("delete_tax_rule", { id: ghost.id }).catch(e => console.error(e));
                 }
                 this.taxRules = validRules;
             }
 
-            // Tax Mappings
-            const taxMappings = await safeInvoke<TaxMapping[]>("get_tax_mappings", "Tax Mappings");
-            if (taxMappings && taxMappings.length > 0) this.taxMappings = taxMappings;
+            if (taxMappingsRes) this.taxMappings = taxMappingsRes;
 
-            // Tax Profiles
-            const taxProfiles = await safeInvoke<TaxProfile[]>("get_tax_profiles", "Tax Profiles");
-            if (taxProfiles && taxProfiles.length > 0) {
-                const validProfiles = taxProfiles.filter(p => p.name && p.name.trim() !== "");
-                const ghostProfiles = taxProfiles.filter(p => !p.name || p.name.trim() === "");
+            if (taxProfilesRes) {
+                const validProfiles = taxProfilesRes.filter(p => p.name && p.name.trim() !== "");
+                const ghostProfiles = taxProfilesRes.filter(p => !p.name || p.name.trim() === "");
                 for (const ghost of ghostProfiles) {
                     await invoke("delete_tax_profile", { id: ghost.id }).catch(e => console.error(e));
                 }
                 this.taxProfiles = validProfiles;
             }
 
-            // Tax Profile Entries
-            const taxProfileEntries = await safeInvoke<TaxProfileEntry[]>("get_tax_profile_entries", "Tax Profile Entries"); // Fetch all
-            if (taxProfileEntries && taxProfileEntries.length > 0) {
-                const validEntries = taxProfileEntries.filter(e => e.tax_profile_id && e.tax_rule_id && e.modality_id);
-                const ghostEntries = taxProfileEntries.filter(e => !e.tax_profile_id || !e.tax_rule_id || !e.modality_id);
+            if (taxProfileEntriesRes) {
+                const validEntries = taxProfileEntriesRes.filter(e => e.tax_profile_id && e.tax_rule_id && e.modality_id);
+                const ghostEntries = taxProfileEntriesRes.filter(e => !e.tax_profile_id || !e.tax_rule_id || !e.modality_id);
                 for (const ghost of ghostEntries) {
                     await invoke("delete_tax_profile_entry", { id: ghost.id }).catch(e => console.error(e));
                 }
@@ -927,9 +908,9 @@ class SettingsStore {
     }
 
     // Cash Transactions
-    async addCashTransaction(item: Omit<CashTransaction, "id">) {
+    async addCashTransaction(item: Omit<CashTransaction, "id"> & { id?: string }) {
         try {
-            const id = crypto.randomUUID();
+            const id = item.id || crypto.randomUUID();
             const transaction = { ...item, id };
             await invoke("save_cash_transaction", { transaction: $state.snapshot(transaction) });
             this.cashTransactions.push(transaction);
@@ -1129,12 +1110,26 @@ class SettingsStore {
     // Journaling
     async addJournalEntry(item: Omit<JournalEntry, "id">) {
         const id = crypto.randomUUID();
-        const entry = { ...item, id };
+        const entry = {
+            id,
+            date: item.date,
+            content: item.content,
+            emotional_state_id: item.emotional_state_id || null,
+            intensity: item.intensity ?? 5,
+            followed_plan: item.followed_plan ?? false,
+            risk_accepted: item.risk_accepted ?? false,
+            market_context: item.market_context ?? "",
+            daily_score: item.daily_score ?? 5
+        };
+
         this.journalEntries.push(entry);
         try {
             await invoke("save_journal_entry", { entry: $state.snapshot(entry) });
         } catch (e) {
             console.error("[SettingsStore] Error saving journal entry:", e);
+            // Rollback local change on error
+            this.journalEntries = this.journalEntries.filter(j => j.id !== id);
+            throw e;
         }
     }
 
@@ -1147,14 +1142,18 @@ class SettingsStore {
         }
     }
 
-    updateJournalEntry(id: string, item: Partial<JournalEntry>) {
+    async updateJournalEntry(id: string, item: Partial<JournalEntry>) {
+        const originalEntries = [...this.journalEntries];
         this.journalEntries = this.journalEntries.map(j => j.id === id ? { ...j, ...item } : j);
         const entry = this.journalEntries.find(j => j.id === id);
         if (entry) {
             try {
-                invoke("save_journal_entry", { entry: $state.snapshot(entry) });
+                await invoke("save_journal_entry", { entry: $state.snapshot(entry) });
             } catch (e) {
                 console.error("[SettingsStore] Error updating journal entry:", e);
+                // Rollback local change on error
+                this.journalEntries = originalEntries;
+                throw e;
             }
         }
     }
