@@ -13,6 +13,7 @@
     import * as Select from "$lib/components/ui/select";
     import { Textarea } from "$lib/components/ui/textarea";
     import Slider from "$lib/components/ui/slider/slider.svelte";
+    import { getLocalDatePart } from "$lib/utils";
 
     let { open = $bindable(false) } = $props();
 
@@ -74,7 +75,7 @@
         // Logic: Find trades for the selected date across accounts
         // and pick the most frequent entry/exit emotional state.
         const dayTrades = tradesStore.trades.filter(
-            (t) => t.date === selectedDate,
+            (t) => getLocalDatePart(t.date) === selectedDate,
         );
         if (dayTrades.length === 0) return;
 
@@ -96,58 +97,99 @@
 
     async function confirmClosure() {
         processing = true;
-        // Simulate API delay
-        await new Promise((r) => setTimeout(r, 1000));
+        try {
+            console.log(
+                "[DailyClosureWizard] Starting closure process for date:",
+                selectedDate,
+            );
+            // Simulate API delay
+            await new Promise((r) => setTimeout(r, 1000));
 
-        const accountsToProcess = previewData.filter((d) =>
-            selectedAccounts.includes(d.account_id),
-        );
+            const accountsToProcess = previewData.filter((d) =>
+                selectedAccounts.includes(d.account_id),
+            );
 
-        for (const data of accountsToProcess) {
-            if (data.result !== 0) {
-                // Find trades for this account and date to link them
-                const linkedTrades = tradesStore.trades
-                    .filter(
-                        (t) =>
-                            t.account_id === data.account_id &&
-                            t.date === selectedDate,
-                    )
-                    .map((t) => t.id);
+            console.log(
+                `[DailyClosureWizard] Processing ${accountsToProcess.length} accounts`,
+            );
 
-                await settingsStore.addCashTransaction({
-                    date: selectedDate,
-                    amount: data.result,
-                    type: data.result >= 0 ? "Deposit" : "Withdraw",
-                    description: `${$t("finance.dailyClosure")} (${data.trades_count} trades)`,
-                    account_id: data.account_id,
-                    trade_ids: linkedTrades,
-                });
+            for (const data of accountsToProcess) {
+                if (data.result !== 0) {
+                    // Find trades for this account and date to link them
+                    // Using normalized date comparison for robustness
+                    const linkedTrades = tradesStore.trades
+                        .filter(
+                            (t) =>
+                                t.account_id === data.account_id &&
+                                getLocalDatePart(t.date) === selectedDate,
+                        )
+                        .map((t) => t.id);
+
+                    console.log(
+                        `[DailyClosureWizard] Saving transaction for ${data.account_name}: ${data.result}. Linked trades: ${linkedTrades.length}`,
+                    );
+
+                    const txResult = await settingsStore.addCashTransaction({
+                        id: `daily_closure_${data.account_id.replace(/:/g, "_")}_${selectedDate.replace(/-/g, "_")}`,
+                        date: selectedDate,
+                        amount: data.result,
+                        type: data.result >= 0 ? "Deposit" : "Withdraw",
+                        description: `${$t("finance.dailyClosure")} (${data.trades_count} trades)`,
+                        account_id: data.account_id,
+                        trade_ids: linkedTrades,
+                        category: "Trading",
+                        system_linked: true,
+                    });
+
+                    if (txResult && !txResult.success) {
+                        throw new Error(
+                            `Failed to save transaction for ${data.account_name}: ${txResult.error}`,
+                        );
+                    }
+                }
             }
-        }
 
-        // Save Journal Entry
-        if (emotionalStateId || journalNotes) {
-            // Check existence again to decide update vs add
-            const existingEntry =
-                settingsStore.getJournalEntryByDate(selectedDate);
-            if (existingEntry) {
-                await settingsStore.updateJournalEntry(existingEntry.id, {
-                    content: journalNotes,
-                    emotional_state_id: emotionalStateId || null,
-                    intensity: emotionalIntensity,
-                });
-            } else {
-                await settingsStore.addJournalEntry({
-                    date: selectedDate,
-                    content: journalNotes,
-                    emotional_state_id: emotionalStateId || null,
-                    intensity: emotionalIntensity,
-                });
+            // Save Journal Entry
+            console.log(
+                "[DailyClosureWizard] Transactions saved. Saving journal entry...",
+            );
+            if (emotionalStateId || journalNotes) {
+                // Check existence again to decide update vs add
+                const existingEntry =
+                    settingsStore.getJournalEntryByDate(selectedDate);
+                if (existingEntry) {
+                    console.log(
+                        "[DailyClosureWizard] Updating existing journal entry:",
+                        existingEntry.id,
+                    );
+                    await settingsStore.updateJournalEntry(existingEntry.id, {
+                        content: journalNotes,
+                        emotional_state_id: emotionalStateId || null,
+                        intensity: emotionalIntensity,
+                    });
+                } else {
+                    console.log(
+                        "[DailyClosureWizard] Creating new journal entry",
+                    );
+                    await settingsStore.addJournalEntry({
+                        date: selectedDate,
+                        content: journalNotes,
+                        emotional_state_id: emotionalStateId || null,
+                        intensity: emotionalIntensity,
+                    });
+                }
             }
-        }
 
-        processing = false;
-        step = 4;
+            toast.success($t("finance.closure.wizard.success"));
+            step = 4;
+        } catch (e: any) {
+            console.error("[DailyClosureWizard] Closure Error:", e);
+            toast.error(
+                `${$t("finance.closure.wizard.error")}: ${e.message || e}`,
+            );
+        } finally {
+            processing = false;
+        }
     }
 
     function close() {

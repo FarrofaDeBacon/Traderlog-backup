@@ -146,6 +146,11 @@
                 dayGroups[dateKey].push(tx);
             });
 
+        // 1.5 Sort transactions within each day by ID descending (proxy for latest first)
+        Object.values(dayGroups).forEach((group) => {
+            group.sort((a, b) => b.id.localeCompare(a.id));
+        });
+
         // 2. Aggregate into Months
         const months: Record<
             string,
@@ -739,22 +744,6 @@
                                                                         onclick={() =>
                                                                             openDetails(
                                                                                 tx,
-                                                                            )}
-                                                                    >
-                                                                        <Eye
-                                                                            class="h-3.5 w-3.5"
-                                                                        />
-                                                                    </Button>
-                                                                {:else if tx.description
-                                                                    .toLowerCase()
-                                                                    .includes("darf")}
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        class="h-7 w-7 text-amber-500/70 hover:text-amber-500 hover:bg-amber-500/10"
-                                                                        onclick={() =>
-                                                                            openDarfDetails(
-                                                                                tx.id,
                                                                             )}
                                                                     >
                                                                         <Eye

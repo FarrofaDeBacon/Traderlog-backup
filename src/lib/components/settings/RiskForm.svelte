@@ -12,9 +12,12 @@
         TrendingUp,
         Plus,
         Trash2,
+        Zap,
+        Brain,
+        Target as TargetIcon,
     } from "lucide-svelte";
     import { t } from "svelte-i18n";
-    import type { RiskProfile, GrowthPhase } from "$lib/stores/settings.svelte";
+    import type { RiskProfile, GrowthPhase } from "$lib/types";
     import * as Tabs from "$lib/components/ui/tabs";
     import * as Card from "$lib/components/ui/card";
 
@@ -73,6 +76,19 @@
         growth_plan_enabled: initialData?.growth_plan_enabled ?? false,
         current_phase_index: initialData?.current_phase_index ?? 0,
         growth_phases: initialData?.growth_phases ?? [],
+        psychological_coupling_enabled:
+            initialData?.psychological_coupling_enabled ?? false,
+        outlier_regression_enabled:
+            initialData?.outlier_regression_enabled ?? false,
+        sniper_mode_enabled: initialData?.sniper_mode_enabled ?? false,
+        sniper_mode_selectivity: initialData?.sniper_mode_selectivity ?? 3,
+        psychological_lookback_count:
+            initialData?.psychological_lookback_count ?? 10,
+        outlier_lookback_count: initialData?.outlier_lookback_count ?? 20,
+        psychological_threshold: initialData?.psychological_threshold ?? -2,
+        lot_reduction_multiplier: initialData?.lot_reduction_multiplier ?? 0.5,
+        psychological_search_strategy:
+            initialData?.psychological_search_strategy ?? "Strict",
     });
 
     function applyPreset(key: string) {
@@ -115,6 +131,23 @@
                 growth_phases: initialData.growth_phases
                     ? [...initialData.growth_phases]
                     : [],
+                psychological_coupling_enabled:
+                    initialData.psychological_coupling_enabled ?? false,
+                outlier_regression_enabled:
+                    initialData.outlier_regression_enabled ?? false,
+                sniper_mode_enabled: initialData.sniper_mode_enabled ?? false,
+                sniper_mode_selectivity:
+                    initialData.sniper_mode_selectivity ?? 3,
+                psychological_lookback_count:
+                    initialData.psychological_lookback_count ?? 10,
+                outlier_lookback_count:
+                    initialData.outlier_lookback_count ?? 20,
+                psychological_threshold:
+                    initialData.psychological_threshold ?? -2,
+                lot_reduction_multiplier:
+                    initialData.lot_reduction_multiplier ?? 0.5,
+                psychological_search_strategy:
+                    initialData.psychological_search_strategy ?? "Strict",
             };
             selectedPreset = "custom";
         }
@@ -286,8 +319,9 @@
     </div>
 
     <Tabs.Root value="general" class="w-full">
-        <Tabs.List class="grid w-full grid-cols-2">
+        <Tabs.List class="grid w-full grid-cols-3">
             <Tabs.Trigger value="general">Geral</Tabs.Trigger>
+            <Tabs.Trigger value="risk-engine">Motor de Risco</Tabs.Trigger>
             <Tabs.Trigger value="growth">Plano de Crescimento</Tabs.Trigger>
         </Tabs.List>
 
@@ -404,6 +438,201 @@
                         <AlertTriangle class="w-3 h-3" />
                         {$t("settings.risk.lockWarning")}
                     </p>
+                {/if}
+            </div>
+        </Tabs.Content>
+
+        <Tabs.Content value="risk-engine" class="space-y-4 pt-4">
+            <!-- Psychological Coupling -->
+            <div
+                class="space-y-4 p-4 rounded-lg border border-purple-500/20 bg-purple-500/5"
+            >
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <Brain class="w-5 h-5 text-purple-400" />
+                        <div class="space-y-0.5">
+                            <h4 class="font-bold text-purple-400">
+                                {$t("settings.risk.engine.psychological.title")}
+                            </h4>
+                            <p
+                                class="text-[10px] text-muted-foreground uppercase tracking-tight"
+                            >
+                                {$t(
+                                    "settings.risk.engine.psychological.description",
+                                    {
+                                        values: {
+                                            count: formData.psychological_lookback_count,
+                                        },
+                                    },
+                                )}
+                            </p>
+                        </div>
+                    </div>
+                    <Switch
+                        bind:checked={formData.psychological_coupling_enabled}
+                    />
+                </div>
+                {#if formData.psychological_coupling_enabled}
+                    <div class="grid grid-cols-2 gap-4 pt-2">
+                        <div class="space-y-2">
+                            <Label class="text-xs"
+                                >{$t(
+                                    "settings.risk.engine.psychological.strategy",
+                                )}</Label
+                            >
+                            <Select.Root
+                                type="single"
+                                bind:value={
+                                    formData.psychological_search_strategy
+                                }
+                            >
+                                <Select.Trigger class="h-8 text-xs">
+                                    {formData.psychological_search_strategy ===
+                                    "Strict"
+                                        ? $t(
+                                              "settings.risk.engine.psychological.strategyStrict",
+                                          )
+                                        : $t(
+                                              "settings.risk.engine.psychological.strategySequence",
+                                          )}
+                                </Select.Trigger>
+                                <Select.Content>
+                                    <Select.Item value="Strict" class="text-xs"
+                                        >{$t(
+                                            "settings.risk.engine.psychological.strategyStrict",
+                                        )}</Select.Item
+                                    >
+                                    <Select.Item
+                                        value="Sequence"
+                                        class="text-xs"
+                                        >{$t(
+                                            "settings.risk.engine.psychological.strategySequence",
+                                        )}</Select.Item
+                                    >
+                                </Select.Content>
+                            </Select.Root>
+                        </div>
+                        <div class="space-y-2">
+                            <Label class="text-xs"
+                                >{$t(
+                                    "settings.risk.engine.psychological.lookback",
+                                )}</Label
+                            >
+                            <Input
+                                type="number"
+                                bind:value={
+                                    formData.psychological_lookback_count
+                                }
+                                class="h-8 text-xs"
+                            />
+                        </div>
+                        <div class="space-y-2">
+                            <Label class="text-xs"
+                                >{$t(
+                                    "settings.risk.engine.psychological.threshold",
+                                )}</Label
+                            >
+                            <Input
+                                type="number"
+                                bind:value={formData.psychological_threshold}
+                                class="h-8 text-xs"
+                            />
+                        </div>
+                        <div class="space-y-2">
+                            <Label class="text-xs"
+                                >{$t(
+                                    "settings.risk.engine.psychological.multiplier",
+                                )}</Label
+                            >
+                            <Input
+                                type="number"
+                                step="0.1"
+                                bind:value={formData.lot_reduction_multiplier}
+                                class="h-8 text-xs"
+                            />
+                        </div>
+                    </div>
+                {/if}
+            </div>
+
+            <!-- Outlier Regression -->
+            <div
+                class="space-y-4 p-4 rounded-lg border border-amber-500/20 bg-amber-500/5"
+            >
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <AlertTriangle class="w-5 h-5 text-amber-500" />
+                        <div class="space-y-0.5">
+                            <h4 class="font-bold text-amber-500">
+                                {$t("settings.risk.engine.outlier.title")}
+                            </h4>
+                            <p
+                                class="text-[10px] text-muted-foreground uppercase tracking-tight"
+                            >
+                                {$t("settings.risk.engine.outlier.description")}
+                            </p>
+                        </div>
+                    </div>
+                    <Switch
+                        bind:checked={formData.outlier_regression_enabled}
+                    />
+                </div>
+                {#if formData.outlier_regression_enabled}
+                    <div class="pt-2">
+                        <Label class="text-xs"
+                            >{$t(
+                                "settings.risk.engine.outlier.lookback",
+                            )}</Label
+                        >
+                        <Input
+                            type="number"
+                            bind:value={formData.outlier_lookback_count}
+                            class="h-8 text-xs w-24"
+                        />
+                    </div>
+                {/if}
+            </div>
+
+            <!-- Sniper Mode -->
+            <div
+                class="space-y-4 p-4 rounded-lg border border-blue-500/20 bg-blue-500/5"
+            >
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <Zap class="w-5 h-5 text-blue-400" />
+                        <div class="space-y-0.5">
+                            <h4 class="font-bold text-blue-400">
+                                {$t("settings.risk.engine.sniper.title")}
+                            </h4>
+                            <p
+                                class="text-[10px] text-muted-foreground uppercase tracking-tight"
+                            >
+                                {$t("settings.risk.engine.sniper.description")}
+                            </p>
+                        </div>
+                    </div>
+                    <Switch bind:checked={formData.sniper_mode_enabled} />
+                </div>
+                {#if formData.sniper_mode_enabled}
+                    <div class="space-y-2 pt-2 animate-in fade-in duration-300">
+                        <Label class="text-xs"
+                            >{$t(
+                                "settings.risk.engine.sniper.selectivity",
+                            )}</Label
+                        >
+                        <div class="flex items-center gap-4">
+                            <Input
+                                type="number"
+                                bind:value={formData.sniper_mode_selectivity}
+                                class="w-24 h-8 text-sm"
+                            />
+                            <p class="text-[10px] text-muted-foreground italic">
+                                {$t(
+                                    "settings.risk.engine.sniper.selectivityTip",
+                                )}
+                            </p>
+                        </div>
+                    </div>
                 {/if}
             </div>
         </Tabs.Content>

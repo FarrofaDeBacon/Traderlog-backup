@@ -12,6 +12,7 @@
         Layers,
         Activity,
         Building2,
+        FileSpreadsheet,
     } from "lucide-svelte";
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
@@ -24,7 +25,8 @@
     import { t } from "svelte-i18n";
     import DeleteConfirmationModal from "$lib/components/settings/DeleteConfirmationModal.svelte";
     import RTDImportDialog from "$lib/components/settings/RTDImportDialog.svelte";
-    import { FileSpreadsheet } from "lucide-svelte";
+    import Skeleton from "$lib/components/ui/skeleton.svelte";
+    import { toast } from "svelte-sonner";
 
     let isDialogOpen = $state(false);
     let isImportOpen = $state(false);
@@ -94,7 +96,6 @@
         const groups: Record<string, Asset[]> = {};
 
         // Initialize groups for all defined types to ensure order (optional, but good for consistency)
-        // Or just let them be created dynamically. Let's use the defined assetTypes to drive the order.
         for (const type of settingsStore.assetTypes) {
             const assetsInType = filteredAssets.filter(
                 (a) =>
@@ -138,6 +139,7 @@
             asset_type_id: "",
             point_value: 1,
             default_fee_id: "",
+            tax_profile_id: "",
         };
         isDialogOpen = true;
     }
@@ -161,8 +163,6 @@
         deleteId = id;
         isDeleteOpen = true;
     }
-
-    import { toast } from "svelte-sonner";
 
     async function confirmDelete() {
         if (deleteId) {
@@ -206,116 +206,131 @@
 
     <!-- Grouped Clickable List Cards -->
     <div class="space-y-6">
-        {#each Object.entries(groupedAssets) as [typeId, assets]}
-            {@const typeCode = settingsStore.getAssetTypeCode(typeId)}
-            {@const style = getAssetTypeStyle(typeCode)}
-            {@const Icon = style.icon}
-
+        {#if settingsStore.isLoadingData && Object.keys(groupedAssets).length === 0}
             <div class="space-y-4">
-                <!-- Rich Header -->
-                <div class="flex items-center gap-2">
-                    <div class={`p-1.5 rounded ${style.bg}`}>
-                        <Icon class={`w-4 h-4 ${style.color}`} />
-                    </div>
-                    <h4 class="text-lg font-semibold tracking-tight">
-                        {getTypeName(typeId)}
-                    </h4>
-                </div>
-
+                <Skeleton class="h-8 w-48" />
                 <div class="grid gap-2">
-                    {#each assets as asset}
-                        <div
-                            class="flex items-center justify-between p-4 rounded-lg border bg-card text-card-foreground shadow-sm hover:border-primary/50 transition-all cursor-pointer group"
-                            onclick={() => openEdit(asset)}
-                            role="button"
-                            tabindex="0"
-                            onkeydown={(e) =>
-                                e.key === "Enter" && openEdit(asset)}
-                        >
-                            <!-- Left: Icon + Info -->
-                            <div class="flex items-center gap-4 shrink-0">
-                                <div class="p-2.5 bg-muted rounded-xl shrink-0">
-                                    <PieChart
-                                        class="w-5 h-5 text-foreground/70"
-                                    />
-                                </div>
-                                <div class="min-w-[150px]">
-                                    <div class="flex items-center gap-2">
-                                        <h4 class="font-bold text-base">
-                                            {asset.symbol}
-                                        </h4>
-                                        {#if !settingsStore.assetTypes.find((t) => t.id === asset.asset_type_id || t.id.replace(/^asset_type:/, "") === asset.asset_type_id.replace(/^asset_type:/, ""))}
-                                            <Badge
-                                                variant="destructive"
-                                                class="text-[10px] h-5 px-1.5 font-normal"
-                                            >
-                                                {$t(
-                                                    "settings.assets.labels.invalid",
-                                                )}
-                                            </Badge>
-                                        {:else}
-                                            <Badge
-                                                variant="secondary"
-                                                class="text-[10px] h-5 px-1.5 font-normal border-primary/20"
-                                            >
-                                                {settingsStore.getAssetTypeCode(
-                                                    asset.asset_type_id,
-                                                )}
-                                            </Badge>
-                                        {/if}
-                                    </div>
-                                    <p class="text-sm text-muted-foreground">
-                                        {asset.name}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <!-- Middle: Value Point -->
-                            <div
-                                class="flex flex-col items-center mr-auto ml-12"
-                            >
-                                <span
-                                    class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider"
-                                    >{$t(
-                                        "settings.assets.labels.pointValue",
-                                    )}</span
-                                >
-                                <span
-                                    class="font-bold text-lg text-foreground tracking-tight"
-                                    >{asset.point_value}</span
-                                >
-                            </div>
-
-                            <!-- Right: Actions -->
-                            <div
-                                class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onclick={(e) => {
-                                        e.stopPropagation(); // Prevent card click
-                                        openEdit(asset);
-                                    }}
-                                >
-                                    <Pencil class="w-4 h-4" />
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    class="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    onclick={(e) => {
-                                        e.stopPropagation();
-                                        requestDelete(asset.id);
-                                    }}
-                                >
-                                    <Trash2 class="w-4 h-4" />
-                                </Button>
-                            </div>
-                        </div>
+                    {#each Array(5) as _}
+                        <Skeleton class="h-20 rounded-lg" />
                     {/each}
                 </div>
             </div>
+        {:else if Object.keys(groupedAssets).length > 0}
+            {#each Object.entries(groupedAssets) as [typeId, assets]}
+                {@const typeCode = settingsStore.getAssetTypeCode(typeId)}
+                {@const style = getAssetTypeStyle(typeCode)}
+                {@const Icon = style.icon}
+
+                <div class="space-y-4">
+                    <!-- Rich Header -->
+                    <div class="flex items-center gap-2">
+                        <div class={`p-1.5 rounded ${style.bg}`}>
+                            <Icon class={`w-4 h-4 ${style.color}`} />
+                        </div>
+                        <h4 class="text-lg font-semibold tracking-tight">
+                            {getTypeName(typeId)}
+                        </h4>
+                    </div>
+
+                    <div class="grid gap-2">
+                        {#each assets as asset}
+                            <div
+                                class="flex items-center justify-between p-4 rounded-lg border bg-card text-card-foreground shadow-sm hover:border-primary/50 transition-all cursor-pointer group"
+                                onclick={() => openEdit(asset)}
+                                role="button"
+                                tabindex="0"
+                                onkeydown={(e) =>
+                                    e.key === "Enter" && openEdit(asset)}
+                            >
+                                <!-- Left: Icon + Info -->
+                                <div class="flex items-center gap-4 shrink-0">
+                                    <div
+                                        class="p-2.5 bg-muted rounded-xl shrink-0"
+                                    >
+                                        <PieChart
+                                            class="w-5 h-5 text-foreground/70"
+                                        />
+                                    </div>
+                                    <div class="min-w-[150px]">
+                                        <div class="flex items-center gap-2">
+                                            <h4 class="font-bold text-base">
+                                                {asset.symbol}
+                                            </h4>
+                                            {#if !settingsStore.assetTypes.find((t) => t.id === asset.asset_type_id || t.id.replace(/^asset_type:/, "") === asset.asset_type_id.replace(/^asset_type:/, ""))}
+                                                <Badge
+                                                    variant="destructive"
+                                                    class="text-[10px] h-5 px-1.5 font-normal"
+                                                >
+                                                    {$t(
+                                                        "settings.assets.labels.invalid",
+                                                    )}
+                                                </Badge>
+                                            {:else}
+                                                <Badge
+                                                    variant="secondary"
+                                                    class="text-[10px] h-5 px-1.5 font-normal border-primary/20"
+                                                >
+                                                    {settingsStore.getAssetTypeCode(
+                                                        asset.asset_type_id,
+                                                    )}
+                                                </Badge>
+                                            {/if}
+                                        </div>
+                                        <p
+                                            class="text-sm text-muted-foreground"
+                                        >
+                                            {asset.name}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Middle: Value Point -->
+                                <div
+                                    class="flex flex-col items-center mr-auto ml-12"
+                                >
+                                    <span
+                                        class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider"
+                                        >{$t(
+                                            "settings.assets.labels.pointValue",
+                                        )}</span
+                                    >
+                                    <span
+                                        class="font-bold text-lg text-foreground tracking-tight"
+                                        >{asset.point_value}</span
+                                    >
+                                </div>
+
+                                <!-- Right: Actions -->
+                                <div
+                                    class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onclick={(e) => {
+                                            e.stopPropagation(); // Prevent card click
+                                            openEdit(asset);
+                                        }}
+                                    >
+                                        <Pencil class="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        class="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        onclick={(e) => {
+                                            e.stopPropagation();
+                                            requestDelete(asset.id);
+                                        }}
+                                    >
+                                        <Trash2 class="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                </div>
+            {/each}
         {:else}
             <!-- Empty State when no groups found (meaning filtered list is empty) -->
             <div
@@ -324,7 +339,7 @@
                 <Search class="w-8 h-8 mb-2 opacity-20" />
                 <span class="text-sm">{$t("settings.assets.empty")}</span>
             </div>
-        {/each}
+        {/if}
     </div>
 </div>
 

@@ -17,6 +17,8 @@
     import PartialExitsManager from "./PartialExitsManager.svelte";
     import ImageUploader from "./ImageUploader.svelte";
     import DailyChecklist from "./DailyChecklist.svelte";
+    import { riskEngine } from "$lib/logic/riskEngine.svelte";
+    import { AlertCircle } from "lucide-svelte";
     import {
         ChevronLeft,
         ChevronRight,
@@ -97,6 +99,49 @@
         images: [] as string[],
         base_currency: "BRL",
     });
+
+    let selectedAsset = $derived.by(() => {
+        const symbol = formData.asset;
+        return untrack(() =>
+            settingsStore.assets.find((a) => a.symbol === symbol),
+        );
+    });
+
+    let selectedAccount = $derived.by(() => {
+        const id = formData.account_id;
+        return untrack(() => settingsStore.accounts.find((a) => a.id === id));
+    });
+
+    let activeRiskProfile = $derived.by(() => {
+        const account = selectedAccount;
+        if (!account) return settingsStore.riskProfiles[0] || null;
+
+        // Find profile for specific account type or "All"
+        return (
+            settingsStore.riskProfiles.find(
+                (p) =>
+                    p.account_type_applicability === account.account_type ||
+                    p.account_type_applicability === "All",
+            ) ||
+            settingsStore.riskProfiles[0] ||
+            null
+        );
+    });
+
+    const suggestedLotMultiplier = $derived(
+        riskEngine.getSuggestedLotMultiplier(activeRiskProfile),
+    );
+    const riskWarnings = $derived(
+        riskEngine.getProactiveWarnings(activeRiskProfile),
+    );
+
+    // Auto-apply lot adjustment if user clicks
+    function applyLotAdjustment() {
+        formData.quantity = Math.round(
+            formData.quantity * suggestedLotMultiplier,
+        );
+        toast.success($t("trades.wizard.risk.toast_lot_adjusted"));
+    }
 
     let priceHasFocus = $state(false);
 
@@ -454,18 +499,6 @@
 
     // AUTO-SYNC Price: Removed as per user request to avoid lag
     // Price synchronization is now manual via the Refresh button.
-
-    // Intermediate derivations with untracked isolation
-    let selectedAsset = $derived.by(() => {
-        const symbol = formData.asset;
-        return untrack(() =>
-            settingsStore.assets.find((a) => a.symbol === symbol),
-        );
-    });
-    let selectedAccount = $derived.by(() => {
-        const id = formData.account_id;
-        return untrack(() => settingsStore.accounts.find((a) => a.id === id));
-    });
 
     // Calculation Engine (c5a63810)
     let calculationResult = $derived.by(() => {
@@ -830,6 +863,53 @@
                     class="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300"
                 >
                     <section class="space-y-4">
+                        {#if riskWarnings.length > 0}
+                            <div
+                                class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg space-y-2 animate-in fade-in zoom-in duration-300"
+                            >
+                                <div
+                                    class="flex items-center gap-2 text-amber-500"
+                                >
+                                    <AlertCircle class="w-4 h-4" />
+                                    <span
+                                        class="text-xs font-bold uppercase tracking-wider"
+                                        >{$t(
+                                            "trades.wizard.risk.alerts_title",
+                                        )}</span
+                                    >
+                                </div>
+                                <ul class="space-y-1">
+                                    {#each riskWarnings as warning}
+                                        <li
+                                            class="text-[10px] text-amber-200/80 leading-tight"
+                                        >
+                                            • {$t(warning.key, warning.params)}
+                                        </li>
+                                    {/each}
+                                </ul>
+
+                                {#if suggestedLotMultiplier < 1.0}
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        class="w-full h-7 text-[9px] border-amber-500/40 bg-amber-500/5 hover:bg-amber-500/20 text-amber-200 uppercase font-bold"
+                                        onclick={applyLotAdjustment}
+                                    >
+                                        {$t(
+                                            "trades.wizard.risk.reduce_lot_button",
+                                            {
+                                                percent: Math.round(
+                                                    (1 -
+                                                        suggestedLotMultiplier) *
+                                                        100,
+                                                ),
+                                            } as any,
+                                        )}
+                                    </Button>
+                                {/if}
+                            </div>
+                        {/if}
+
                         <h3
                             class="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]"
                         >

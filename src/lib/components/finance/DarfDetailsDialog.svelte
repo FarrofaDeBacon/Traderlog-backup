@@ -11,11 +11,14 @@
         Percent,
         Info,
         CheckCircle2,
+        Undo2,
     } from "lucide-svelte";
     import { format } from "date-fns";
     import { ptBR } from "date-fns/locale";
+    import { t, locale } from "svelte-i18n";
+    import { toast } from "svelte-sonner";
 
-    let { transactionId = "", open = $bindable(false) } = $props();
+    let { transactionId = "", darfId = "", open = $bindable(false) } = $props();
 
     let darf = $state<TaxDarf | null>(null);
     let appraisal = $state<any>(null);
@@ -23,7 +26,7 @@
     let isComplementary = $state(false);
 
     $effect(() => {
-        if (open && transactionId) {
+        if (open && (transactionId || darfId)) {
             loadDarf();
         }
     });
@@ -31,11 +34,16 @@
     async function loadDarf() {
         loading = true;
         try {
-            console.log(
-                "[DARF DIALOG] Loading for transactionId:",
-                transactionId,
-            );
-            darf = await irpfStore.getDarfByTransaction(transactionId);
+            if (darfId) {
+                console.log("[DARF DIALOG] Loading for darfId:", darfId);
+                darf = await irpfStore.getDarfById(darfId);
+            } else if (transactionId) {
+                console.log(
+                    "[DARF DIALOG] Loading for transactionId:",
+                    transactionId,
+                );
+                darf = await irpfStore.getDarfByTransaction(transactionId);
+            }
 
             if (darf) {
                 console.log("[DARF DIALOG] DARF found:", darf);
@@ -74,6 +82,25 @@
             currency: "BRL",
         }).format(value);
     }
+
+    let showUnpayConfirm = $state(false);
+
+    async function handleUnpay() {
+        showUnpayConfirm = true;
+    }
+
+    async function confirmUnpay() {
+        if (!darf) return;
+
+        try {
+            await irpfStore.unpayDarf(irpfStore.getId(darf.id));
+            open = false; // Close dialog on success
+            showUnpayConfirm = false;
+        } catch (error) {
+            console.error("[DARF DIALOG] Error undoing payment:", error);
+            // Error already handled by store's toast
+        }
+    }
 </script>
 
 <Dialog.Root bind:open>
@@ -83,10 +110,10 @@
         <Dialog.Header>
             <Dialog.Title class="flex items-center gap-2 text-xl">
                 <FileText class="w-5 h-5 text-amber-500" />
-                Detalhes do Pagamento DARF
+                {$t("finance.darfDetails.title")}
             </Dialog.Title>
             <Dialog.Description class="text-zinc-400">
-                Informações detalhadas sobre o imposto recolhido.
+                {$t("finance.darfDetails.description")}
             </Dialog.Description>
         </Dialog.Header>
 
@@ -95,7 +122,9 @@
                 <div
                     class="w-8 h-8 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"
                 ></div>
-                <p class="text-sm text-zinc-500">Buscando dados do DARF...</p>
+                <p class="text-sm text-zinc-500">
+                    {$t("finance.darfDetails.loading")}
+                </p>
             </div>
         {:else if darf}
             <div class="space-y-6 pt-4">
@@ -104,7 +133,7 @@
                     <div class="space-y-1">
                         <span
                             class="text-xs text-zinc-500 uppercase font-bold tracking-wider"
-                            >Período de Apuração</span
+                            >{$t("finance.darfDetails.period")}</span
                         >
                         <div class="flex items-center gap-2">
                             <Calendar class="w-4 h-4 text-zinc-400" />
@@ -114,19 +143,29 @@
                         </div>
                     </div>
                     <div class="flex flex-col items-end gap-2">
-                        <Badge
-                            variant="outline"
-                            class="bg-green-500/10 text-green-500 border-green-500/20 px-3 py-1"
-                        >
-                            <CheckCircle2 class="w-3.5 h-3.5 mr-1.5" />
-                            Pago
-                        </Badge>
+                        {#if darf.status === "Paid"}
+                            <Badge
+                                variant="outline"
+                                class="bg-green-500/10 text-green-500 border-green-500/20 px-3 py-1"
+                            >
+                                <CheckCircle2 class="w-3.5 h-3.5 mr-1.5" />
+                                {$t("finance.darfDetails.statusPaid")}
+                            </Badge>
+                        {:else}
+                            <Badge
+                                variant="outline"
+                                class="bg-amber-500/10 text-amber-500 border-amber-500/20 px-3 py-1"
+                            >
+                                <Info class="w-3.5 h-3.5 mr-1.5" />
+                                {$t("finance.darfDetails.statusPending")}
+                            </Badge>
+                        {/if}
                         {#if isComplementary}
                             <Badge
                                 variant="outline"
                                 class="bg-blue-500/10 text-blue-400 border-blue-500/20 px-2 py-0.5 text-[10px]"
                             >
-                                DARF Complementar
+                                {$t("finance.darfDetails.complementaryBadge")}
                             </Badge>
                         {/if}
                     </div>
@@ -139,7 +178,7 @@
                     <div class="space-y-1">
                         <span
                             class="text-xs text-zinc-500 uppercase font-bold tracking-wider"
-                            >Código da Receita</span
+                            >{$t("finance.darfDetails.revenueCode")}</span
                         >
                         <div class="text-base font-semibold text-zinc-200">
                             {darf.revenue_code}
@@ -148,7 +187,7 @@
                     <div class="space-y-1">
                         <span
                             class="text-xs text-zinc-500 uppercase font-bold tracking-wider"
-                            >Vencimento</span
+                            >{$t("finance.darfDetails.dueDate")}</span
                         >
                         <div class="text-base font-semibold text-zinc-200">
                             {darf.due_date
@@ -165,7 +204,7 @@
                             class="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"
                         >
                             <Info class="w-3.5 h-3.5" />
-                            Detalhamento da Base de Cálculo
+                            {$t("finance.darfDetails.calculationInfo")}
                         </h4>
                         <div
                             class="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-4 grid grid-cols-2 gap-y-4 gap-x-6"
@@ -173,7 +212,9 @@
                             <div class="space-y-1">
                                 <span
                                     class="text-[10px] text-zinc-500 uppercase"
-                                    >Resultado Bruto</span
+                                    >{$t(
+                                        "finance.darfDetails.grossResult",
+                                    )}</span
                                 >
                                 <p
                                     class="text-sm font-semibold {appraisal.gross_profit >=
@@ -187,7 +228,9 @@
                             <div class="space-y-1">
                                 <span
                                     class="text-[10px] text-zinc-500 uppercase"
-                                    >Prejuízos Compensados</span
+                                    >{$t(
+                                        "finance.darfDetails.compensatedLosses",
+                                    )}</span
                                 >
                                 <p
                                     class="text-sm font-semibold text-amber-500/80"
@@ -200,7 +243,9 @@
                             <div class="space-y-1">
                                 <span
                                     class="text-[10px] text-zinc-500 uppercase"
-                                    >Base de Cálculo</span
+                                    >{$t(
+                                        "finance.darfDetails.calculationBasis",
+                                    )}</span
                                 >
                                 <p class="text-sm font-semibold text-zinc-200">
                                     {formatCurrency(
@@ -211,7 +256,7 @@
                             <div class="space-y-1">
                                 <span
                                     class="text-[10px] text-zinc-500 uppercase"
-                                    >Aliquota Aplicada</span
+                                    >{$t("finance.darfDetails.taxRate")}</span
                                 >
                                 <p class="text-sm font-semibold text-zinc-200">
                                     {appraisal.tax_rate * 100}%
@@ -226,7 +271,9 @@
                     class="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800/50 space-y-3"
                 >
                     <div class="flex justify-between items-center text-sm">
-                        <span class="text-zinc-400">Valor do Principal</span>
+                        <span class="text-zinc-400"
+                            >{$t("finance.darfDetails.principalValue")}</span
+                        >
                         <span class="font-mono text-zinc-200"
                             >{formatCurrency(darf.principal_value)}</span
                         >
@@ -237,7 +284,8 @@
                             <span
                                 class="text-zinc-400 flex items-center gap-1.5"
                             >
-                                Multa <Percent class="w-3 h-3" />
+                                {$t("finance.darfDetails.fine")}
+                                <Percent class="w-3 h-3" />
                             </span>
                             <span class="font-mono text-amber-500"
                                 >+{formatCurrency(darf.fine)}</span
@@ -250,7 +298,8 @@
                             <span
                                 class="text-zinc-400 flex items-center gap-1.5"
                             >
-                                Juros <Info class="w-3 h-3" />
+                                {$t("finance.darfDetails.interest")}
+                                <Info class="w-3 h-3" />
                             </span>
                             <span class="font-mono text-amber-500"
                                 >+{formatCurrency(darf.interest)}</span
@@ -261,7 +310,9 @@
                     <div
                         class="pt-2 border-t border-zinc-800 flex justify-between items-center"
                     >
-                        <span class="font-bold text-zinc-100">Total Pago</span>
+                        <span class="font-bold text-zinc-100"
+                            >{$t("finance.darfDetails.totalPaid")}</span
+                        >
                         <span
                             class="text-lg font-bold text-green-400 font-mono"
                         >
@@ -279,7 +330,7 @@
                         <p
                             class="text-[10px] text-zinc-500 uppercase font-bold"
                         >
-                            Pago em
+                            {$t("finance.darfDetails.paidAt")}
                         </p>
                         <p class="text-xs text-zinc-300">
                             {darf.payment_date
@@ -288,7 +339,7 @@
                                       "dd 'de' MMMM 'de' yyyy",
                                       { locale: ptBR },
                                   )
-                                : "Data não disponível"}
+                                : $t("finance.darfDetails.dateNotAvailable")}
                         </p>
                     </div>
                 </div>
@@ -297,19 +348,56 @@
             <div class="py-12 text-center space-y-2">
                 <Info class="w-8 h-8 text-zinc-600 mx-auto" />
                 <p class="text-zinc-500">
-                    Não foi possível carregar os detalhes deste DARF.
+                    {$t("finance.darfDetails.errorMessage")}
                 </p>
             </div>
         {/if}
 
-        <Dialog.Footer class="mt-4">
-            <Button
-                variant="secondary"
-                onclick={() => (open = false)}
-                class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700"
-            >
-                Fechar
-            </Button>
+        <Dialog.Footer
+            class="mt-4 flex flex-col sm:flex-row gap-2 border-t border-zinc-800/50 pt-4"
+        >
+            {#if showUnpayConfirm}
+                <div class="flex items-center gap-2 mr-auto">
+                    <Undo2 class="w-4 h-4 text-red-500 animate-pulse" />
+                    <span class="text-xs font-bold text-red-500 uppercase"
+                        >Confirmar Estorno?</span
+                    >
+                </div>
+                <Button
+                    variant="destructive"
+                    onclick={confirmUnpay}
+                    class="bg-red-600 hover:bg-red-700 text-white"
+                >
+                    Confirmar
+                </Button>
+                <Button
+                    variant="outline"
+                    onclick={() => (showUnpayConfirm = false)}
+                    class="border-zinc-700 text-zinc-400 hover:bg-zinc-800"
+                >
+                    Cancelar
+                </Button>
+            {:else}
+                {#if darf && darf.status === "Paid"}
+                    <Button
+                        variant="destructive"
+                        onclick={handleUnpay}
+                        class="bg-red-600/20 hover:bg-red-600 text-white border border-red-500/30 mr-auto group transition-all"
+                    >
+                        <Undo2
+                            class="w-4 h-4 mr-2 text-red-500 group-hover:text-white"
+                        />
+                        Desfazer Pagamento
+                    </Button>
+                {/if}
+                <Button
+                    variant="secondary"
+                    onclick={() => (open = false)}
+                    class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700"
+                >
+                    {$t("general.close")}
+                </Button>
+            {/if}
         </Dialog.Footer>
     </Dialog.Content>
 </Dialog.Root>

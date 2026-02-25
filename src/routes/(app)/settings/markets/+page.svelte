@@ -24,6 +24,7 @@
     import { t } from "svelte-i18n";
     import DeleteConfirmationModal from "$lib/components/settings/DeleteConfirmationModal.svelte";
     import { toast } from "svelte-sonner";
+    import Skeleton from "$lib/components/ui/skeleton.svelte";
 
     let isDialogOpen = $state(false);
     let editingId = $state<string | null>(null);
@@ -118,7 +119,13 @@
 
     function openEdit(item: Market) {
         editingId = item.id;
-        formMarket = { ...item };
+        formMarket = {
+            code: item.code,
+            name: item.name,
+            timezone: item.timezone,
+            trading_days: [...item.trading_days],
+            trading_sessions: item.trading_sessions.map((s) => ({ ...s })),
+        };
         isDialogOpen = true;
     }
 
@@ -136,14 +143,10 @@
         isDeleteOpen = true;
     }
 
-    async function confirmDelete() {
+    function confirmDelete() {
         if (deleteId) {
-            const result = await settingsStore.deleteMarket(deleteId);
-            if (!result.success) {
-                toast.error(result.error || $t("general.error"));
-            } else {
-                toast.success($t("general.deleteSuccess"));
-            }
+            settingsStore.removeMarket(deleteId);
+            toast.success($t("general.deleteSuccess"));
             deleteId = null;
         }
     }
@@ -166,181 +169,206 @@
     </div>
     <Separator />
 
-    <div class="space-y-8">
-        {#each Object.entries(groupedMarkets) as [timezone, items]}
-            {@const isBrazil =
-                timezone.includes("Brasília") || timezone.includes("Sao_Paulo")}
-            {@const isUS =
-                timezone.includes("New_York") ||
-                timezone.includes("Chicago") ||
-                timezone.includes("US")}
-            {@const isAsia =
-                timezone.includes("Tokyo") ||
-                timezone.includes("Hong_Kong") ||
-                timezone.includes("Asia")}
-            {@const isUTC = timezone.includes("UTC")}
-
+    <!-- Grouped Clickable List Cards -->
+    <div class="space-y-6">
+        {#if settingsStore.isLoadingData && Object.keys(groupedMarkets).length === 0}
             <div class="space-y-4">
-                <!-- Rich Header -->
-                <div class="flex items-center gap-2">
-                    <div
-                        class={`p-1.5 rounded ${
-                            isBrazil
-                                ? "bg-green-500/10"
-                                : isUS
-                                  ? "bg-blue-500/10"
-                                  : isAsia
-                                    ? "bg-red-500/10"
-                                    : "bg-muted"
-                        }`}
-                    >
-                        {#if isBrazil}
-                            <MapPin class="w-4 h-4 text-green-500" />
-                        {:else if isUS}
-                            <MapPin class="w-4 h-4 text-blue-500" />
-                        {:else if isAsia}
-                            <MapPin class="w-4 h-4 text-red-500" />
-                        {:else}
-                            <Clock class="w-4 h-4 text-muted-foreground" />
-                        {/if}
-                    </div>
-                    <h4 class="text-lg font-semibold tracking-tight">
-                        {timezone}
-                    </h4>
-                </div>
-
-                <div class="flex flex-col gap-3">
-                    {#each items as item}
-                        <div
-                            class="flex items-center justify-between p-4 rounded-lg border bg-card hover:border-primary/50 transition-all group shadow-sm cursor-pointer"
-                            onclick={() => openEdit(item)}
-                            role="button"
-                            tabindex="0"
-                            onkeydown={(e) =>
-                                e.key === "Enter" && openEdit(item)}
-                        >
-                            <!-- Left: Icon + Info -->
-                            <div class="flex items-center gap-4 shrink-0">
-                                <div class="p-2.5 bg-muted rounded-xl shrink-0">
-                                    <Globe class="w-5 h-5 text-foreground/70" />
-                                </div>
-                                <div class="min-w-[150px]">
-                                    <h4 class="font-bold text-base">
-                                        {item.code}
-                                    </h4>
-                                    <p class="text-sm text-muted-foreground">
-                                        {item.name}
-                                    </p>
-                                </div>
-                                <!-- Trading Info -->
-                                <div class="ml-6 text-xs text-muted-foreground">
-                                    <div class="flex items-center gap-1">
-                                        <Clock class="w-3 h-3" />
-                                        {#if item.trading_sessions?.length}
-                                            {item.trading_sessions
-                                                .map(
-                                                    (s) =>
-                                                        `${s.start_time}-${s.end_time}`,
-                                                )
-                                                .join(", ")}
-                                        {:else}
-                                            Não configurado
-                                        {/if}
-                                    </div>
-                                    <div class="flex gap-1 mt-0.5">
-                                        {#each weekdays as day}
-                                            <span
-                                                class="w-5 h-5 flex items-center justify-center rounded text-[10px] {item.trading_days?.includes(
-                                                    day.value,
-                                                )
-                                                    ? 'bg-primary/20 text-primary'
-                                                    : 'bg-muted/50 text-muted-foreground/50'}"
-                                            >
-                                                {$t(
-                                                    `general.weekdays.${day.label}`,
-                                                ).charAt(0)}
-                                            </span>
-                                        {/each}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Right: Actions -->
-                            <div
-                                class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onclick={(e) => {
-                                        e.stopPropagation(); // Avoid triggering edit twice
-                                        openEdit(item);
-                                    }}
-                                >
-                                    <Pencil class="w-4 h-4" />
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    class="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    onclick={(e) => {
-                                        e.stopPropagation();
-                                        requestDelete(item.id);
-                                    }}
-                                >
-                                    <Trash2 class="w-4 h-4" />
-                                </Button>
-                            </div>
-                        </div>
+                <Skeleton class="h-8 w-48" />
+                <div class="space-y-3">
+                    {#each Array(3) as _}
+                        <Skeleton class="h-24 rounded-lg" />
                     {/each}
                 </div>
             </div>
+        {:else if Object.keys(groupedMarkets).length > 0}
+            {#each Object.entries(groupedMarkets) as [timezone, items]}
+                {@const isBrazil =
+                    timezone.includes("Brasília") ||
+                    timezone.includes("Sao_Paulo")}
+                {@const isUS =
+                    timezone.includes("York") || timezone.includes("Chicago")}
+                {@const isAsia =
+                    timezone.includes("Tokyo") ||
+                    timezone.includes("Hong_Kong") ||
+                    timezone.includes("Asia")}
+                {@const isUTC = timezone.includes("UTC")}
+
+                <div class="space-y-4">
+                    <!-- Rich Header -->
+                    <div class="flex items-center gap-2">
+                        <div
+                            class={`p-1.5 rounded ${
+                                isBrazil
+                                    ? "bg-green-500/10"
+                                    : isUS
+                                      ? "bg-blue-500/10"
+                                      : isAsia
+                                        ? "bg-red-500/10"
+                                        : "bg-muted"
+                            }`}
+                        >
+                            {#if isBrazil}
+                                <MapPin class="w-4 h-4 text-green-500" />
+                            {:else if isUS}
+                                <MapPin class="w-4 h-4 text-blue-500" />
+                            {:else if isAsia}
+                                <MapPin class="w-4 h-4 text-red-500" />
+                            {:else}
+                                <Clock class="w-4 h-4 text-muted-foreground" />
+                            {/if}
+                        </div>
+                        <h4 class="text-lg font-semibold tracking-tight">
+                            {timezone}
+                        </h4>
+                    </div>
+
+                    <div class="flex flex-col gap-3">
+                        {#each items as item}
+                            <div
+                                class="flex items-center justify-between p-4 rounded-lg border bg-card hover:border-primary/50 transition-all group shadow-sm cursor-pointer"
+                                onclick={() => openEdit(item)}
+                                role="button"
+                                tabindex="0"
+                                onkeydown={(e) =>
+                                    e.key === "Enter" && openEdit(item)}
+                            >
+                                <!-- Left: Icon + Info -->
+                                <div class="flex items-center gap-4 shrink-0">
+                                    <div
+                                        class="p-2.5 bg-muted rounded-xl shrink-0"
+                                    >
+                                        <Globe
+                                            class="w-5 h-5 text-foreground/70"
+                                        />
+                                    </div>
+                                    <div class="min-w-[150px]">
+                                        <h4 class="font-bold text-base">
+                                            {item.code}
+                                        </h4>
+                                        <p
+                                            class="text-sm text-muted-foreground"
+                                        >
+                                            {item.name}
+                                        </p>
+                                    </div>
+                                    <!-- Trading Info -->
+                                    <div
+                                        class="ml-6 text-xs text-muted-foreground"
+                                    >
+                                        <div class="flex items-center gap-1">
+                                            <Clock class="w-3 h-3" />
+                                            {#if item.trading_sessions?.length}
+                                                {item.trading_sessions
+                                                    .map(
+                                                        (s) =>
+                                                            `${s.start_time}-${s.end_time}`,
+                                                    )
+                                                    .join(", ")}
+                                            {:else}
+                                                Não configurado
+                                            {/if}
+                                        </div>
+                                        <div class="flex gap-1 mt-0.5">
+                                            {#each weekdays as day}
+                                                <span
+                                                    class="w-5 h-5 flex items-center justify-center rounded text-[10px] {item.trading_days?.includes(
+                                                        day.value,
+                                                    )
+                                                        ? 'bg-primary/20 text-primary'
+                                                        : 'bg-muted/50 text-muted-foreground/50'}"
+                                                >
+                                                    {$t(
+                                                        `general.weekdays.${day.label}`,
+                                                    ).charAt(0)}
+                                                </span>
+                                            {/each}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Right: Actions -->
+                                <div
+                                    class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onclick={(e) => {
+                                            e.stopPropagation(); // Avoid triggering edit twice
+                                            openEdit(item);
+                                        }}
+                                    >
+                                        <Pencil class="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        class="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        onclick={(e) => {
+                                            e.stopPropagation();
+                                            requestDelete(item.id);
+                                        }}
+                                    >
+                                        <Trash2 class="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                </div>
+            {/each}
         {:else}
             <div
                 class="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg border-muted-foreground/25 text-muted-foreground h-[150px]"
             >
-                <span class="text-sm">Nenhum mercado encontrado</span>
+                <Globe class="w-8 h-8 mb-2 opacity-20" />
+                <span class="text-sm">{$t("settings.markets.empty")}</span>
             </div>
-        {/each}
+        {/if}
     </div>
 </div>
 
 <DeleteConfirmationModal bind:open={isDeleteOpen} onConfirm={confirmDelete} />
 
 <Dialog.Root bind:open={isDialogOpen}>
-    <Dialog.Content class="sm:max-w-[540px]">
+    <Dialog.Content class="sm:max-w-[600px]">
         <Dialog.Header>
-            <Dialog.Title class="flex items-center gap-2">
-                <Globe class="w-5 h-5 text-primary" />
-                {editingId
-                    ? $t("settings.markets.form.titleEdit")
-                    : $t("settings.markets.form.titleNew")}
-            </Dialog.Title>
-            <Dialog.Description>
-                {$t("settings.markets.form.description")}
-            </Dialog.Description>
+            <Dialog.Title
+                >{editingId
+                    ? $t("settings.markets.edit")
+                    : $t("settings.markets.new")}</Dialog.Title
+            >
         </Dialog.Header>
 
-        <div class="space-y-6 py-4">
-            <!-- Basic Info -->
-            <div class="grid grid-cols-2 gap-4">
-                <div class="space-y-2">
-                    <Label>{$t("settings.markets.form.code")}</Label>
-                    <Input
-                        bind:value={formMarket.code}
-                        class="uppercase font-mono"
-                        placeholder={$t(
-                            "settings.markets.form.codePlaceholder",
-                        )}
-                    />
-                </div>
-                <div class="space-y-2">
-                    <Label>{$t("settings.markets.form.timezone")}</Label>
+        <div class="grid gap-6 py-4">
+            <div class="grid grid-cols-4 items-center gap-4">
+                <Label class="text-right"
+                    >{$t("settings.markets.form.code")}</Label
+                >
+                <Input
+                    bind:value={formMarket.code}
+                    class="col-span-3 uppercase"
+                    placeholder="Ex: B3, NYSE"
+                />
+            </div>
+            <div class="grid grid-cols-4 items-center gap-4">
+                <Label class="text-right"
+                    >{$t("settings.markets.form.name")}</Label
+                >
+                <Input
+                    bind:value={formMarket.name}
+                    class="col-span-3"
+                    placeholder="Ex: Bolsa de Valores do Brasil"
+                />
+            </div>
+            <div class="grid grid-cols-4 items-center gap-4">
+                <Label class="text-right">Fuso Horário</Label>
+                <div class="col-span-3">
                     <Select.Root type="single" bind:value={formMarket.timezone}>
-                        <Select.Trigger class="w-full">
+                        <Select.Trigger>
                             {timezones.find(
                                 (t) => t.value === formMarket.timezone,
-                            )?.label ?? formMarket.timezone}
+                            )?.label || formMarket.timezone}
                         </Select.Trigger>
                         <Select.Content>
                             {#each timezones as tz}
@@ -353,112 +381,71 @@
                 </div>
             </div>
 
-            <div class="space-y-2">
-                <Label>{$t("settings.markets.form.fullName")}</Label>
-                <Input
-                    bind:value={formMarket.name}
-                    placeholder={$t(
-                        "settings.markets.form.fullNamePlaceholder",
-                    )}
-                />
-            </div>
-
             <Separator />
 
-            <!-- Trading Days -->
-            <div class="space-y-3">
-                <Label class="flex items-center gap-2">
-                    <Calendar class="w-4 h-4 text-muted-foreground" />
-                    {$t("settings.markets.form.tradingDays")}
-                </Label>
-                <div class="flex gap-1.5">
+            <div class="space-y-4">
+                <Label>Dias de Negociação</Label>
+                <div class="flex gap-2">
                     {#each weekdays as day}
-                        <button
-                            type="button"
-                            class="flex-1 py-2 rounded-lg text-sm font-medium transition-all border-2 {formMarket.trading_days.includes(
-                                day.value,
-                            )
-                                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                                : 'bg-muted/30 text-muted-foreground border-transparent hover:bg-muted/50'}"
+                        <Button
+                            variant={formMarket.trading_days.includes(day.value)
+                                ? "default"
+                                : "outline"}
+                            class="flex-1"
                             onclick={() => toggleDay(day.value)}
                         >
-                            {$t(`general.weekdays.${day.label}`)}
-                        </button>
+                            {$t(`general.weekdays.${day.label}`).charAt(0)}
+                        </Button>
                     {/each}
                 </div>
             </div>
 
             <Separator />
 
-            <!-- Trading Sessions -->
-            <div class="space-y-3">
-                <Label class="flex items-center gap-2">
-                    <Clock class="w-4 h-4 text-muted-foreground" />
-                    {$t("settings.markets.form.tradingSessions")}
-                </Label>
-                <div class="space-y-2">
-                    {#each formMarket.trading_sessions as session, i}
-                        <div
-                            class="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border"
-                        >
-                            <div class="flex-1 flex items-center gap-3">
-                                <div class="space-y-1">
-                                    <span
-                                        class="text-[10px] uppercase text-muted-foreground font-medium"
-                                        >{$t(
-                                            "settings.markets.form.start",
-                                        )}</span
-                                    >
-                                    <Input
-                                        type="time"
-                                        bind:value={session.start_time}
-                                        class="w-full font-mono"
-                                    />
-                                </div>
-                                <div class="text-muted-foreground/50 pt-5">
-                                    →
-                                </div>
-                                <div class="space-y-1">
-                                    <span
-                                        class="text-[10px] uppercase text-muted-foreground font-medium"
-                                        >{$t("settings.markets.form.end")}</span
-                                    >
-                                    <Input
-                                        type="time"
-                                        bind:value={session.end_time}
-                                        class="w-full font-mono"
-                                    />
-                                </div>
-                            </div>
-                            {#if formMarket.trading_sessions.length > 1}
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    class="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                                    onclick={() => removeSession(i)}
-                                >
-                                    <X class="w-4 h-4" />
-                                </Button>
-                            {/if}
-                        </div>
-                    {/each}
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <Label>Sessões de Trading</Label>
                     <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        class="w-full border-dashed"
+                        class="h-8 px-2"
                         onclick={addSession}
                     >
-                        <Plus class="w-4 h-4 mr-2" />
-                        {$t("settings.markets.form.addSession")}
+                        <Plus class="w-4 h-4 mr-1" /> Add Sessão
                     </Button>
                 </div>
+
+                {#each formMarket.trading_sessions as session, idx}
+                    <div class="grid grid-cols-7 items-center gap-2">
+                        <Input
+                            type="time"
+                            bind:value={session.start_time}
+                            class="col-span-3"
+                        />
+                        <span class="text-center text-muted-foreground"
+                            >até</span
+                        >
+                        <Input
+                            type="time"
+                            bind:value={session.end_time}
+                            class="col-span-3"
+                        />
+                        {#if formMarket.trading_sessions.length > 1}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                class="text-destructive h-8 w-8"
+                                onclick={() => removeSession(idx)}
+                            >
+                                <X class="w-4 h-4" />
+                            </Button>
+                        {/if}
+                    </div>
+                {/each}
             </div>
         </div>
 
-        <Dialog.Footer class="gap-2">
-            <Button variant="outline" onclick={() => (isDialogOpen = false)}
-                >{$t("general.cancel")}</Button
-            >
+        <Dialog.Footer>
             <Button onclick={save}>{$t("settings.markets.form.save")}</Button>
         </Dialog.Footer>
     </Dialog.Content>

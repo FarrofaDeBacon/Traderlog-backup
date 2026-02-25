@@ -19,7 +19,9 @@
     import { irpfStore } from "$lib/stores/irpfStore.svelte";
     import { settingsStore } from "$lib/stores/settings.svelte"; // Import settingsStore
     import * as Select from "$lib/components/ui/select";
-    let year = $state(new Date().getFullYear());
+    import DarfDetailsDialog from "$lib/components/finance/DarfDetailsDialog.svelte";
+    // Use centralized year from irpfStore
+    let selectedYear = $state(irpfStore.selectedYear);
 
     // View Modal State
     let isViewModalOpen = $state(false);
@@ -42,7 +44,7 @@
     });
 
     onMount(() => {
-        irpfStore.loadDarfs(year);
+        irpfStore.loadAllData(selectedYear);
         // Ensure accounts are loaded if not already
         if (settingsStore.accounts.length === 0) {
             settingsStore.loadData();
@@ -50,7 +52,7 @@
     });
 
     function loadData() {
-        irpfStore.loadDarfs(year);
+        irpfStore.loadAllData(selectedYear);
     }
 
     function openPayModal(item: any) {
@@ -180,7 +182,7 @@
                 // Filter by year strictly for history (Parse MM/YYYY manually)
                 const parts = d.period.split("/");
                 const darfYear = parts.length > 1 ? parseInt(parts[1]) : 0;
-                return darfYear === year;
+                return darfYear === irpfStore.selectedYear;
             })
             .sort((a, b) => {
                 // Sort by period descending (MM/YYYY)
@@ -198,11 +200,8 @@
             }),
     );
 
-    let selectedYearOption = $derived({ value: year, label: year.toString() });
-    let selectedYear = $state(year);
     function loadIrpfData() {
-        year = selectedYear;
-        loadData();
+        irpfStore.loadAllData(selectedYear);
     }
 </script>
 
@@ -240,7 +239,7 @@
                 <Select.Trigger
                     class="w-[140px] bg-black/20 border-white/10 text-white"
                 >
-                    {selectedYear}
+                    {irpfStore.selectedYear}
                 </Select.Trigger>
                 <Select.Content>
                     {#each Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i) as y}
@@ -371,7 +370,7 @@
             class="text-lg font-semibold text-white mb-4 flex items-center gap-2"
         >
             <CheckCircle class="w-5 h-5 text-green-500" />
-            Histórico de Pagamentos ({year})
+            Histórico de Pagamentos ({selectedYear})
         </h3>
 
         {#if irpfStore.loading}
@@ -382,7 +381,7 @@
             <div
                 class="p-8 text-center border border-dashed border-white/10 rounded-lg text-muted-foreground"
             >
-                Nenhum histórico encontrado para {year}.
+                Nenhum histórico encontrado para {selectedYear}.
             </div>
         {:else}
             <div
@@ -579,102 +578,11 @@
             </Dialog.Content>
         </Dialog.Root>
 
-        <!-- View Modal -->
-        <Dialog.Root bind:open={isViewModalOpen}>
-            <Dialog.Content class="sm:max-w-[425px]">
-                <Dialog.Header>
-                    <Dialog.Title>Detalhes da DARF</Dialog.Title>
-                </Dialog.Header>
-                {#if selectedDarf}
-                    <div class="grid gap-4 py-4">
-                        <div class="space-y-1">
-                            <Label>Código Receita</Label>
-                            <div class="font-mono text-white">
-                                {selectedDarf.revenue_code}
-                            </div>
-                        </div>
-                        <div class="space-y-1">
-                            <Label>Valor Principal</Label>
-                            <div class="font-mono text-xl text-primary">
-                                {formatCurrency(selectedDarf.principal_value)}
-                            </div>
-                        </div>
-
-                        <!-- Appraisal Snapshot (Simulation/Link) -->
-                        <div
-                            class="p-3 bg-white/5 rounded border border-white/10 space-y-2"
-                        >
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs text-muted-foreground"
-                                    >Período de Apuração</span
-                                >
-                                <span class="text-sm font-bold text-white"
-                                    >{selectedDarf.period}</span
-                                >
-                            </div>
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                class="w-full text-xs"
-                                href="/fiscal/irpf"
-                            >
-                                <Eye class="w-3 h-3 mr-2" />
-                                Ver Apuração Detalhada (Dashboard)
-                            </Button>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="space-y-1">
-                                <Label>Multa</Label>
-                                <div class="font-mono text-white">
-                                    {formatCurrency(selectedDarf.fine)}
-                                </div>
-                            </div>
-                            <div class="space-y-1">
-                                <Label>Juros</Label>
-                                <div class="font-mono text-white">
-                                    {formatCurrency(selectedDarf.interest)}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="space-y-1 pt-2 border-t border-white/10">
-                            <Label>Valor Total</Label>
-                            <div class="font-mono text-xl font-bold text-white">
-                                {formatCurrency(selectedDarf.total_value)}
-                            </div>
-                        </div>
-                        {#if selectedDarf.status === "Paid"}
-                            <div
-                                class="p-3 bg-green-500/10 border border-green-500/20 rounded text-green-400 text-sm flex flex-col gap-1"
-                            >
-                                <div class="flex items-center gap-2 font-bold">
-                                    <CheckCircle class="w-4 h-4" />
-                                    Pago em {formatDate(
-                                        selectedDarf.payment_date,
-                                    )}
-                                </div>
-                                {#if selectedDarf.account_id}
-                                    <div class="text-xs text-green-400/70 pl-6">
-                                        Via: {getAccountName(
-                                            selectedDarf.account_id,
-                                        )}
-                                    </div>
-                                {/if}
-
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    class="w-full mt-2"
-                                    onclick={() => openUnpayModal(selectedDarf)}
-                                >
-                                    <Undo2 class="w-3 h-3 mr-2" /> Desfazer Pagamento
-                                </Button>
-                            </div>
-                        {/if}
-                    </div>
-                {/if}
-            </Dialog.Content>
-        </Dialog.Root>
+        <!-- Standardized View Modal -->
+        <DarfDetailsDialog
+            darfId={selectedDarf ? irpfStore.getId(selectedDarf.id) : ""}
+            bind:open={isViewModalOpen}
+        />
 
         <!-- Delete Modal -->
         <Dialog.Root bind:open={isDeleteModalOpen}>

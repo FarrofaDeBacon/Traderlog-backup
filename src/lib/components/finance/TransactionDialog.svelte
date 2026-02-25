@@ -228,7 +228,9 @@
                     <div class="col-span-3 space-y-2">
                         <Label>{$t("finance.transactionDialog.type")}</Label>
                         <Select.Root type="single" bind:value={transactionType}>
-                            <Select.Trigger class="w-full">
+                            <Select.Trigger
+                                class="w-full bg-zinc-950/50 border-zinc-800"
+                            >
                                 {transactionTypes.find(
                                     (o) => o.value === transactionType,
                                 )?.label ?? transactionType}
@@ -246,7 +248,9 @@
                     <div class="col-span-5 space-y-2">
                         <Label>{$t("finance.transactionDialog.account")}</Label>
                         <Select.Root type="single" bind:value={accountId}>
-                            <Select.Trigger class="w-full">
+                            <Select.Trigger
+                                class="w-full bg-zinc-950/50 border-zinc-800"
+                            >
                                 {accountOptions.find(
                                     (o) => o.value === accountId,
                                 )?.label ?? $t("finance.statement.account")}
@@ -318,7 +322,9 @@
                     <div class="flex-1 space-y-1">
                         <Label class="text-xs">{$t("general.from")}</Label>
                         <Select.Root type="single" bind:value={fromAccountId}>
-                            <Select.Trigger class="bg-background h-9 w-full">
+                            <Select.Trigger
+                                class="bg-zinc-950/50 border-zinc-800 h-9 w-full"
+                            >
                                 {accountOptions.find(
                                     (a) => a.value === fromAccountId,
                                 )?.label ?? $t("general.origin")}
@@ -341,7 +347,9 @@
                     <div class="flex-1 space-y-1">
                         <Label class="text-xs">{$t("general.to")}</Label>
                         <Select.Root type="single" bind:value={toAccountId}>
-                            <Select.Trigger class="bg-background h-9 w-full">
+                            <Select.Trigger
+                                class="bg-zinc-950/50 border-zinc-800 h-9 w-full"
+                            >
                                 {accountOptions.find(
                                     (a) => a.value === toAccountId,
                                 )?.label ?? $t("general.destination")}

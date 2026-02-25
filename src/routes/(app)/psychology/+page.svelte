@@ -18,7 +18,6 @@
         Eye,
     } from "lucide-svelte";
     import EChart from "$lib/components/ui/echart.svelte";
-    import type { EChartsOption } from "echarts";
     import { Button } from "$lib/components/ui/button";
     import DailyCheckinDialog from "$lib/components/psychology/DailyCheckinDialog.svelte";
     import DateFilter from "$lib/components/filters/DateFilter.svelte";
@@ -26,6 +25,7 @@
     import * as Dialog from "$lib/components/ui/dialog";
     import { invoke } from "@tauri-apps/api/core";
     import { untrack } from "svelte";
+    import Skeleton from "$lib/components/ui/skeleton.svelte";
 
     let showCheckinDialog = $state(false);
     let showDeleteConfirm = $state(false);
@@ -115,24 +115,41 @@
 
     // --- Derived Data ---
 
-    function isDateInRange(dateStr: string) {
-        if (timeFilter === "all") return true;
-        const d = new Date(dateStr);
+    // Optimized filter limits
+    const filterLimits = $derived.by(() => {
         const now = new Date();
         now.setHours(0, 0, 0, 0);
-        d.setHours(0, 0, 0, 0);
+        const todayStr = now.toISOString().split("T")[0];
+        const yesterdayStr = new Date(now.getTime() - 86400000)
+            .toISOString()
+            .split("T")[0];
+        const thisMonthStr = now.toISOString().slice(0, 7); // YYYY-MM
 
-        if (timeFilter === "today") return d.getTime() === now.getTime();
+        return {
+            today: todayStr,
+            yesterday: yesterdayStr,
+            thisMonth: thisMonthStr,
+            customStart: startDate ? new Date(startDate) : null,
+            customEnd: endDate ? new Date(endDate) : null,
+        };
+    });
+
+    function isDateInRange(dateStr: string) {
+        if (timeFilter === "all") return true;
+        const onlyDate = dateStr.split("T")[0];
+
+        if (timeFilter === "today") return onlyDate === filterLimits.today;
         if (timeFilter === "yesterday")
-            return d.getTime() === now.getTime() - 86400000;
-        if (timeFilter === "custom" && startDate && endDate) {
-            return d >= new Date(startDate) && d <= new Date(endDate);
-        }
-        if (timeFilter === "this_month") {
-            return (
-                d.getMonth() === now.getMonth() &&
-                d.getFullYear() === now.getFullYear()
-            );
+            return onlyDate === filterLimits.yesterday;
+        if (timeFilter === "this_month")
+            return onlyDate.startsWith(filterLimits.thisMonth);
+        if (
+            timeFilter === "custom" &&
+            filterLimits.customStart &&
+            filterLimits.customEnd
+        ) {
+            const d = new Date(onlyDate + "T12:00:00");
+            return d >= filterLimits.customStart && d <= filterLimits.customEnd;
         }
         return true;
     }
@@ -258,7 +275,7 @@
         // Build the hierarchy: Month -> Week -> Day
         for (const [dateStr, data] of dayMap.entries()) {
             const date = new Date(dateStr + "T12:00:00");
-            const monthKey = date.toISOString().slice(0, 7); // YYYY-MM
+            const monthKey = dateStr.slice(0, 7); // YYYY-MM
             const weekKey = getWeekKey(date);
 
             if (!monthsMap.has(monthKey)) {
@@ -397,18 +414,25 @@
 
         if (trades.length === 0 && journals.length === 0) return {};
 
-        // Use a Map for O(1) lookup
+        // Use Maps for O(1) lookup
         const journalMap = new Map<string, any>();
         for (const j of journals) {
-            journalMap.set(j.date, j);
+            journalMap.set(j.date.split("T")[0], j);
         }
 
-        const tradeDates = trades.map((t) => t.date);
-        const journalDates = journals.map((j) => j.date);
+        const tradeMap = new Map<string, any[]>();
+        for (const t of trades) {
+            const date = t.date.split("T")[0];
+            if (!tradeMap.has(date)) tradeMap.set(date, []);
+            tradeMap.get(date)!.push(t);
+        }
+
+        const tradeDates = trades.map((t) => t.date.split("T")[0]);
+        const journalDates = journals.map((j) => j.date.split("T")[0]);
         const allDates = [...new Set([...tradeDates, ...journalDates])].sort();
 
         const data = allDates.map((date) => {
-            const dailyTrades = trades.filter((t) => t.date === date);
+            const dailyTrades = tradeMap.get(date) || [];
             const pnl = dailyTrades.reduce((acc, t) => acc + t.result, 0);
             const journal = journalMap.get(date);
             const intensity = journal ? journal.intensity : null;
@@ -420,7 +444,7 @@
         });
 
         console.log(
-            `[PsychologyHub] correlationChartOption calculated in ${performance.now() - t0}ms`,
+            `[PsychologyHub] correlationChartOption optimized calculation in ${performance.now() - t0}ms`,
         );
 
         return {
@@ -429,7 +453,7 @@
             xAxis: {
                 type: "category",
                 data: data.map((d) => d.date),
-                axisLabel: { color: "#888" },
+                axisLabel: { color: "#888", fontSize: 10 },
             },
             yAxis: [
                 { type: "value", name: "Result", axisLabel: { color: "#888" } },
@@ -637,19 +661,9 @@
         }
     }
 
-    function deleteJournalEntry(id: string) {
-        entryToDelete = id;
-        showDeleteConfirm = true;
-    }
-
-    async function confirmDelete() {
-        if (entryToDelete) {
-            await settingsStore.removeJournalEntry(entryToDelete);
-            toast.success("Registro excluído.");
-        }
-        showDeleteConfirm = false;
-        entryToDelete = null;
-    }
+    const isLoading = $derived(
+        tradesStore.isLoading || settingsStore.isLoadingData,
+    );
 </script>
 
 <div class="space-y-6 animate-in fade-in duration-500">
@@ -679,150 +693,168 @@
 
     <!-- KPI Cards (Padronização Estilo Financeiro) -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Melhor Mindset -->
-        <div
-            class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 p-4 transition-all hover:border-emerald-500/30 border-l-[3px] border-l-emerald-500"
-        >
-            <div class="flex items-start justify-between">
-                <span
-                    class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
-                >
-                    Melhor Mindset
-                </span>
-                <Brain class="h-4 w-4 text-emerald-500" />
-            </div>
-            <div class="mt-4">
-                <div
-                    class="text-2xl font-black tracking-tighter text-emerald-500 uppercase leading-none"
-                >
-                    {bestMindset?.name || "-"}
+        {#if isLoading}
+            {#each Array(4) as _}
+                <Skeleton class="h-32 rounded-xl" />
+            {/each}
+        {:else}
+            <!-- Melhor Mindset -->
+            <div
+                class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 p-4 transition-all hover:border-emerald-500/30 border-l-[3px] border-l-emerald-500"
+            >
+                <div class="flex items-start justify-between">
+                    <span
+                        class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
+                    >
+                        Melhor Mindset
+                    </span>
+                    <Brain class="h-4 w-4 text-emerald-500" />
                 </div>
-                <p
-                    class="text-[10px] font-bold uppercase tracking-tight text-zinc-500 mt-1"
-                >
-                    Consolidado: {formatCurrency(bestMindset?.totalResult || 0)}
-                </p>
+                <div class="mt-4">
+                    <div
+                        class="text-2xl font-black tracking-tighter text-emerald-500 uppercase leading-none"
+                    >
+                        {bestMindset?.name || "-"}
+                    </div>
+                    <p
+                        class="text-[10px] font-bold uppercase tracking-tight text-zinc-500 mt-1"
+                    >
+                        Consolidado: {formatCurrency(
+                            bestMindset?.totalResult || 0,
+                        )}
+                    </p>
+                </div>
             </div>
-        </div>
 
-        <!-- Pior Mindset -->
-        <div
-            class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 p-4 transition-all hover:border-red-500/30 border-l-[3px] border-l-red-500"
-        >
-            <div class="flex items-start justify-between">
-                <span
-                    class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
-                >
-                    Pior Mindset
-                </span>
-                <AlertTriangle class="h-4 w-4 text-red-500" />
-            </div>
-            <div class="mt-4">
-                <div
-                    class="text-2xl font-black tracking-tighter text-red-500 uppercase leading-none"
-                >
-                    {worstMindset?.name || "-"}
+            <!-- Pior Mindset -->
+            <div
+                class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 p-4 transition-all hover:border-red-500/30 border-l-[3px] border-l-red-500"
+            >
+                <div class="flex items-start justify-between">
+                    <span
+                        class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
+                    >
+                        Pior Mindset
+                    </span>
+                    <AlertTriangle class="h-4 w-4 text-red-500" />
                 </div>
-                <p
-                    class="text-[10px] font-bold uppercase tracking-tight text-zinc-500 mt-1"
-                >
-                    Perda Acumulada: {formatCurrency(
-                        worstMindset?.totalResult || 0,
-                    )}
-                </p>
+                <div class="mt-4">
+                    <div
+                        class="text-2xl font-black tracking-tighter text-red-500 uppercase leading-none"
+                    >
+                        {worstMindset?.name || "-"}
+                    </div>
+                    <p
+                        class="text-[10px] font-bold uppercase tracking-tight text-zinc-500 mt-1"
+                    >
+                        Perda Acumulada: {formatCurrency(
+                            worstMindset?.totalResult || 0,
+                        )}
+                    </p>
+                </div>
             </div>
-        </div>
 
-        <!-- Custo do Tilt -->
-        <div
-            class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 p-4 transition-all hover:border-orange-500/30 border-l-[3px] border-l-orange-500"
-        >
-            <div class="flex items-start justify-between">
-                <span
-                    class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
-                >
-                    Custo do Tilt
-                </span>
-                <TrendingDown class="h-4 w-4 text-orange-500" />
-            </div>
-            <div class="mt-4">
-                <div
-                    class="text-2xl font-black tracking-tighter text-orange-500 leading-none"
-                >
-                    {formatCurrency(tiltResult)}
+            <!-- Custo do Tilt -->
+            <div
+                class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 p-4 transition-all hover:border-orange-500/30 border-l-[3px] border-l-orange-500"
+            >
+                <div class="flex items-start justify-between">
+                    <span
+                        class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
+                    >
+                        Custo do Tilt
+                    </span>
+                    <TrendingDown class="h-4 w-4 text-orange-500" />
                 </div>
-                <p
-                    class="text-[10px] font-bold uppercase tracking-tight text-zinc-500 mt-1"
-                >
-                    Baseado em {tiltTrades.length} trades emocionais
-                </p>
+                <div class="mt-4">
+                    <div
+                        class="text-2xl font-black tracking-tighter text-orange-500 leading-none"
+                    >
+                        {formatCurrency(tiltResult)}
+                    </div>
+                    <p
+                        class="text-[10px] font-bold uppercase tracking-tight text-zinc-500 mt-1"
+                    >
+                        Baseado em {tiltTrades.length} trades emocionais
+                    </p>
+                </div>
             </div>
-        </div>
 
-        <!-- Registros -->
-        <div
-            class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 p-4 transition-all hover:border-blue-500/30 border-l-[3px] border-l-blue-500"
-        >
-            <div class="flex items-start justify-between">
-                <span
-                    class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
-                >
-                    Registros
-                </span>
-                <CheckCircle2 class="h-4 w-4 text-blue-500" />
-            </div>
-            <div class="mt-4">
-                <div
-                    class="text-2xl font-black tracking-tighter text-blue-500 leading-none"
-                >
-                    {filteredJournal.length}
+            <!-- Registros -->
+            <div
+                class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 p-4 transition-all hover:border-blue-500/30 border-l-[3px] border-l-blue-500"
+            >
+                <div class="flex items-start justify-between">
+                    <span
+                        class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
+                    >
+                        Registros
+                    </span>
+                    <CheckCircle2 class="h-4 w-4 text-blue-500" />
                 </div>
-                <p
-                    class="text-[10px] font-bold uppercase tracking-tight text-zinc-500 mt-1"
-                >
-                    Check-ins psicológicos realizados
-                </p>
+                <div class="mt-4">
+                    <div
+                        class="text-2xl font-black tracking-tighter text-blue-500 leading-none"
+                    >
+                        {filteredJournal.length}
+                    </div>
+                    <p
+                        class="text-[10px] font-bold uppercase tracking-tight text-zinc-500 mt-1"
+                    >
+                        Check-ins psicológicos realizados
+                    </p>
+                </div>
             </div>
-        </div>
+        {/if}
     </div>
 
     <!-- Charts Section (3 Columns - Restored) -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card.Root class="bg-zinc-900/20 border-zinc-800">
-            <Card.Header class="pb-1">
-                <Card.Title
-                    class="text-[10px] font-black uppercase tracking-widest text-zinc-500"
-                    >PnL por Emoção</Card.Title
-                >
-            </Card.Header>
-            <Card.Content class="h-[250px] p-2">
-                <EChart options={resultByEmotionChartOption} />
-            </Card.Content>
-        </Card.Root>
+        {#if isLoading}
+            {#each Array(3) as _}
+                <Card.Root class="bg-zinc-900/20 border-zinc-800 h-[300px]">
+                    <Card.Content class="p-6">
+                        <Skeleton class="w-full h-full" />
+                    </Card.Content>
+                </Card.Root>
+            {/each}
+        {:else}
+            <Card.Root class="bg-zinc-900/20 border-zinc-800">
+                <Card.Header class="pb-1">
+                    <Card.Title
+                        class="text-[10px] font-black uppercase tracking-widest text-zinc-500"
+                        >PnL por Emoção</Card.Title
+                    >
+                </Card.Header>
+                <Card.Content class="h-[250px] p-2">
+                    <EChart options={resultByEmotionChartOption} />
+                </Card.Content>
+            </Card.Root>
 
-        <Card.Root class="bg-zinc-900/20 border-zinc-800">
-            <Card.Header class="pb-1">
-                <Card.Title
-                    class="text-[10px] font-black uppercase tracking-widest text-zinc-500"
-                    >Taxa de Acerto (%)</Card.Title
-                >
-            </Card.Header>
-            <Card.Content class="h-[250px] p-2">
-                <EChart options={winRateChartOption} />
-            </Card.Content>
-        </Card.Root>
+            <Card.Root class="bg-zinc-900/20 border-zinc-800">
+                <Card.Header class="pb-1">
+                    <Card.Title
+                        class="text-[10px] font-black uppercase tracking-widest text-zinc-500"
+                        >Taxa de Acerto (%)</Card.Title
+                    >
+                </Card.Header>
+                <Card.Content class="h-[250px] p-2">
+                    <EChart options={winRateChartOption} />
+                </Card.Content>
+            </Card.Root>
 
-        <Card.Root class="bg-zinc-900/20 border-zinc-800">
-            <Card.Header class="pb-1">
-                <Card.Title
-                    class="text-[10px] font-black uppercase tracking-widest text-zinc-500"
-                    >Intensidade vs Resultado</Card.Title
-                >
-            </Card.Header>
-            <Card.Content class="h-[250px] p-2">
-                <EChart options={correlationChartOption} />
-            </Card.Content>
-        </Card.Root>
+            <Card.Root class="bg-zinc-900/20 border-zinc-800">
+                <Card.Header class="pb-1">
+                    <Card.Title
+                        class="text-[10px] font-black uppercase tracking-widest text-zinc-500"
+                        >Intensidade vs Resultado</Card.Title
+                    >
+                </Card.Header>
+                <Card.Content class="h-[250px] p-2">
+                    <EChart options={correlationChartOption} />
+                </Card.Content>
+            </Card.Root>
+        {/if}
     </div>
 
     <!-- Detailed Analysis & Filters -->

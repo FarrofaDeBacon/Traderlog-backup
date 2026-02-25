@@ -49,25 +49,31 @@
             return;
         }
 
-        const existingEntry = settingsStore.getJournalEntryByDate(selectedDate);
-        if (existingEntry) {
-            await settingsStore.updateJournalEntry(existingEntry.id, {
-                content: journalNotes,
-                emotional_state_id: emotionalStateId || null,
-                intensity: emotionalIntensity,
-            });
-        } else {
-            await settingsStore.addJournalEntry({
-                date: selectedDate,
-                content: journalNotes,
-                emotional_state_id: emotionalStateId || null,
-                intensity: emotionalIntensity,
-            });
-        }
+        try {
+            const existingEntry =
+                settingsStore.getJournalEntryByDate(selectedDate);
+            if (existingEntry) {
+                await settingsStore.updateJournalEntry(existingEntry.id, {
+                    content: journalNotes,
+                    emotional_state_id: emotionalStateId || null,
+                    intensity: emotionalIntensity,
+                });
+            } else {
+                await settingsStore.addJournalEntry({
+                    date: selectedDate,
+                    content: journalNotes,
+                    emotional_state_id: emotionalStateId || null,
+                    intensity: emotionalIntensity,
+                });
+            }
 
-        toast.success($t("psychology.checkin.success"));
-        open = false;
-        aiFeedback = ""; // Reset feedback
+            toast.success($t("psychology.checkin.success"));
+            open = false;
+            aiFeedback = ""; // Reset feedback
+        } catch (e) {
+            console.error("[DailyCheckinDialog] Save error:", e);
+            toast.error("Erro ao salvar diário. Tente novamente.");
+        }
     }
 
     async function analyzeEntry() {

@@ -491,6 +491,14 @@
                 "s": "S",
                 "n": "N"
             },
+            "risk": {
+                "alerts_title": "Alertas de Risco",
+                "emotional_warning": "Estado emocional recente ({weight}) abaixo do limite ({threshold}). Sugestão: reduzir lote em {percent}%.",
+                "outlier_warning": "Perda 'outlier' detectada na janela de análise. Recomendado pausar e revisar estratégia.",
+                "sniper_warning": "Limite de seletividade atingido ({current}/{limit} trades).",
+                "reduce_lot_button": "Reduzir Lote em {percent}% Agora",
+                "toast_lot_adjusted": "Lote ajustado preventivamente conforme sugestão do Motor de Risco."
+            },
             "partials": {
                 "executed_volume": "Volume Executado",
                 "remaining": "Restantes",
@@ -562,6 +570,29 @@
         "description": "Gestão centralizada de caixa, extratos e fechamentos.",
         "dailyClosure": "Fechamento Diário",
         "newTransaction": "Novo Aporte/Retirada",
+        "darfDetails": {
+            "title": "Detalhes do Pagamento DARF",
+            "description": "Informações detalhadas sobre o imposto recolhido.",
+            "loading": "Buscando dados do DARF...",
+            "period": "Período de Apuração",
+            "statusPaid": "Pago",
+            "statusPending": "Pendente",
+            "complementaryBadge": "DARF Complementar",
+            "revenueCode": "Código da Receita",
+            "dueDate": "Vencimento",
+            "calculationInfo": "Detalhamento da Base de Cálculo",
+            "grossResult": "Resultado Bruto",
+            "compensatedLosses": "Prejuízos Compensados",
+            "calculationBasis": "Base de Cálculo",
+            "taxRate": "Alíquota Aplicada",
+            "principalValue": "Valor do Principal",
+            "fine": "Multa",
+            "interest": "Juros",
+            "totalPaid": "Total Pago",
+            "paidAt": "Pago em",
+            "dateNotAvailable": "Data não disponível",
+            "errorMessage": "Não foi possível carregar os detalhes deste DARF."
+        },
         "quickStats": {
             "totalBalance": "Saldo Total (Est.)",
             "activeAccounts": "Contas Ativas",
@@ -1163,6 +1194,30 @@
                 "Prop": "Mesa Proprietária",
                 "Real": "Conta Real",
                 "Demo": "Conta Demo"
+            },
+            "engine": {
+                "title": "Motor de Risco",
+                "psychological": {
+                    "title": "Acoplamento Psicológico",
+                    "description": "Ajusta o risco baseado na mentalidade (lookback de {count} trades).",
+                    "strategy": "Estratégia de Busca",
+                    "strategyStrict": "Apenas com dados",
+                    "strategySequence": "Últimos trades",
+                    "lookback": "Quantidade Amostras",
+                    "threshold": "Gatilho (Peso)",
+                    "multiplier": "Redução de Lote (X)"
+                },
+                "outlier": {
+                    "title": "Regressão de Outlier",
+                    "description": "Bloqueia trades se detectar perda desproporcional.",
+                    "lookback": "Amostras de Janela"
+                },
+                "sniper": {
+                    "title": "Modo Sniper",
+                    "description": "Foco em seletividade extrema.",
+                    "selectivity": "Máximo de Trades/Dia",
+                    "selectivityTip": "Sugerido: 2 a 3 trades para alta performance."
+                }
             }
         },
         "modalities": {
