@@ -938,7 +938,11 @@ class SettingsStore {
             const transaction = { ...item, id } as CashTransaction;
             await invoke("save_cash_transaction", { transaction: $state.snapshot(transaction) });
 
-            const existingIndex = this.cashTransactions.findIndex(t => t.id === id);
+            const cleanInputId = id.split(':').pop() || id;
+            const existingIndex = this.cashTransactions.findIndex(t => {
+                const cleanTId = t.id.split(':').pop() || t.id;
+                return cleanTId === cleanInputId;
+            });
             let amountDiff = transaction.amount;
 
             if (existingIndex >= 0) {
