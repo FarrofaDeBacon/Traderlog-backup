@@ -907,7 +907,10 @@ pub async fn seed_demo_data(db: State<'_, DbState>, modules: Vec<String>) -> Res
     crate::seed::demo_accounts_seed::seed_accounts(&db.0, filter.clone()).await?;
     
     // Seed trades with filter
-    crate::seed::demo_trades_seed::seed_all_demo_trades(&db.0, filter).await
+    crate::seed::demo_trades_seed::seed_all_demo_trades(&db.0, filter).await?;
+    
+    // Seed demo tax records
+    crate::seed::tax_seed::seed_initial_tax_records(&db.0).await
 }
 
 #[tauri::command]

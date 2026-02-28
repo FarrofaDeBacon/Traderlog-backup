@@ -100,13 +100,12 @@ pub async fn seed_tax_rules(db: &Surreal<Db>) -> Result<(), String> {
 
     println!("[SEED] ✅ Regras e Perfis Tributários sincronizados.");
     
-    // Seed initial records for demonstration
-    seed_initial_tax_records(db).await?;
+    // (Os registros de impostos de demonstração agora são gerados separadamente em run_all_seeds)
 
     Ok(())
 }
 
-async fn seed_initial_tax_records(db: &Surreal<Db>) -> Result<(), String> {
+pub async fn seed_initial_tax_records(db: &Surreal<Db>) -> Result<(), String> {
     println!("[SEED] Gerando Registros de Impostos de Demonstração...");
 
     let now = Utc::now();

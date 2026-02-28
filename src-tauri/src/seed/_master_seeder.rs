@@ -46,6 +46,7 @@ pub async fn run_all_seeds(db: &Surreal<Db>) -> Result<(), String> {
     // Nível 4: Dados Operacionais (Contas e Trades)
     demo_accounts_seed::seed_accounts(db, None).await?;
     demo_trades_seed::seed_all_demo_trades(db, None).await?;
+    tax_seed::seed_initial_tax_records(db).await?;
 
     println!("\n[SEED] ✅ Seeding concluído com sucesso!\n");
     Ok(())
