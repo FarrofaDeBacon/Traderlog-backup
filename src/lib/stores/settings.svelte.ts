@@ -70,6 +70,10 @@ class SettingsStore {
     hardwareId = $state<string>("");
     licenseDetails = $state<LicenseData | null>(null);
     isLoadingData = $state<boolean>(false);
+    activeProfile = $derived(this.riskProfiles.find(p => p.active) || this.riskProfiles[0]);
+    isLoggedIn = $state<boolean>(
+        typeof window !== "undefined" ? localStorage.getItem("isLoggedIn") === "true" : false
+    );
 
 
     // Computed license info
@@ -229,6 +233,12 @@ class SettingsStore {
             // Process results
             if (profile) {
                 this.userProfile = { ...this.userProfile, ...profile };
+
+                // If user has no password yet (legacy/new install), auto-login
+                if (!this.userProfile.password_hash) {
+                    this.isLoggedIn = true;
+                }
+
                 if (!this.userProfile.trial_start_date && this.userProfile.onboarding_completed) {
                     this.userProfile.trial_start_date = new Date().toISOString();
                     this.saveUserProfile();
@@ -246,7 +256,12 @@ class SettingsStore {
             if (transactionsRes) this.cashTransactions = transactionsRes;
             if (journalEntriesRes) this.journalEntries = journalEntriesRes;
             if (feesRes) this.fees = feesRes;
-            if (riskProfilesRes) this.riskProfiles = riskProfilesRes;
+            if (riskProfilesRes) {
+                this.riskProfiles = riskProfilesRes.map(rp => ({
+                    ...rp,
+                    account_ids: rp.account_ids ?? []
+                }));
+            }
             if (modalitiesRes) this.modalities = modalitiesRes;
             if (tagsRes) this.tags = tagsRes;
             if (indicatorsRes) this.indicators = indicatorsRes;
@@ -782,6 +797,15 @@ class SettingsStore {
         this.saveRiskProfiles();
     }
 
+    setActiveRiskProfile(id: string) {
+        this.riskProfiles = this.riskProfiles.map(r => ({
+            ...r,
+            active: r.id === id
+        }));
+        this.saveRiskProfiles();
+    }
+
+
     // Modalities
     addModality(item: Omit<Modality, "id">) {
         this.modalities.push({ ...item, id: crypto.randomUUID() });
@@ -911,13 +935,22 @@ class SettingsStore {
     async addCashTransaction(item: Omit<CashTransaction, "id"> & { id?: string }) {
         try {
             const id = item.id || crypto.randomUUID();
-            const transaction = { ...item, id };
+            const transaction = { ...item, id } as CashTransaction;
             await invoke("save_cash_transaction", { transaction: $state.snapshot(transaction) });
-            this.cashTransactions.push(transaction);
+
+            const existingIndex = this.cashTransactions.findIndex(t => t.id === id);
+            let amountDiff = transaction.amount;
+
+            if (existingIndex >= 0) {
+                amountDiff = transaction.amount - this.cashTransactions[existingIndex].amount;
+                this.cashTransactions[existingIndex] = transaction;
+            } else {
+                this.cashTransactions.push(transaction);
+            }
 
             const account = this.accounts.find(a => a.id === item.account_id);
-            if (account) {
-                const newBalance = account.balance + item.amount;
+            if (account && amountDiff !== 0) {
+                const newBalance = account.balance + amountDiff;
                 await this.updateAccount(account.id, { balance: newBalance });
             }
             return { success: true, id };
@@ -1187,8 +1220,26 @@ class SettingsStore {
         this.chartTypes = [];
     }
 
-    login(email: string, pass: string) { return true; }
-    logout() { console.log("User logged out"); }
+    async login(_email: string, pass: string): Promise<boolean> {
+        try {
+            const isValid = await invoke<boolean>("verify_password", { password: pass });
+            if (isValid) {
+                this.isLoggedIn = true;
+                localStorage.setItem("isLoggedIn", "true");
+            }
+            return isValid;
+        } catch (e) {
+            console.error("[SettingsStore] Login failed:", e);
+            throw e;
+        }
+    }
+
+    logout() {
+        this.isLoggedIn = false;
+        localStorage.removeItem("isLoggedIn");
+        console.log("[SettingsStore] User logged out");
+        window.location.href = "/login";
+    }
 }
 
 export const settingsStore = new SettingsStore();
