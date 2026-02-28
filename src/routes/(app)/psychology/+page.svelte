@@ -10,13 +10,15 @@
         Brain,
         TrendingUp,
         TrendingDown,
-        AlertTriangle,
         CheckCircle2,
-        Trash2,
-        ChevronDown,
+        AlertTriangle,
         Calendar,
         Eye,
+        ChevronDown,
+        Trash2,
+        Info,
     } from "lucide-svelte";
+
     import EChart from "$lib/components/ui/echart.svelte";
     import { Button } from "$lib/components/ui/button";
     import DailyCheckinDialog from "$lib/components/psychology/DailyCheckinDialog.svelte";
@@ -54,7 +56,11 @@
             if (lvl.trades) items.push(...lvl.trades);
             if (lvl.journalEntries) items.push(...lvl.journalEntries);
             if (lvl.weeks) {
-                for (const w of lvl.weeks.values()) processLevel(w);
+                const weeksList =
+                    lvl.weeks instanceof Map
+                        ? Array.from(lvl.weeks.values())
+                        : Object.values(lvl.weeks || {});
+                for (const w of weeksList) processLevel(w);
             }
             if (lvl.days) {
                 for (const d of lvl.days) processLevel(d);
@@ -226,8 +232,12 @@
         // Encontrar o estado equivalente mais próximo
         let bestState = null;
         let minDiff = Infinity;
-        for (const state of statesMap.values()) {
-            const diff = Math.abs(state.weight - avgWeight);
+        const statesList =
+            statesMap instanceof Map
+                ? Array.from(statesMap.values())
+                : Object.values(statesMap || {});
+        for (const state of statesList) {
+            const diff = Math.abs((state.weight || 0) - avgWeight);
             if (diff < minDiff) {
                 minDiff = diff;
                 bestState = state;
@@ -246,6 +256,7 @@
     }
 
     const hierarchicalPsychologyData = $derived.by(() => {
+        if (settingsStore.isLoadingData) return [];
         const t0 = performance.now();
         const monthsMap = new Map<string, any>();
 
@@ -347,36 +358,46 @@
         }
 
         // Convert Maps to sorted arrays and calculate emotions for higher levels
-        const result = Array.from(monthsMap.values())
-            .sort((a: any, b: any) => b.key.localeCompare(a.key))
-            .map((month: any) => {
-                const monthEmotion = calculateAverageEmotion(
-                    month.trades,
-                    month.journalEntries,
-                    statesMap,
-                );
-                const weeks = Array.from(
-                    (month.weeks as Map<string, any>).values(),
+        try {
+            const result = Array.from(monthsMap?.values() || [])
+                .sort((a: any, b: any) =>
+                    (b.key || "").localeCompare(a.key || ""),
                 )
-                    .sort((a: any, b: any) => b.key.localeCompare(a.key))
-                    .map((week: any) => {
-                        const weekEmotion = calculateAverageEmotion(
-                            week.trades,
-                            week.journalEntries,
-                            statesMap,
-                        );
-                        const days = week.days.sort((a: any, b: any) =>
-                            b.date.localeCompare(a.date),
-                        );
-                        return { ...week, ...weekEmotion, days };
-                    });
-                return { ...month, ...monthEmotion, weeks };
-            });
+                .map((month: any) => {
+                    const monthEmotion = calculateAverageEmotion(
+                        month.trades || [],
+                        month.journalEntries || [],
+                        statesMap,
+                    );
+                    const weeks = Array.from(
+                        (month.weeks as Map<string, any>)?.values() || [],
+                    )
+                        .sort((a: any, b: any) =>
+                            (b.key || "").localeCompare(a.key || ""),
+                        )
+                        .map((week: any) => {
+                            const weekEmotion = calculateAverageEmotion(
+                                week.trades || [],
+                                week.journalEntries || [],
+                                statesMap,
+                            );
+                            const days = (week.days || []).sort(
+                                (a: any, b: any) =>
+                                    (b.date || "").localeCompare(a.date || ""),
+                            );
+                            return { ...week, ...weekEmotion, days };
+                        });
+                    return { ...month, ...monthEmotion, weeks };
+                });
 
-        console.log(
-            `[PsychologyHub] hierarchicalPsychologyData calculated in ${performance.now() - t0}ms`,
-        );
-        return result;
+            console.log(
+                `[PsychologyHub] hierarchicalPsychologyData calculated in ${performance.now() - t0}ms`,
+            );
+            return result;
+        } catch (err) {
+            console.error("[PsychologyHub] Error processing results:", err);
+            return [];
+        }
     });
 
     // Auto-expand first items (Month and Week)
@@ -453,13 +474,27 @@
             xAxis: {
                 type: "category",
                 data: data.map((d) => d.date),
-                axisLabel: { color: "#888", fontSize: 10 },
+                axisLabel: { 
+                    color: "#888", 
+                    fontSize: 10,
+                    formatter: function (value: string) {
+                        try {
+                            const date = new Date(value + "T12:00:00");
+                            return date.toLocaleDateString($locale || "pt-BR", {
+                                day: "2-digit",
+                                month: "short"
+                            }).replace(".", "");
+                        } catch(e) {
+                            return value;
+                        }
+                    }
+                },
             },
             yAxis: [
-                { type: "value", name: "Result", axisLabel: { color: "#888" } },
+                { type: "value", name: $t("general.result"), axisLabel: { color: "#888" } },
                 {
                     type: "value",
-                    name: "Intensity",
+                    name: $t("general.intensityLabel") || $t("general.intensity_short") || "Intensidade",
                     min: 0,
                     max: 10,
                     axisLabel: { color: "#888" },
@@ -467,7 +502,7 @@
             ],
             series: [
                 {
-                    name: "Result",
+                    name: $t("general.result"),
                     type: "bar",
                     data: data.map((d) => d.pnl),
                     itemStyle: {
@@ -476,7 +511,7 @@
                     },
                 },
                 {
-                    name: "Intensity",
+                    name: $t("general.intensityLabel") || $t("general.intensity_short") || "Intensidade",
                     type: "line",
                     yAxisIndex: 1,
                     data: data.map((d) => d.intensity),
@@ -489,34 +524,42 @@
 
     // --- KPI & Summary Logic (Restored from Backup) ---
     const statsByEmotion = $derived.by(() => {
+        if (settingsStore.isLoadingData) return [];
         const stats = new Map<
             string,
             {
                 id: string;
                 name: string;
+                color: string;
                 count: number;
                 wins: number;
                 losses: number;
                 totalResult: number;
-                impact: "Positive" | "Negative" | "Neutral";
+                impact: string;
             }
         >();
 
-        for (const state of emotionalStates) {
+        const statesMap = new Map<string, any>();
+        for (const s of emotionalStates || []) statesMap.set(s.id, s);
+
+        for (const state of emotionalStates || []) {
             stats.set(state.id, {
                 id: state.id,
                 name: state.name,
+                color: state.color,
                 count: 0,
                 wins: 0,
                 losses: 0,
                 totalResult: 0,
-                impact: state.impact,
+                impact: state.impact || "Neutral",
             });
         }
 
+        // Ensure unknown is always there
         stats.set("unknown", {
             id: "unknown",
-            name: "Não Registrado",
+            name: "Não informado",
+            color: "#71717a",
             count: 0,
             wins: 0,
             losses: 0,
@@ -524,12 +567,12 @@
             impact: "Neutral",
         });
 
-        for (const trade of filteredTrades) {
+        for (const trade of filteredTrades || []) {
             const stateId = trade.entry_emotional_state_id || "unknown";
             const current = stats.get(stateId);
             if (current) {
                 current.count++;
-                current.totalResult += trade.result;
+                current.totalResult += Number(trade.result) || 0;
                 if (trade.result > 0) current.wins++;
                 else if (trade.result < 0) current.losses++;
             }
@@ -668,15 +711,18 @@
 
 <div class="space-y-6 animate-in fade-in duration-500">
     <!-- Header -->
+    <div class="mb-4 space-y-1">
+        <h1 class="text-xl font-black text-white uppercase tracking-tighter">
+            {$t("psychology.title")}
+        </h1>
+        <p class="text-[10px] text-muted-foreground font-bold uppercase">
+            {$t("psychology.description")}
+        </p>
+    </div>
+
     <div
         class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
     >
-        <div>
-            <h2 class="text-3xl font-bold tracking-tight">
-                {$t("psychology.title")}
-            </h2>
-            <p class="text-muted-foreground">{$t("psychology.description")}</p>
-        </div>
         <div class="flex items-center gap-2">
             <Button variant="outline" size="sm" onclick={syncWeights}>
                 <TrendingUp class="w-3 h-3 mr-1" />
@@ -700,108 +746,116 @@
         {:else}
             <!-- Melhor Mindset -->
             <div
-                class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 p-4 transition-all hover:border-emerald-500/30 border-l-[3px] border-l-emerald-500"
+                class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 transition-all hover:border-emerald-500/30 border-l-4 border-l-emerald-500"
             >
-                <div class="flex items-start justify-between">
+                <div class="flex items-start justify-between py-1.5 px-3">
                     <span
-                        class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
+                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
                     >
-                        Melhor Mindset
+                        {$t("psychology.kpi.bestMindset")}
                     </span>
-                    <Brain class="h-4 w-4 text-emerald-500" />
+                    <Brain class="h-3 w-3 text-emerald-500" />
                 </div>
-                <div class="mt-4">
+                <div class="py-1 px-3 pb-2">
                     <div
-                        class="text-2xl font-black tracking-tighter text-emerald-500 uppercase leading-none"
+                        class="text-base font-mono font-bold text-emerald-500 uppercase tracking-tight leading-none"
                     >
                         {bestMindset?.name || "-"}
                     </div>
                     <p
-                        class="text-[10px] font-bold uppercase tracking-tight text-zinc-500 mt-1"
+                        class="text-[10px] text-muted-foreground mt-1 underline decoration-emerald-500/30 underline-offset-2 decoration-dotted"
                     >
-                        Consolidado: {formatCurrency(
-                            bestMindset?.totalResult || 0,
-                        )}
+                        {$t("psychology.kpi.consolidated")}:
+                        <span class="font-mono font-bold"
+                            >{formatCurrency(
+                                bestMindset?.totalResult || 0,
+                            )}</span
+                        >
                     </p>
                 </div>
             </div>
 
             <!-- Pior Mindset -->
             <div
-                class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 p-4 transition-all hover:border-red-500/30 border-l-[3px] border-l-red-500"
+                class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 transition-all hover:border-red-500/30 border-l-4 border-l-red-500"
             >
-                <div class="flex items-start justify-between">
+                <div class="flex items-start justify-between py-1.5 px-3">
                     <span
-                        class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
+                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
                     >
-                        Pior Mindset
+                        {$t("psychology.kpi.worstMindset")}
                     </span>
-                    <AlertTriangle class="h-4 w-4 text-red-500" />
+                    <AlertTriangle class="h-3 w-3 text-red-500" />
                 </div>
-                <div class="mt-4">
+                <div class="py-1 px-3 pb-2">
                     <div
-                        class="text-2xl font-black tracking-tighter text-red-500 uppercase leading-none"
+                        class="text-base font-mono font-bold text-red-500 uppercase tracking-tight leading-none"
                     >
                         {worstMindset?.name || "-"}
                     </div>
                     <p
-                        class="text-[10px] font-bold uppercase tracking-tight text-zinc-500 mt-1"
+                        class="text-[10px] text-muted-foreground mt-1 underline decoration-red-500/30 underline-offset-2 decoration-dotted"
                     >
-                        Perda Acumulada: {formatCurrency(
-                            worstMindset?.totalResult || 0,
-                        )}
+                        {$t("psychology.kpi.accumulatedLoss")}:
+                        <span class="font-mono font-bold"
+                            >{formatCurrency(
+                                worstMindset?.totalResult || 0,
+                            )}</span
+                        >
                     </p>
                 </div>
             </div>
 
             <!-- Custo do Tilt -->
             <div
-                class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 p-4 transition-all hover:border-orange-500/30 border-l-[3px] border-l-orange-500"
+                class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 transition-all hover:border-orange-500/30 border-l-4 border-l-orange-500"
             >
-                <div class="flex items-start justify-between">
+                <div class="flex items-start justify-between py-1.5 px-3">
                     <span
-                        class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
+                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
                     >
-                        Custo do Tilt
+                        {$t("psychology.kpi.tiltCost")}
                     </span>
-                    <TrendingDown class="h-4 w-4 text-orange-500" />
+                    <TrendingDown class="h-3 w-3 text-orange-500" />
                 </div>
-                <div class="mt-4">
+                <div class="py-1 px-3 pb-2">
                     <div
-                        class="text-2xl font-black tracking-tighter text-orange-500 leading-none"
+                        class="text-base font-mono font-bold text-orange-500 tracking-tight leading-none"
                     >
                         {formatCurrency(tiltResult)}
                     </div>
                     <p
-                        class="text-[10px] font-bold uppercase tracking-tight text-zinc-500 mt-1"
+                        class="text-[10px] text-muted-foreground mt-1 whitespace-nowrap opacity-70"
                     >
-                        Baseado em {tiltTrades.length} trades emocionais
+                        {$t("psychology.kpi.tiltDescription", {
+                            values: { count: tiltTrades.length },
+                        })}
                     </p>
                 </div>
             </div>
 
             <!-- Registros -->
             <div
-                class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 p-4 transition-all hover:border-blue-500/30 border-l-[3px] border-l-blue-500"
+                class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 transition-all hover:border-blue-500/30 border-l-4 border-l-blue-500"
             >
-                <div class="flex items-start justify-between">
+                <div class="flex items-start justify-between py-1.5 px-3">
                     <span
-                        class="text-[10px] font-black uppercase tracking-widest text-zinc-400"
+                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
                     >
-                        Registros
+                        {$t("psychology.kpi.records")}
                     </span>
-                    <CheckCircle2 class="h-4 w-4 text-blue-500" />
+                    <CheckCircle2 class="h-3 w-3 text-blue-500" />
                 </div>
-                <div class="mt-4">
+                <div class="py-1 px-3 pb-2">
                     <div
-                        class="text-2xl font-black tracking-tighter text-blue-500 leading-none"
+                        class="text-base font-mono font-bold text-blue-500 tracking-tight leading-none"
                     >
                         {filteredJournal.length}
                     </div>
                     <p
-                        class="text-[10px] font-bold uppercase tracking-tight text-zinc-500 mt-1"
+                        class="text-[10px] text-muted-foreground mt-1 opacity-70"
                     >
-                        Check-ins psicológicos realizados
+                        {$t("psychology.kpi.recordsDescription")}
                     </p>
                 </div>
             </div>
@@ -823,7 +877,7 @@
                 <Card.Header class="pb-1">
                     <Card.Title
                         class="text-[10px] font-black uppercase tracking-widest text-zinc-500"
-                        >PnL por Emoção</Card.Title
+                        >{$t("psychology.charts.pnlByEmotion")}</Card.Title
                     >
                 </Card.Header>
                 <Card.Content class="h-[250px] p-2">
@@ -835,7 +889,7 @@
                 <Card.Header class="pb-1">
                     <Card.Title
                         class="text-[10px] font-black uppercase tracking-widest text-zinc-500"
-                        >Taxa de Acerto (%)</Card.Title
+                        >{$t("psychology.charts.winRate")}</Card.Title
                     >
                 </Card.Header>
                 <Card.Content class="h-[250px] p-2">
@@ -847,7 +901,7 @@
                 <Card.Header class="pb-1">
                     <Card.Title
                         class="text-[10px] font-black uppercase tracking-widest text-zinc-500"
-                        >Intensidade vs Resultado</Card.Title
+                        >{$t("psychology.charts.correlation")}</Card.Title
                     >
                 </Card.Header>
                 <Card.Content class="h-[250px] p-2">
@@ -865,12 +919,12 @@
             <h3
                 class="text-sm font-black uppercase tracking-widest text-zinc-400"
             >
-                Análise Hierárquica
+                {$t("psychology.analysis.title")}
             </h3>
             <p
                 class="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter"
             >
-                Mês > Semana > Dia
+                {$t("psychology.analysis.hierarchy")}
             </p>
         </div>
 
@@ -918,7 +972,7 @@
                 <div
                     class="h-40 flex items-center justify-center text-muted-foreground border-2 border-dashed rounded-xl border-zinc-800 uppercase text-[10px] font-black"
                 >
-                    Nenhum dado encontrado para o período
+                    {$t("general.noData")}
                 </div>
             {:else}
                 <div class="space-y-4">
@@ -953,7 +1007,8 @@
                                                 variant="outline"
                                                 class="text-[9px] px-1.5 h-4 bg-zinc-800 border-zinc-700 font-bold uppercase"
                                             >
-                                                {month.weeks.length} SEMANAS
+                                                {month.weeks.length}
+                                                {$t("general.weeks_upper")}
                                             </Badge>
                                             <div
                                                 class="flex gap-1.5 opacity-60"
@@ -1188,8 +1243,9 @@
                                                                     >
                                                                         <span
                                                                             class="text-xs font-bold text-zinc-100"
-                                                                            >Fechamento
-                                                                            Diário</span
+                                                                            >{$t(
+                                                                                "general.dayClosure",
+                                                                            )}</span
                                                                         >
                                                                         <div
                                                                             class="flex items-center gap-2"
@@ -1318,17 +1374,21 @@
                                                                                 >
                                                                                     <th
                                                                                         class="px-3 text-[8px] font-black text-zinc-500 uppercase"
-                                                                                        >Ativo</th
+                                                                                        >{$t(
+                                                                                            "general.asset",
+                                                                                        )}</th
                                                                                     >
                                                                                     <th
                                                                                         class="px-3 text-[8px] font-black text-zinc-500 uppercase"
-                                                                                        >Cálculo
-                                                                                        Emocional</th
+                                                                                        >{$t(
+                                                                                            "psychology.analysis.emotionalCalc",
+                                                                                        )}</th
                                                                                     >
                                                                                     <th
                                                                                         class="px-3 text-[8px] font-black text-zinc-500 uppercase text-right"
-                                                                                        >Peso
-                                                                                        Total</th
+                                                                                        >{$t(
+                                                                                            "psychology.analysis.totalWeight",
+                                                                                        )}</th
                                                                                     >
                                                                                 </tr>
                                                                             </thead>
@@ -1365,7 +1425,9 @@
                                                                                                         class="text-[8px] text-zinc-500 font-medium lowercase italic"
                                                                                                     >
                                                                                                         ({st?.weight}
-                                                                                                        peso
+                                                                                                        {$t(
+                                                                                                            "general.weight",
+                                                                                                        )}
                                                                                                         x
                                                                                                         {(
                                                                                                             trade.intensity ||
@@ -1373,7 +1435,9 @@
                                                                                                         ).toFixed(
                                                                                                             1,
                                                                                                         )}
-                                                                                                        int)
+                                                                                                        {$t(
+                                                                                                            "general.intensity_short",
+                                                                                                        )}
                                                                                                     </span>
                                                                                                 </div>
                                                                                             {/if}
@@ -1426,7 +1490,7 @@
             <h3
                 class="text-sm font-black uppercase tracking-widest text-zinc-400"
             >
-                Diário do Trader
+                {$t("psychology.journal.title")}
             </h3>
             <div
                 class="rounded-xl border border-zinc-800 bg-zinc-900/20 overflow-hidden"
@@ -1439,27 +1503,33 @@
                             <tr class="h-8">
                                 <th
                                     class="px-3 text-[9px] font-black text-zinc-500 uppercase"
-                                    >Data</th
+                                    >{$t("general.date")}</th
                                 >
                                 <th
                                     class="px-3 text-[9px] font-black text-zinc-500 uppercase w-32"
-                                    >E. Entrada</th
+                                    >{$t(
+                                        "psychology.journal.entryStateShort",
+                                    )}</th
                                 >
                                 <th
                                     class="px-3 text-[9px] font-black text-zinc-500 uppercase w-32"
-                                    >E. Saída</th
+                                    >{$t(
+                                        "psychology.journal.exitStateShort",
+                                    )}</th
                                 >
                                 <th
                                     class="px-3 text-[9px] font-black text-zinc-500 uppercase text-right"
-                                    >Int.</th
+                                    >{$t(
+                                        "psychology.journal.intensityShort",
+                                    )}</th
                                 >
                                 <th
                                     class="px-3 text-[9px] font-black text-zinc-500 uppercase text-right"
-                                    >Score</th
+                                    >{$t("psychology.journal.score")}</th
                                 >
                                 <th
                                     class="px-3 text-[9px] font-black text-zinc-500 uppercase text-right"
-                                    >Ação</th
+                                    >{$t("general.actions")}</th
                                 >
                             </tr>
                         </thead>
@@ -1576,7 +1646,7 @@
                         <h2
                             class="text-xl font-black uppercase tracking-tighter"
                         >
-                            Insight de Cálculo
+                            {$t("psychology.insight.title")}
                         </h2>
                         <p
                             class="text-xs font-bold text-zinc-500 uppercase mt-1"
@@ -1613,23 +1683,23 @@
                         <tr class="h-8 border-b border-zinc-800">
                             <th
                                 class="px-3 text-[9px] font-black text-zinc-500 uppercase"
-                                >Origem</th
+                                >{$t("general.origin")}</th
                             >
                             <th
                                 class="px-3 text-[9px] font-black text-zinc-500 uppercase w-32"
-                                >E. Entrada</th
+                                >{$t("psychology.journal.entryStateShort")}</th
                             >
                             <th
                                 class="px-3 text-[9px] font-black text-zinc-500 uppercase w-32"
-                                >E. Saída</th
+                                >{$t("psychology.journal.exitStateShort")}</th
                             >
                             <th
                                 class="px-3 text-[9px] font-black text-zinc-500 uppercase text-right"
-                                >Int.</th
+                                >{$t("psychology.journal.intensityShort")}</th
                             >
                             <th
                                 class="px-3 text-[9px] font-black text-zinc-500 uppercase text-right"
-                                >Score Op.</th
+                                >{$t("psychology.insight.opScore")}</th
                             >
                         </tr>
                     </thead>
@@ -1672,7 +1742,10 @@
                                             <span
                                                 class="text-[10px] font-bold text-white uppercase"
                                             >
-                                                {item.asset_symbol || "DIÁRIO"}
+                                                {item.asset_symbol ||
+                                                    $t(
+                                                        "general.day",
+                                                    ).toUpperCase()}
                                             </span>
                                             <span
                                                 class="text-[8px] text-zinc-500 font-medium"
@@ -1767,7 +1840,7 @@
                         <h4
                             class="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2"
                         >
-                            Fórmula de Cálculo
+                            {$t("psychology.insight.formulaTitle")}
                         </h4>
                         <div class="flex flex-col gap-1.5">
                             <div class="flex flex-col">

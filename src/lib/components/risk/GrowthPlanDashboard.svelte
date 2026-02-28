@@ -6,6 +6,7 @@
     import { TrendingUp, TrendingDown, Lock, CheckCircle } from "lucide-svelte";
     import { evaluateGrowthPhase } from "$lib/utils/riskLogic";
     import { toast } from "svelte-sonner";
+    import { t } from "svelte-i18n";
 
     // Mock das estatísticas (Em produção viria do Store de Trades)
     let currentStats = {
@@ -15,11 +16,7 @@
         lossStreak: 1,
     };
 
-    let activeProfile = $derived(
-        settingsStore.riskProfiles.find(
-            (p) => p.account_type_applicability === "Real",
-        ) || settingsStore.riskProfiles[0],
-    );
+    let activeProfile = $derived(settingsStore.activeProfile);
     let currentPhase = $derived(
         activeProfile?.growth_phases?.[activeProfile.current_phase_index],
     );
@@ -37,7 +34,13 @@
                 evaluation.newPhaseIndex,
             );
             toast.success(
-                `Parabéns! Você subiu para a ${activeProfile.growth_phases[evaluation.newPhaseIndex].name}`,
+                $t("settings.risk.growthPlan.toasts.promote", {
+                    values: {
+                        name: activeProfile.growth_phases[
+                            evaluation.newPhaseIndex
+                        ].name,
+                    },
+                }),
             );
         }
     }
@@ -49,7 +52,13 @@
                 evaluation.newPhaseIndex,
             );
             toast.warning(
-                `Atenção: Você voltou para a ${activeProfile.growth_phases[evaluation.newPhaseIndex].name}`,
+                $t("settings.risk.growthPlan.toasts.demote", {
+                    values: {
+                        name: activeProfile.growth_phases[
+                            evaluation.newPhaseIndex
+                        ].name,
+                    },
+                }),
             );
         }
     }
@@ -62,11 +71,13 @@
                 <div class="space-y-1">
                     <Card.Title class="flex items-center gap-2">
                         <TrendingUp class="w-5 h-5 text-primary" />
-                        Plano de Crescimento: {currentPhase.name}
+                        {$t("settings.risk.growthPlan.title")}: {currentPhase.name}
                     </Card.Title>
                     <Card.Description
-                        >Lote Máximo: <strong>{currentPhase.max_lots}</strong> |
-                        Loss Diário:
+                        >{$t("settings.risk.growthPlan.maxLotsLabel")}
+                        <strong>{currentPhase.max_lots}</strong>
+                        |
+                        {$t("settings.risk.growthPlan.dailyLossLabel")}
                         <strong>R$ {currentPhase.max_daily_loss}</strong
                         ></Card.Description
                     >
@@ -74,14 +85,16 @@
                 <div class="text-right">
                     <span
                         class="text-xs text-muted-foreground uppercase font-bold"
-                        >Status Atual</span
+                        >{$t("settings.risk.growthPlan.status.title")}</span
                     >
                     <div class="font-mono text-lg">
                         {evaluation?.action === "promote"
-                            ? "APROVADO"
+                            ? $t("settings.risk.growthPlan.status.approved")
                             : evaluation?.action === "demote"
-                              ? "REGRESSÃO"
-                              : "EM ANDAMENTO"}
+                              ? $t("settings.risk.growthPlan.status.regression")
+                              : $t(
+                                    "settings.risk.growthPlan.status.inProgress",
+                                )}
                     </div>
                 </div>
             </div>
@@ -91,14 +104,20 @@
                 <!-- Progression Status -->
                 <div class="space-y-2">
                     <span class="text-xs font-semibold text-green-600"
-                        >Requisitos para Subir</span
+                        >{$t(
+                            "settings.risk.growthPlan.requirements.promote",
+                        )}</span
                     >
-                    {#each currentPhase.progression_rules as rule}
+                    {#each currentPhase?.progression_rules || [] as rule}
                         <div class="flex justify-between text-sm">
                             <span
                                 >{rule.condition === "profit_target"
-                                    ? "Lucro"
-                                    : "Dias Positivos"}</span
+                                    ? $t(
+                                          "settings.risk.growthPlan.requirements.profit",
+                                      )
+                                    : $t(
+                                          "settings.risk.growthPlan.requirements.days",
+                                      )}</span
                             >
                             <span>
                                 {rule.condition === "profit_target"
@@ -118,14 +137,20 @@
                 <!-- Regression Status -->
                 <div class="space-y-2">
                     <span class="text-xs font-semibold text-red-600"
-                        >Limites de Segurança (Regressão)</span
+                        >{$t(
+                            "settings.risk.growthPlan.requirements.demote",
+                        )}</span
                     >
-                    {#each currentPhase.regression_rules as rule}
+                    {#each currentPhase?.regression_rules || [] as rule}
                         <div class="flex justify-between text-sm">
                             <span
                                 >{rule.condition === "drawdown_limit"
-                                    ? "Drawdown"
-                                    : "Sequência de Loss"}</span
+                                    ? $t(
+                                          "settings.risk.growthPlan.requirements.drawdown",
+                                      )
+                                    : $t(
+                                          "settings.risk.growthPlan.requirements.lossStreak",
+                                      )}</span
                             >
                             <span
                                 class={currentStats.currentDrawdown > rule.value
@@ -155,12 +180,12 @@
                         class="bg-green-600 hover:bg-green-700 text-white"
                     >
                         <CheckCircle class="w-4 h-4 mr-2" />
-                        Confirmar Promoção
+                        {$t("settings.risk.growthPlan.actions.promote")}
                     </Button>
                 {:else if evaluation?.action === "demote"}
                     <Button onclick={applyRegression} variant="destructive">
                         <Lock class="w-4 h-4 mr-2" />
-                        Aceitar Regressão
+                        {$t("settings.risk.growthPlan.actions.demote")}
                     </Button>
                 {/if}
             </div>

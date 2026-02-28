@@ -15,6 +15,7 @@
   import { Separator } from "$lib/components/ui/separator";
   import * as Dialog from "$lib/components/ui/dialog";
   import NewTradeWizard from "$lib/components/trades/NewTradeWizard.svelte";
+  import CurrencyTicker from "$lib/components/finance/CurrencyTicker.svelte";
   import {
     TrendingUp,
     TrendingDown,
@@ -30,8 +31,9 @@
     Wallet,
     Plus,
   } from "lucide-svelte";
-  import { isSameDay, startOfMonth, format } from "date-fns";
+  import { isSameDay, startOfMonth, format, parseISO } from "date-fns";
   import PerformanceCalendar from "$lib/components/dashboard/PerformanceCalendar.svelte";
+  import { ptBR } from "date-fns/locale";
   import { cn } from "$lib/utils";
   import {
     Select,
@@ -44,6 +46,8 @@
   // --- State ---
   let selectedAccountId = $state<string>("all");
   let isNewTradeOpen = $state(false);
+  let isDailyDetailOpen = $state(false);
+  let selectedDateForDetail = $state<Date | null>(null);
 
   const filteredTrades = $derived.by(() => {
     let trades = tradesStore.trades || [];
@@ -57,27 +61,117 @@
     settingsStore.accounts.find((a) => a.id === selectedAccountId),
   );
 
-  // --- Active Components (Elder / Velez) ---
-  const activeProfile = $derived.by(() => {
-    if (selectedAccountId === "all") return settingsStore.riskProfiles[0];
-    const account = selectedAccount;
-    return (
-      settingsStore.riskProfiles.find(
-        (p) =>
-          p.account_type_applicability === account?.account_type ||
-          p.account_type_applicability === "All",
-      ) || settingsStore.riskProfiles[0]
-    );
-  });
-
-  const activePhase = $derived(
-    activeProfile?.growth_phases?.[activeProfile.current_phase_index],
+  const activeProfile = $derived(
+    settingsStore.activeProfile || settingsStore.riskProfiles[0],
   );
+
+  const activePhase = $derived.by(() => {
+    const profile = activeProfile;
+    if (
+      !profile ||
+      !profile.growth_phases ||
+      profile.current_phase_index === undefined
+    )
+      return null;
+    return profile.growth_phases[profile.current_phase_index] || null;
+  });
 
   // --- Mastery Stats Engine ---
   const stats = $derived.by(() => {
-    const trades = filteredTrades;
-    if (trades.length === 0)
+    try {
+      const trades = filteredTrades;
+      if (!trades || trades.length === 0)
+        return {
+          net: 0,
+          winRate: 0,
+          profitFactor: 0,
+          payoff: 0,
+          equity: [],
+          monthResult: 0,
+          dayResult: 0,
+          discipline: 100,
+          drawdown: 0,
+          tradesToday: 0,
+          avgRFactor: 0,
+        };
+
+      const sorted = [...trades].sort((a, b) => {
+        const da = new Date(a.date).getTime();
+        const db = new Date(b.date).getTime();
+        return (isNaN(da) ? 0 : da) - (isNaN(db) ? 0 : db);
+      });
+
+      let current = 0,
+        totalW = 0,
+        totalL = 0,
+        wins = 0,
+        dayRes = 0,
+        monthRes = 0,
+        discSum = 0,
+        peak = 0,
+        maxDD = 0,
+        tradesToday = 0,
+        rFactorSum = 0,
+        rFactorCount = 0;
+      const today = new Date();
+      const thisMonth = startOfMonth(today);
+
+      const equity = sorted.map((t) => {
+        const res = Number(t.result) || 0;
+        current += res;
+
+        // Drawdown Logic
+        if (current > peak) peak = current;
+        const dd = peak === 0 ? 0 : ((peak - current) / peak) * 100;
+        if (dd > maxDD) maxDD = dd;
+
+        if (res > 0) {
+          wins++;
+          totalW += res;
+        } else if (res < 0) {
+          totalL += Math.abs(res);
+        }
+
+        try {
+          const tDate = parseISO(t.date);
+          if (isSameDay(tDate, today)) {
+            dayRes += res;
+            tradesToday++;
+          }
+          if (tDate >= thisMonth) monthRes += res;
+        } catch (e) {
+          // ignore single date error
+        }
+
+        discSum += t.followed_plan ? 100 : 0;
+
+        // R-Factor calculation (Reward/Risk)
+        if (t.risk_amount && t.risk_amount > 0) {
+          rFactorSum += t.result / t.risk_amount;
+          rFactorCount++;
+        }
+
+        return [new Date(t.date).getTime(), current];
+      });
+
+      return {
+        net: current,
+        winRate: (wins / trades.length) * 100,
+        profitFactor: totalL === 0 ? (totalW > 0 ? 99 : 0) : totalW / totalL,
+        payoff:
+          wins > 0 && trades.length - wins > 0
+            ? totalW / wins / (totalL / (trades.length - wins) || 1)
+            : 0,
+        equity,
+        monthResult: monthRes,
+        dayResult: dayRes,
+        discipline: discSum / trades.length,
+        drawdown: maxDD,
+        tradesToday,
+        avgRFactor: rFactorCount > 0 ? rFactorSum / rFactorCount : 0,
+      };
+    } catch (err) {
+      console.error("[Dashboard] Error in stats derived:", err);
       return {
         net: 0,
         winRate: 0,
@@ -86,50 +180,28 @@
         equity: [],
         monthResult: 0,
         dayResult: 0,
-        discipline: 100,
+        discipline: 0,
+        drawdown: 0,
+        tradesToday: 0,
+        avgRFactor: 0,
       };
-
-    const sorted = [...trades].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-    );
-    let current = 0,
-      totalW = 0,
-      totalL = 0,
-      wins = 0,
-      dayRes = 0,
-      monthRes = 0,
-      discSum = 0;
-    const today = new Date();
-    const thisMonth = startOfMonth(today);
-
-    const equity = sorted.map((t) => {
-      current += t.result || 0;
-      if (t.result > 0) {
-        wins++;
-        totalW += t.result;
-      } else {
-        totalL += Math.abs(t.result);
-      }
-      if (isSameDay(new Date(t.date), today)) dayRes += t.result;
-      if (new Date(t.date) >= thisMonth) monthRes += t.result;
-      discSum += t.followed_plan ? 100 : 0;
-      return [new Date(t.date).getTime(), current];
-    });
-
-    return {
-      net: current,
-      winRate: (wins / trades.length) * 100,
-      profitFactor: totalL === 0 ? 10 : totalW / totalL,
-      payoff:
-        wins > 0 && trades.length - wins > 0
-          ? totalW / wins / (totalL / (trades.length - wins))
-          : 0,
-      equity,
-      monthResult: monthRes,
-      dayResult: dayRes,
-      discipline: discSum / trades.length,
-    };
+    }
   });
+
+  const growthProgress = $derived.by(() => {
+    if (!activePhase) return 0;
+    const rule = activePhase.progression_rules.find(
+      (r: any) => r.condition === "profit_target",
+    );
+    if (!rule) return 0;
+    const target = rule.value;
+    return Math.min(Math.max((stats.net / target) * 100, 0), 100);
+  });
+
+  function handleDayClick(day: Date) {
+    selectedDateForDetail = day;
+    isDailyDetailOpen = true;
+  }
 
   function formatCurrency(val: number) {
     return new Intl.NumberFormat("pt-BR", {
@@ -149,13 +221,15 @@
     grid: { top: 10, right: 10, bottom: 30, left: 50 },
     xAxis: {
       type: "time",
-      axisLine: { lineStyle: { color: "var(--border)" } },
-      axisLabel: { color: "var(--muted-foreground)", fontSize: 10 },
+      axisLine: { lineStyle: { color: "rgba(255,255,255,0.15)" } },
+      axisLabel: { color: "#71717a", fontSize: 10 },
     },
     yAxis: {
       type: "value",
-      splitLine: { lineStyle: { color: "var(--border)", type: "dashed" } },
-      axisLabel: { color: "var(--muted-foreground)", fontSize: 10 },
+      splitLine: {
+        lineStyle: { color: "rgba(255,255,255,0.1)", type: "dashed" },
+      },
+      axisLabel: { color: "#71717a", fontSize: 10 },
     },
     series: [
       {
@@ -182,368 +256,747 @@
   });
 </script>
 
-<div class="flex-1 space-y-8 p-8 min-h-screen">
-  <Dialog.Root bind:open={isNewTradeOpen}>
-    <Dialog.Content
-      class="max-w-3xl max-h-[85vh] p-0 border-0 bg-transparent shadow-none"
-    >
-      <NewTradeWizard close={() => (isNewTradeOpen = false)} />
-    </Dialog.Content>
-  </Dialog.Root>
-
-  <!-- TOP Navigation & Survival (Elder Focus) -->
-  <div
-    class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6"
-  >
-    <div class="flex flex-col md:flex-row md:items-center gap-6">
-      <div>
-        <h2
-          class="text-4xl font-extrabold tracking-tight text-foreground font-outfit"
+{#if settingsStore.isLoadingData}
+  <div class="flex items-center justify-center p-20 min-h-[60vh] w-full">
+    <div class="flex flex-col items-center gap-4 text-center">
+      <div
+        class="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"
+      ></div>
+      <div class="space-y-1">
+        <p
+          class="text-sm font-bold text-foreground uppercase tracking-widest animate-pulse"
         >
-          Trading <span class="text-primary">Mastery</span>
-        </h2>
-        <p class="text-slate-500 font-medium text-sm">
-          Controle de Operações e Mindset
+          {$t("dashboard.syncingTerminal") || "Sincronizando Terminal"}
+        </p>
+        <p
+          class="text-xs text-muted-foreground uppercase font-medium tracking-tighter opacity-70"
+        >
+          {$t("dashboard.waitingSurvivorData") ||
+            "Aguardando dados do Survivor Hub..."}
         </p>
       </div>
-
-      <div class="flex items-center gap-3">
-        <Select type="single" bind:value={selectedAccountId}>
-          <SelectTrigger class="w-[220px]">
-            <div class="flex items-center gap-2">
-              <Wallet class="w-4 h-4 text-muted-foreground" />
-              <SelectValue placeholder="Selecione a Conta" />
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as Contas</SelectItem>
-            {#each settingsStore.accounts as acc}
-              <SelectItem value={acc.id}>{acc.nickname}</SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
-
-        <Button
-          onclick={() => (isNewTradeOpen = true)}
-          class="bg-emerald-600 hover:bg-emerald-700 shadow-sm gap-2"
-        >
-          <Plus class="w-4 h-4" /> Novo Trade
-        </Button>
-      </div>
-    </div>
-
-    <!-- Active Risk Monitors (Elder 2% / 6%) -->
-    <div class="flex flex-wrap gap-4">
-      <Card
-        class="border-border shadow-sm px-6 py-3 flex items-center gap-4 min-w-[200px]"
-      >
-        <div class="p-2 bg-emerald-500/10 rounded-lg">
-          <ShieldCheck class="w-5 h-5 text-emerald-500" />
-        </div>
-        <div>
-          <p
-            class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider"
-          >
-            Risco por Trade (2%)
-          </p>
-          <p class="text-lg font-black text-foreground">OK</p>
-        </div>
-      </Card>
-
-      <Card
-        class="border-border shadow-sm px-6 py-3 flex items-center gap-4 min-w-[200px]"
-      >
-        <div class="p-2 bg-rose-500/10 rounded-lg">
-          <TrendingDown class="w-5 h-5 text-rose-500" />
-        </div>
-        <div>
-          <p
-            class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider"
-          >
-            Risco Mensal (6%)
-          </p>
-          <div class="flex items-center gap-2">
-            {#if stats}
-              {@const monthlyExposure =
-                (Math.abs(stats.monthResult) /
-                  (selectedAccount?.balance || 10000)) *
-                100}
-              <span class="text-lg font-black text-foreground"
-                >{monthlyExposure.toFixed(1)}%</span
-              >
-              <div class="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  class={cn(
-                    "h-full",
-                    monthlyExposure > 4 ? "bg-rose-500" : "bg-emerald-500",
-                  )}
-                  style="width: {Math.min((monthlyExposure / 6) * 100, 100)}%"
-                ></div>
-              </div>
-            {/if}
-          </div>
-        </div>
-      </Card>
     </div>
   </div>
+{:else}
+  <div class="space-y-6">
+    <div class="px-4 pt-4 -mb-8">
+      <CurrencyTicker />
+    </div>
 
-  <Separator class="bg-slate-200 opacity-50" />
+    <div class="flex-1 flex flex-col space-y-8 p-4 md:p-8 min-h-screen">
+      <Dialog.Root bind:open={isNewTradeOpen}>
+        <Dialog.Content
+          class="max-w-3xl max-h-[85vh] p-0 border-0 bg-transparent shadow-none"
+        >
+          <NewTradeWizard close={() => (isNewTradeOpen = false)} />
+        </Dialog.Content>
+      </Dialog.Root>
 
-  <!-- Main Grid: Growth & Performance -->
-  <div class="grid gap-8 lg:grid-cols-7">
-    <!-- Left Wing: Analytical Hub (5 Cols) -->
-    <div class="col-span-full xl:col-span-5 space-y-8">
-      <!-- Primary Metrics Bento -->
-      <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        {#each [{ label: "Resultado Total", val: formatCurrency(stats.net), icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" }, { label: "Taxa de Acerto", val: `${stats.winRate.toFixed(1)}%`, icon: Trophy, color: "text-blue-600", bg: "bg-blue-50" }, { label: "Fator de Lucro", val: stats.profitFactor.toFixed(2), icon: Activity, color: "text-amber-600", bg: "bg-amber-50" }, { label: "Disciplina (Douglas)", val: `${stats.discipline.toFixed(0)}%`, icon: Zap, color: "text-purple-600", bg: "bg-purple-50" }] as kpi}
-          <Card class="hover:shadow-md transition-shadow group">
-            <CardContent class="p-6">
-              <div class="flex items-center justify-between mb-4">
-                <div
-                  class={cn(
-                    "p-2 rounded-xl transition-transform group-hover:scale-110",
-                    kpi.bg,
-                  )}
-                >
-                  <kpi.icon class={cn("w-5 h-5", kpi.color)} />
-                </div>
-                <Badge
-                  variant="secondary"
-                  class="bg-muted text-muted-foreground text-[9px] border-none font-bold uppercase tracking-widest"
-                  >Mastery</Badge
-                >
-              </div>
-              <h3
-                class="text-2xl font-black text-foreground tracking-tight font-outfit"
-              >
-                {kpi.val}
-              </h3>
-              <p
-                class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1"
-              >
-                {kpi.label}
+      <!-- TOP Navigation & Survivor Hub (Compact Header) -->
+      <div
+        class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
+      >
+        <div class="space-y-0.5">
+          <h1 class="text-3xl font-bold tracking-tight text-foreground">
+            {$t("dashboard.title")}
+          </h1>
+          <div class="flex items-center gap-3">
+            <p class="text-sm text-muted-foreground">
+              {$t("dashboard.subtitle")}
+            </p>
+            <Separator orientation="vertical" class="h-4" />
+            <div class="flex items-center gap-2">
+              <p class="text-xs font-medium text-muted-foreground/80">
+                {$t("dashboard.terminalHub")}
               </p>
+              <Select type="single" bind:value={selectedAccountId}>
+                <SelectTrigger class="w-[180px] h-8 text-xs font-medium">
+                  <div class="flex items-center gap-2">
+                    <Wallet class="w-3 h-3 text-muted-foreground shrink-0" />
+                    <span class="truncate">
+                      {selectedAccountId === "all"
+                        ? $t("general.all")
+                        : settingsStore.accounts.find(
+                            (a) => a.id === selectedAccountId,
+                          )?.nickname || $t("trades.filters.account")}
+                    </span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{$t("general.all")}</SelectItem>
+                  {#each settingsStore.accounts as acc}
+                    <SelectItem value={acc.id}>{acc.nickname}</SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <Button
+            onclick={() => (isNewTradeOpen = true)}
+            class="bg-emerald-600 hover:bg-emerald-700 shadow-md gap-2 font-semibold px-6"
+          >
+            <Plus class="w-4 h-4" />
+            {$t("dashboard.newTrade")}
+          </Button>
+        </div>
+      </div>
+
+      <!-- ELITE KPI LINE: 6 Professional Horizontal Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+        {#each [{ label: $t("dashboard.kpis.netResult"), val: formatCurrency(stats.net), icon: TrendingUp, color: "text-emerald-500", borderColor: "border-l-emerald-500" }, { label: $t("dashboard.kpis.winRate"), val: `${stats.winRate.toFixed(1)}%`, icon: Trophy, color: "text-blue-500", borderColor: "border-l-blue-500" }, { label: $t("dashboard.kpis.profitFactor"), val: stats.profitFactor.toFixed(2), icon: Activity, color: "text-amber-500", borderColor: "border-l-amber-500" }, { label: $t("dashboard.kpis.discipline"), val: `${stats.discipline.toFixed(0)}%`, icon: Zap, color: "text-purple-500", borderColor: "border-l-purple-500" }, { label: $t("dashboard.kpis.payoff"), val: stats.payoff.toFixed(2), icon: ArrowUpRight, color: "text-indigo-400", borderColor: "border-l-indigo-400" }, { label: $t("dashboard.kpis.maxDrawdown"), val: `${(stats.drawdown || 0).toFixed(1)}%`, icon: Activity, color: "text-rose-500", borderColor: "border-l-rose-500" }] as kpi}
+          <Card
+            class="shadow-sm bg-card border-l-2 {kpi.borderColor} hover:shadow-md transition-shadow"
+          >
+            <CardContent class="py-0.5 px-2.5">
+              <div class="flex items-center justify-between space-y-0">
+                <span
+                  class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
+                  >{kpi.label}</span
+                >
+                <kpi.icon class={cn("w-3 h-3", kpi.color)} />
+              </div>
+              <div class="mt-0">
+                <h3
+                  class="text-base font-mono font-bold text-foreground tabular-nums tracking-tight leading-none"
+                >
+                  {kpi.val}
+                </h3>
+              </div>
             </CardContent>
           </Card>
         {/each}
       </div>
 
-      <!-- Performance Timeline Central (Calendar request) -->
-      <Card class="overflow-hidden">
-        <CardHeader class="border-b border-border/50 px-8 py-6 bg-muted/20">
-          <div class="flex items-center justify-between">
-            <div>
-              <CardTitle
-                class="text-xl font-black text-foreground uppercase tracking-tighter"
-                >Calendário de Performance</CardTitle
-              >
-              <CardDescription
-                class="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1"
-                >Clique para detalhar o histórico</CardDescription
-              >
-            </div>
-            <Button variant="outline" size="sm" class="gap-2"
-              ><Calendar class="w-4 h-4" /> Detalhes Mensais</Button
-            >
-          </div>
-        </CardHeader>
-        <CardContent class="p-8">
-          <PerformanceCalendar trades={filteredTrades} />
-        </CardContent>
-      </Card>
+      <Separator />
 
-      <!-- Equity Curve -->
-      <Card class="p-8">
-        <div class="flex justify-between items-center mb-10">
-          <div>
-            <h3
-              class="text-xl font-black text-foreground uppercase tracking-tighter"
-            >
-              Curva de Patrimônio
-            </h3>
-            <p
-              class="text-xs font-bold text-muted-foreground uppercase tracking-widest"
-            >
-              Evolução Líquida Acumulada
-            </p>
-          </div>
-          <div class="flex gap-2">
-            <Badge
-              class="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20 font-bold px-3 py-1"
-              >CONSISTÊNCIA ALTA</Badge
-            >
-          </div>
-        </div>
-        <div class="h-[350px]">
-          <EChart options={equityOptions} />
-        </div>
-      </Card>
-    </div>
-
-    <!-- Right Wing: Strategy & Growth (2 Cols) -->
-    <div class="col-span-full xl:col-span-2 space-y-8">
-      <!-- Growth Plan Widget (Velez Focus) -->
-      <Card class="overflow-hidden border-t-4 border-t-emerald-500">
-        <CardContent class="p-8 space-y-8">
-          <div class="flex items-start justify-between">
-            <div class="space-y-1">
-              <h3
-                class="font-black text-foreground uppercase tracking-tighter text-2xl"
-              >
-                Plano Evolutivo
-              </h3>
-              <p
-                class="text-[10px] font-bold text-primary uppercase tracking-widest border border-primary/20 bg-primary/5 px-2 py-0.5 rounded-full inline-block"
-              >
-                {activeProfile?.name || "Nenhum Perfil Ativo"}
-              </p>
-            </div>
-            <div class="p-3 bg-emerald-500/10 rounded-2xl">
-              <ArrowUpRight class="w-6 h-6 text-emerald-500" />
-            </div>
-          </div>
-
+      <div class="grid gap-4 lg:grid-cols-12 mt-2">
+        <!-- Left Analytical Hub (8 Cols) -->
+        <div class="col-span-full lg:col-span-8 space-y-2">
+          <!-- Unified Survivor Control Center -->
           {#if activeProfile?.growth_plan_enabled}
-            <div class="space-y-8">
-              <div class="space-y-3">
-                <div
-                  class="flex justify-between text-[11px] font-black text-muted-foreground uppercase tracking-widest"
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <h4
+                  class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1 flex items-center gap-2"
                 >
-                  <span>Fase Atual: {activePhase?.name}</span>
-                  <span>45%</span>
-                </div>
-                <div class="h-2.5 bg-muted rounded-full overflow-hidden">
-                  <div
-                    class="h-full bg-emerald-500 transition-all duration-1000 shadow-[0_0_10px_rgba(16,185,129,0.3)]"
-                    style="width: 45%"
-                  ></div>
-                </div>
-              </div>
+                  <Zap class="w-3 h-3 text-emerald-500 fill-emerald-500/20" />
+                  {$t("dashboard.survivor.title")}
+                </h4>
 
-              <div class="grid grid-cols-2 gap-4">
-                <div class="p-5 bg-muted/40 rounded-2xl border border-border">
-                  <p
-                    class="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1"
-                  >
-                    Lote Máximo
-                  </p>
-                  <p class="text-xl font-black text-foreground font-outfit">
-                    {activePhase?.max_lots || 1}
-                  </p>
-                </div>
-                <div class="p-5 bg-muted/40 rounded-2xl border border-border">
-                  <p
-                    class="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1"
-                  >
-                    Loss Máx/Dia
-                  </p>
-                  <p class="text-xl font-black text-rose-500 font-outfit">
-                    {formatCurrency(activePhase?.max_daily_loss || 500)}
-                  </p>
-                </div>
-              </div>
-
-              <div
-                class="p-6 bg-emerald-500/5 rounded-2xl border border-emerald-500/10"
-              >
-                <p
-                  class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-3 flex items-center gap-2"
-                >
-                  <Target class="w-3 h-3" /> Metas Próxima Fase
-                </p>
-                <div class="space-y-2">
-                  {#each activePhase?.progression_rules || [] as rule}
-                    <div
-                      class="flex items-center justify-between text-xs font-bold"
+                <div class="flex items-center gap-2.5">
+                  <div class="flex items-center gap-2">
+                    <p class="text-xs font-medium text-muted-foreground/80">
+                      {$t("dashboard.survivor.activePlan")}
+                    </p>
+                    <Select
+                      type="single"
+                      value={activeProfile?.id}
+                      onValueChange={(val) =>
+                        settingsStore.setActiveRiskProfile(val)}
                     >
-                      <div
-                        class="flex items-center gap-2 text-muted-foreground"
+                      <SelectTrigger
+                        class="w-[150px] h-8 text-xs font-medium bg-emerald-500/5 border-emerald-500/20 text-emerald-500"
                       >
+                        <div class="flex items-center gap-2">
+                          <ShieldCheck class="w-3 h-3 shrink-0" />
+                          <span class="truncate"
+                            >{activeProfile?.name ||
+                              $t("dashboard.survivor.select")}</span
+                          >
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {#each settingsStore.riskProfiles as profile}
+                          <SelectItem value={profile.id}
+                            >{profile.name}</SelectItem
+                          >
+                        {/each}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Separator orientation="vertical" class="h-4" />
+
+                  <div class="flex items-center gap-1.5">
+                    <span
+                      class="text-[9px] font-bold text-muted-foreground/60 uppercase"
+                      >{$t("dashboard.survivor.operationalStatus")}</span
+                    >
+                    {#if stats.dayResult <= -(activePhase?.max_daily_loss || 0) && activePhase?.max_daily_loss > 0}
+                      <Badge
+                        variant="outline"
+                        class="bg-rose-500/10 text-rose-500 border-rose-500/20 text-[9px] font-black uppercase tracking-tighter"
+                        >{$t("dashboard.survivor.statusBlocked")}</Badge
+                      >
+                    {:else if stats.dayResult <= -(activePhase?.max_daily_loss || 0) * 0.7 && activePhase?.max_daily_loss > 0}
+                      <Badge
+                        variant="outline"
+                        class="bg-orange-500/10 text-orange-500 border-orange-500/20 text-[9px] font-black uppercase tracking-tighter"
+                        >{$t("dashboard.survivor.statusRisk")}</Badge
+                      >
+                    {:else}
+                      <Badge
+                        variant="outline"
+                        class="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px] font-black uppercase tracking-tighter"
+                        >{$t("dashboard.survivor.statusAlpha")}</Badge
+                      >
+                    {/if}
+                  </div>
+
+                  <Separator orientation="vertical" class="h-3" />
+
+                  <!-- Phase Roadmap -->
+                  <div class="flex items-center gap-1.5">
+                    {#each activeProfile?.growth_phases || [] as phase, i}
+                      <div class="flex items-center">
                         <div
-                          class="w-1.5 h-1.5 rounded-full bg-emerald-500"
+                          class={cn(
+                            "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                            i === activeProfile?.current_phase_index
+                              ? "bg-emerald-500 scale-125 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                              : i < (activeProfile?.current_phase_index || 0)
+                                ? "bg-emerald-500/40"
+                                : "bg-zinc-800",
+                          )}
                         ></div>
-                        <span
-                          >{rule.condition === "profit_target"
-                            ? "Alvo Financeiro:"
-                            : rule.condition === "consistency_days"
-                              ? "Consistência:"
-                              : "Dias Positivos:"}
-                        </span>
+                        {#if i < (activeProfile?.growth_phases?.length || 0) - 1}
+                          <div
+                            class={cn(
+                              "w-3 h-[1px]",
+                              i < (activeProfile?.current_phase_index || 0)
+                                ? "bg-emerald-500/40"
+                                : "bg-zinc-800",
+                            )}
+                          ></div>
+                        {/if}
                       </div>
-                      <span class="text-foreground">
-                        {rule.condition === "profit_target"
-                          ? formatCurrency(rule.value)
-                          : `${rule.value} pregões`}
-                      </span>
-                    </div>
-                  {/each}
+                    {/each}
+                  </div>
                 </div>
               </div>
-            </div>
-          {:else}
-            <div class="py-12 text-center space-y-6">
-              <div
-                class="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto"
-              >
-                <Target class="w-8 h-8 text-muted-foreground/20" />
+
+              <div class="grid grid-cols-1 xl:grid-cols-5 gap-2.5">
+                <!-- Card 1: Growth Engine (Span 3) -->
+                <Card
+                  class="xl:col-span-4 border-border/40 shadow-sm overflow-hidden bg-card"
+                >
+                  <CardContent class="p-0">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-0">
+                      <!-- SubCol 1: Current Phase -->
+                      <div
+                        class="py-0.5 px-2.5 border-r border-border/10 space-y-1"
+                      >
+                        <div class="flex items-center justify-between">
+                          <span
+                            class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50"
+                            >{$t("dashboard.survivor.currentPhase")}</span
+                          >
+                          <span
+                            class="text-[9px] font-mono font-bold text-emerald-400"
+                            >{growthProgress.toFixed(0)}%</span
+                          >
+                        </div>
+                        <h3
+                          class="font-black text-foreground uppercase tracking-tight text-xs truncate"
+                        >
+                          {activePhase?.name}
+                        </h3>
+                        <div
+                          class="h-1 bg-zinc-800 rounded-full overflow-hidden"
+                        >
+                          <div
+                            class="h-full bg-emerald-500 transition-all duration-700"
+                            style="width: {growthProgress}%"
+                          ></div>
+                        </div>
+                      </div>
+
+                      <!-- SubCol 2: Day Progress -->
+                      <div
+                        class="py-0.5 px-2.5 border-r border-border/10 space-y-1"
+                      >
+                        <div class="flex items-center justify-between">
+                          <span
+                            class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50"
+                            >{$t("dashboard.survivor.dailyEvolution")}</span
+                          >
+                          <span
+                            class="text-[9px] font-bold {stats.dayResult >= 0
+                              ? 'text-emerald-500'
+                              : 'text-rose-500'}"
+                          >
+                            {activeProfile?.daily_target > 0
+                              ? (
+                                  (stats.dayResult /
+                                    activeProfile.daily_target) *
+                                  100
+                                ).toFixed(0)
+                              : 0}%
+                          </span>
+                        </div>
+                        <div class="flex items-center justify-between h-4">
+                          <span
+                            class="text-[11px] font-mono font-bold tabular-nums {stats.dayResult >=
+                            0
+                              ? 'text-emerald-400'
+                              : 'text-rose-400'}"
+                          >
+                            {formatCurrency(stats.dayResult)}
+                          </span>
+                          <span
+                            class="text-[9px] text-muted-foreground/50 font-medium"
+                            >{$t("dashboard.survivor.target")}{formatCurrency(
+                              activeProfile?.daily_target || 0,
+                            )}</span
+                          >
+                        </div>
+                        <div
+                          class="h-1 bg-zinc-800 rounded-full overflow-hidden"
+                        >
+                          <div
+                            class={cn(
+                              "h-full transition-all duration-700",
+                              stats.dayResult >= 0
+                                ? "bg-emerald-500"
+                                : "bg-rose-500",
+                            )}
+                            style="width: {Math.min(
+                              activeProfile?.daily_target > 0
+                                ? (Math.abs(stats.dayResult) /
+                                    activeProfile.daily_target) *
+                                    100
+                                : 0,
+                              100,
+                            )}%"
+                          ></div>
+                        </div>
+                      </div>
+
+                      <!-- SubCol 3: Usage Counters -->
+                      <div
+                        class="py-0.5 px-2.5 border-r border-border/10 space-y-1"
+                      >
+                        <div class="flex justify-between items-center">
+                          <span
+                            class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50"
+                            >{$t("dashboard.survivor.tradesUsage")}</span
+                          >
+                          <span
+                            class="text-[9px] font-mono font-bold {stats.tradesToday >=
+                            (activeProfile?.max_trades_per_day || 0)
+                              ? 'text-amber-500'
+                              : 'text-emerald-500'}"
+                          >
+                            {stats.tradesToday}/{activeProfile?.max_trades_per_day ||
+                              0}
+                          </span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                          {#each Array(activeProfile?.max_trades_per_day || 3) as _, i}
+                            <div
+                              class={cn(
+                                "h-1 flex-1 rounded-full",
+                                i < stats.tradesToday
+                                  ? stats.tradesToday >
+                                    (activeProfile?.max_trades_per_day || 0)
+                                    ? "bg-rose-500"
+                                    : "bg-emerald-600"
+                                  : "bg-zinc-800/80",
+                              )}
+                            ></div>
+                          {/each}
+                        </div>
+                        <div class="flex justify-between items-center">
+                          <span
+                            class="text-[9px] font-bold uppercase text-muted-foreground/40"
+                            >{$t("dashboard.survivor.avgRFactor")}</span
+                          >
+                          <span
+                            class="text-[10px] font-mono font-bold tabular-nums {stats.avgRFactor >=
+                            (activeProfile?.min_risk_reward || 1)
+                              ? 'text-emerald-500'
+                              : 'text-amber-500'}"
+                          >
+                            {stats.avgRFactor.toFixed(2)}R
+                          </span>
+                        </div>
+                      </div>
+
+                      <!-- SubCol 4: Next Level Roadmap -->
+                      <div class="py-0.5 px-2.5 space-y-1">
+                        <p
+                          class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 flex items-center gap-1.5"
+                        >
+                          <Trophy class="w-2.5 h-2.5 text-amber-500" />
+                          {$t("dashboard.survivor.roadmapProgress")}
+                        </p>
+                        <div class="flex flex-col gap-1">
+                          {#each activePhase?.progression_rules || [] as rule}
+                            <div class="flex items-center justify-between">
+                              <span
+                                class="text-[9px] font-medium text-muted-foreground/60"
+                              >
+                                {rule.condition === "profit_target"
+                                  ? $t("dashboard.survivor.pnl")
+                                  : $t("dashboard.survivor.consistency")}:
+                              </span>
+                              <span
+                                class="text-[9px] font-black text-foreground tabular-nums"
+                              >
+                                {rule.condition === "profit_target"
+                                  ? formatCurrency(rule.value)
+                                  : `${rule.value}d`}
+                              </span>
+                            </div>
+                          {/each}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <!-- Card 2: Risk Monitor (Survivor Focus) -->
+                <Card class="border-border/40 bg-card overflow-hidden">
+                  <CardContent class="p-0 flex flex-col h-full">
+                    <div
+                      class="py-0.5 px-2.5 flex-1 border-b border-border/10 space-y-0.5"
+                    >
+                      <div class="flex items-center justify-between">
+                        <span
+                          class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 flex items-center gap-1.5"
+                        >
+                          <ShieldCheck class="w-2.5 h-2.5 text-rose-500" />
+                          {$t("dashboard.survivor.riskMonth")}
+                        </span>
+                        <span class="text-[9px] font-bold text-rose-500"
+                          >6% {$t("dashboard.survivor.limit")}</span
+                        >
+                      </div>
+                      <div class="flex items-center justify-between">
+                        <span
+                          class="text-[11px] font-mono font-bold tabular-nums"
+                        >
+                          {(
+                            (Math.abs(stats.monthResult) /
+                              (selectedAccount?.balance || 10000)) *
+                            100
+                          ).toFixed(1)}%
+                        </span>
+                        <div
+                          class="flex-1 max-w-[40px] h-1 bg-zinc-800 rounded-full ml-2 overflow-hidden"
+                        >
+                          <div
+                            class="h-full bg-rose-500"
+                            style="width: {Math.min(
+                              (((Math.abs(stats.monthResult) /
+                                (selectedAccount?.balance || 10000)) *
+                                100) /
+                                6) *
+                                100,
+                              100,
+                            )}%"
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="py-0.5 px-2.5 flex-1 bg-emerald-500/5">
+                      <div class="flex items-center justify-between mb-1">
+                        <span
+                          class="text-[9px] font-black uppercase tracking-widest text-emerald-500/70 shrink-0"
+                          >{$t("dashboard.survivor.eligibility")}</span
+                        >
+                        <Badge
+                          variant="outline"
+                          class="h-4 px-1 text-[8px] bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                          >{$t("dashboard.survivor.greenZone")}</Badge
+                        >
+                      </div>
+                      <p
+                        class="text-[10px] font-black text-emerald-400 uppercase tracking-tighter"
+                      >
+                        {$t("dashboard.survivor.operateTrade")}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-              <p
-                class="text-sm text-muted-foreground font-bold uppercase tracking-widest"
-              >
-                Nenhum plano ativado
-              </p>
-              <Button variant="outline" size="sm" class="border-border"
-                >Configurar Agora</Button
-              >
             </div>
           {/if}
-        </CardContent>
-      </Card>
 
-      <!-- Retired Mindset section removed -->
+          <!-- Equity Curve -->
 
-      <!-- Distribution Mini (Clean) -->
-      <Card class="p-8">
-        <h3
-          class="text-xs font-black text-muted-foreground mb-8 uppercase tracking-widest border-b border-border pb-4"
-        >
-          Eficiência por Horário
-        </h3>
-        <div class="space-y-6">
-          {#each [{ label: "Manhã (09h-12h)", val: 68, color: "bg-emerald-500", text: "text-emerald-500" }, { label: "Tarde (12h-18h)", val: 32, color: "bg-muted", text: "text-muted-foreground" }] as item}
-            <div class="space-y-2">
-              <div
-                class="flex justify-between text-[10px] font-black uppercase tracking-widest"
-              >
-                <span class="text-muted-foreground">{item.label}</span>
-                <span class={item.text}>{item.val}%</span>
+          <Card class="p-2 bg-card border-border/40">
+            <div class="flex justify-between items-start mb-2">
+              <div class="flex items-center gap-3">
+                <div class="p-1 bg-emerald-500/10 rounded-lg">
+                  <TrendingUp class="w-3.5 h-3.5 text-emerald-500" />
+                </div>
+                <div>
+                  <h3
+                    class="text-xs font-bold text-foreground tracking-tight leading-none"
+                  >
+                    {$t("dashboard.charts.equity")}
+                  </h3>
+                  <p class="text-[11px] text-muted-foreground">
+                    {$t("dashboard.charts.equitySubtitle")}
+                  </p>
+                </div>
               </div>
-              <div class="h-2 w-full bg-muted rounded-full overflow-hidden">
-                <div
-                  class={cn("h-full", item.color)}
-                  style="width: {item.val}%"
-                ></div>
+              <div class="flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  class="bg-emerald-500/10 text-emerald-500 border-none font-bold px-2 py-0.5 text-[9px] uppercase"
+                >
+                  {filteredTrades.filter((t) => t.result > 0).length}
+                  {$t("dashboard.charts.wins")}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  class="bg-rose-500/10 text-rose-500 border-none font-bold px-2 py-0.5 text-[9px] uppercase"
+                >
+                  {filteredTrades.filter((t) => (t.result || 0) < 0).length}
+                  {$t("dashboard.charts.losses")}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  class="bg-blue-500/10 text-blue-500 border-none font-bold px-2 py-0.5 text-[9px] uppercase"
+                >
+                  {$t("dashboard.charts.consistency")}
+                </Badge>
               </div>
             </div>
-          {/each}
+            <div class="h-[280px] w-full">
+              <EChart options={equityOptions} />
+            </div>
+          </Card>
         </div>
-        <div class="mt-8 pt-6 border-t border-border">
-          <p
-            class="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest text-center"
-          >
-            Baseado nos últimos 20 trades
-          </p>
+
+        <div class="col-span-full lg:col-span-4 space-y-2">
+          <!-- Compact Performance Calendar (Restored) -->
+          <Card class="overflow-hidden p-2">
+            <CardContent class="p-0">
+              <PerformanceCalendar
+                trades={filteredTrades}
+                compact={true}
+                onDateClick={handleDayClick}
+              />
+            </CardContent>
+          </Card>
+
+          <!-- Daily Detail Modal -->
+          <Dialog.Root bind:open={isDailyDetailOpen}>
+            <Dialog.Content
+              class="max-w-4xl max-h-[90vh] overflow-y-auto text-left"
+            >
+              <Dialog.Header>
+                <Dialog.Title
+                  class="text-xl font-bold uppercase tracking-tight"
+                >
+                  {$t("dashboard.dailyDetail.title")}
+                </Dialog.Title>
+                <Dialog.Description
+                  class="text-xs font-semibold text-muted-foreground uppercase tracking-widest"
+                >
+                  {$t("dashboard.dailyDetail.subtitle")}
+                </Dialog.Description>
+              </Dialog.Header>
+
+              <div class="space-y-6 pt-4">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-lg font-bold tracking-tight">
+                    {#if selectedDateForDetail}
+                      {format(selectedDateForDetail, "dd 'de' MMMM, yyyy", {
+                        locale: ptBR,
+                      })}
+                    {/if}
+                  </h4>
+                </div>
+                {#if selectedDateForDetail}
+                  {@const dayTrades = filteredTrades.filter((t) =>
+                    isSameDay(new Date(t.date), selectedDateForDetail as Date),
+                  )}
+                  {@const dayRes = dayTrades.reduce(
+                    (acc, t) => acc + (t.result || 0),
+                    0,
+                  )}
+
+                  <div class="grid grid-cols-3 gap-4">
+                    <div class="p-4 bg-muted rounded-xl border border-border">
+                      <p
+                        class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1"
+                      >
+                        {$t("dashboard.dailyDetail.summary")}
+                      </p>
+                      <p
+                        class={cn(
+                          "text-base font-mono font-bold tabular-nums",
+                          dayRes >= 0 ? "text-emerald-500" : "text-rose-500",
+                        )}
+                      >
+                        {formatCurrency(dayRes)}
+                      </p>
+                    </div>
+                    <div class="p-4 bg-muted rounded-xl border border-border">
+                      <p
+                        class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1"
+                      >
+                        {$t("dashboard.dailyDetail.tradeQty")}
+                      </p>
+                      <p
+                        class="text-base font-black text-foreground tabular-nums"
+                      >
+                        {dayTrades.length}
+                      </p>
+                    </div>
+                    <div class="p-4 bg-muted rounded-xl border border-border">
+                      <p
+                        class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1"
+                      >
+                        {$t("dashboard.dailyDetail.efficiency")}
+                      </p>
+                      <p
+                        class="text-base font-black text-blue-500 tabular-nums"
+                      >
+                        {dayTrades.length > 0
+                          ? (
+                              (dayTrades.filter((t) => t.result > 0).length /
+                                dayTrades.length) *
+                              100
+                            ).toFixed(0)
+                          : 0}%
+                      </p>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div class="space-y-4">
+                    <h4
+                      class="text-[10px] font-bold uppercase tracking-widest text-foreground"
+                    >
+                      {$t("dashboard.dailyDetail.operationsList")}
+                    </h4>
+                    <div
+                      class="rounded-xl border border-border overflow-hidden"
+                    >
+                      <table class="w-full text-left text-xs">
+                        <thead
+                          class="bg-muted/50 font-bold uppercase tracking-tight text-[10px]"
+                        >
+                          <tr>
+                            <th class="px-4 py-3"
+                              >{$t("dashboard.dailyDetail.asset")}</th
+                            >
+                            <th class="px-4 py-3 text-center"
+                              >{$t("dashboard.dailyDetail.direction")}</th
+                            >
+                            <th class="px-4 py-3 text-right"
+                              >{$t("dashboard.dailyDetail.result")}</th
+                            >
+                            <th class="px-4 py-3 text-right"
+                              >{$t("general.quantity")}</th
+                            >
+                          </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border">
+                          {#each dayTrades as trade}
+                            <tr class="hover:bg-muted/30 transition-colors">
+                              <td class="px-4 py-3 font-medium"
+                                >{trade.asset_symbol}</td
+                              >
+                              <td class="px-4 py-3 text-center">
+                                <Badge
+                                  variant="outline"
+                                  class={cn(
+                                    "text-[10px] font-semibold uppercase tracking-tight py-0.5 h-5 border-none",
+                                    trade.direction === "Buy"
+                                      ? "bg-emerald-500/10 text-emerald-500"
+                                      : "bg-rose-500/10 text-rose-500",
+                                  )}
+                                >
+                                  {trade.direction === "Buy"
+                                    ? $t("dashboard.dailyDetail.buy")
+                                    : $t("dashboard.dailyDetail.sell")}
+                                </Badge>
+                              </td>
+                              <td
+                                class={cn(
+                                  "px-4 py-3 text-right font-medium font-mono",
+                                  trade.result >= 0
+                                    ? "text-emerald-500"
+                                    : "text-rose-500",
+                                )}
+                              >
+                                {formatCurrency(trade.result)}
+                              </td>
+                              <td
+                                class="px-4 py-3 text-right text-muted-foreground font-mono"
+                              >
+                                {trade.quantity}
+                              </td>
+                            </tr>
+                          {:else}
+                            <tr>
+                              <td
+                                colspan="4"
+                                class="px-4 py-12 text-center text-muted-foreground font-medium uppercase text-[10px] tracking-widest"
+                              >
+                                {$t("dashboard.dailyDetail.noTrades")}
+                              </td>
+                            </tr>
+                          {/each}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                {/if}
+              </div>
+            </Dialog.Content>
+          </Dialog.Root>
+
+          <!-- Distribution Mini (Clean) -->
+          <Card class="p-1.5">
+            <h3
+              class="text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wider border-b border-border/50 pb-1"
+            >
+              {$t("dashboard.schedule.title")}
+            </h3>
+            <div class="space-y-2">
+              {#each [{ label: "Manhã (09h-12h)", val: 68, color: "bg-emerald-500", text: "text-emerald-500" }, { label: "Tarde (12h-18h)", val: 32, color: "bg-muted", text: "text-muted-foreground" }] as item}
+                <div class="space-y-2">
+                  <div
+                    class="flex justify-between text-[8px] font-black uppercase tracking-wider"
+                  >
+                    <span class="text-muted-foreground">
+                      {item.label === "Manhã (09h-12h)"
+                        ? $t("dashboard.schedule.morning")
+                        : $t("dashboard.schedule.afternoon")} ({item.label.split(
+                        "(",
+                      )[1]}
+                    </span>
+                    <span class={item.text}>{item.val}%</span>
+                  </div>
+                  <div class="h-2 w-full bg-muted rounded-full overflow-hidden">
+                    <div
+                      class={cn("h-full", item.color)}
+                      style="width: {item.val}%"
+                    ></div>
+                  </div>
+                </div>
+              {/each}
+            </div>
+            <div class="mt-8 pt-6 border-t border-border">
+              <p
+                class="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest text-center"
+              >
+                {$t("dashboard.schedule.basedOn", { values: { count: 20 } })}
+              </p>
+            </div>
+          </Card>
         </div>
-      </Card>
+      </div>
     </div>
   </div>
-</div>
-
-<style>
-  :global(.font-outfit) {
-    font-family: "Outfit", sans-serif;
-  }
-  :global(.font-inter) {
-    font-family: "Inter", sans-serif;
-  }
-</style>
+{/if}

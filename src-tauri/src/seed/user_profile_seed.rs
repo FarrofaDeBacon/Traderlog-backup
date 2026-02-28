@@ -32,6 +32,8 @@ pub async fn seed_user_profile(db: &Surreal<Db>) -> Result<(), String> {
         birth_date: None,
         trial_start_date: None,
         license_key: None,
+        password_hash: None,
+        recovery_hash: None,
         utc_offset: -180,
     };
     let mut json_data = serde_json::to_value(&profile_data).unwrap();

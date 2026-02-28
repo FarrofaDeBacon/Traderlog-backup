@@ -13,8 +13,6 @@
         CheckCircle2,
         Undo2,
     } from "lucide-svelte";
-    import { format } from "date-fns";
-    import { ptBR } from "date-fns/locale";
     import { t, locale } from "svelte-i18n";
     import { toast } from "svelte-sonner";
 
@@ -77,7 +75,7 @@
     }
 
     function formatCurrency(value: number) {
-        return new Intl.NumberFormat("pt-BR", {
+        return new Intl.NumberFormat($locale || "pt-BR", {
             style: "currency",
             currency: "BRL",
         }).format(value);
@@ -191,7 +189,9 @@
                         >
                         <div class="text-base font-semibold text-zinc-200">
                             {darf.due_date
-                                ? format(new Date(darf.due_date), "dd/MM/yyyy")
+                                ? new Date(darf.due_date).toLocaleDateString(
+                                      $locale || "pt-BR",
+                                  )
                                 : "-"}
                         </div>
                     </div>
@@ -334,11 +334,13 @@
                         </p>
                         <p class="text-xs text-zinc-300">
                             {darf.payment_date
-                                ? format(
-                                      new Date(darf.payment_date),
-                                      "dd 'de' MMMM 'de' yyyy",
-                                      { locale: ptBR },
-                                  )
+                                ? new Date(
+                                      darf.payment_date,
+                                  ).toLocaleDateString($locale || "pt-BR", {
+                                      day: "numeric",
+                                      month: "long",
+                                      year: "numeric",
+                                  })
                                 : $t("finance.darfDetails.dateNotAvailable")}
                         </p>
                     </div>
@@ -360,7 +362,7 @@
                 <div class="flex items-center gap-2 mr-auto">
                     <Undo2 class="w-4 h-4 text-red-500 animate-pulse" />
                     <span class="text-xs font-bold text-red-500 uppercase"
-                        >Confirmar Estorno?</span
+                        >{$t("finance.darfDetails.unpayTitle")}</span
                     >
                 </div>
                 <Button
@@ -368,14 +370,14 @@
                     onclick={confirmUnpay}
                     class="bg-red-600 hover:bg-red-700 text-white"
                 >
-                    Confirmar
+                    {$t("finance.darfDetails.unpayConfirm")}
                 </Button>
                 <Button
                     variant="outline"
                     onclick={() => (showUnpayConfirm = false)}
                     class="border-zinc-700 text-zinc-400 hover:bg-zinc-800"
                 >
-                    Cancelar
+                    {$t("finance.darfDetails.unpayCancel")}
                 </Button>
             {:else}
                 {#if darf && darf.status === "Paid"}
@@ -387,7 +389,7 @@
                         <Undo2
                             class="w-4 h-4 mr-2 text-red-500 group-hover:text-white"
                         />
-                        Desfazer Pagamento
+                        {$t("finance.darfDetails.unpayAction")}
                     </Button>
                 {/if}
                 <Button

@@ -1260,7 +1260,7 @@
                                                 bind:value={
                                                     formData.entry_price
                                                 }
-                                                class="h-10 bg-zinc-900 border-muted/40 text-sm font-mono text-white flex-1"
+                                                class="h-10 bg-zinc-900 border-muted/40 text-sm font-mono font-bold text-white flex-1"
                                             />
                                             {#if true || settingsStore.rtdEnabled || rtdStore.symbols.length > 0}
                                                 <Button
@@ -1348,7 +1348,7 @@
                                     type="number"
                                     step="any"
                                     bind:value={formData.quantity}
-                                    class="h-10 bg-zinc-900 border-muted/40 text-sm text-white pl-4"
+                                    class="h-10 bg-zinc-900 border-muted/40 text-sm font-mono font-bold text-white pl-4"
                                 />
                             </div>
                             <div class="space-y-1.5">
@@ -1433,7 +1433,7 @@
                                     type="number"
                                     step="0.00001"
                                     bind:value={formData.stop_loss}
-                                    class="h-10 bg-zinc-900 border-muted/40 text-xs font-mono text-white"
+                                    class="h-10 bg-zinc-900 border-muted/40 text-xs font-mono font-bold text-white"
                                     placeholder="0.00"
                                 />
                                 {#if formData.stop_loss && formData.entry_price && formData.asset}
@@ -1441,7 +1441,7 @@
                                         (a) => a.symbol === formData.asset,
                                     )}
                                     <div
-                                        class="text-[9px] text-red-500 font-bold uppercase tracking-tighter"
+                                        class="text-[9px] font-mono text-red-500 font-bold uppercase tracking-tighter"
                                     >
                                         {$t("trades.wizard.tooltips.risk")}: R$ {Math.abs(
                                             (formData.entry_price -
@@ -1465,7 +1465,7 @@
                                     type="number"
                                     step="0.00001"
                                     bind:value={formData.take_profit}
-                                    class="h-10 bg-zinc-900 border-muted/40 text-xs font-mono text-white"
+                                    class="h-10 bg-zinc-900 border-muted/40 text-xs font-mono font-bold text-white"
                                     placeholder="0.00"
                                 />
                                 {#if formData.take_profit && formData.entry_price && formData.asset}
@@ -1473,7 +1473,7 @@
                                         (a) => a.symbol === formData.asset,
                                     )}
                                     <div
-                                        class="text-[9px] text-emerald-500 font-bold uppercase tracking-tighter"
+                                        class="text-[9px] font-mono text-emerald-500 font-bold uppercase tracking-tighter"
                                     >
                                         {$t("trades.wizard.tooltips.target")}:
                                         R$ {Math.abs(
@@ -1541,7 +1541,7 @@
                                     type="number"
                                     step="any"
                                     bind:value={formData.exit_price}
-                                    class="bg-muted/30 border-0 h-8 text-xs font-mono"
+                                    class="bg-muted/30 border-0 h-8 text-xs font-mono font-bold"
                                 />
                             </div>
                             <div class="space-y-1.5">
@@ -1690,11 +1690,13 @@
                                         class="text-[9px] text-primary/80 font-bold uppercase tracking-tighter"
                                     >
                                         {$t("trades.wizard.fields.entry")}:
-                                        <span class="text-white font-mono"
+                                        <span
+                                            class="text-white font-mono font-bold"
                                             >{formData.entry_price}</span
                                         >
                                         |
-                                        <span class="text-primary"
+                                        <span
+                                            class="text-primary font-mono font-bold"
                                             >{formData.quantity}
                                             {$t(
                                                 "trades.wizard.unit_labels.contracts",

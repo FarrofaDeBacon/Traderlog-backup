@@ -92,7 +92,9 @@
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {#each settingsStore.riskProfiles as profile}
             <Card.Root
-                class="border-l-4 border-l-primary hover:border-primary/50 transition-all cursor-pointer hover:shadow-md"
+                class="border-l-4 {profile.active
+                    ? 'border-l-green-500 shadow-lg'
+                    : 'border-l-primary'} hover:border-primary/50 transition-all cursor-pointer hover:shadow-md"
                 onclick={() => openDetails(profile)}
                 role="button"
                 tabindex={0}
@@ -105,9 +107,20 @@
                                 <ShieldAlert class="w-5 h-5 text-primary" />
                             </div>
                             <div>
-                                <Card.Title class="text-base"
-                                    >{profile.name}</Card.Title
-                                >
+                                <div class="flex items-center gap-2">
+                                    <Card.Title class="text-base"
+                                        >{profile.name}</Card.Title
+                                    >
+                                    {#if profile.active}
+                                        <Badge
+                                            class="bg-green-500/20 text-green-500 hover:bg-green-500/30 border-green-500/50 text-[10px] py-0 h-4"
+                                        >
+                                            {$t(
+                                                "settings.risk.profiles.active",
+                                            )}
+                                        </Badge>
+                                    {/if}
+                                </div>
                                 <Card.Description>
                                     {#if profile.account_type_applicability === "All"}
                                         {$t("settings.risk.accountTypes.All")}
@@ -123,10 +136,7 @@
                 </Card.Header>
                 <Card.Content class="text-sm space-y-2 pb-2">
                     <div class="flex justify-between items-center text-red-400">
-                        <span
-                            >{$t("settings.risk.dailyLossLimitShort") ||
-                                "Limite Loss"}:</span
-                        >
+                        <span>{$t("settings.risk.profiles.dailyLoss")}:</span>
                         <span class="font-bold"
                             >R$ {profile.max_daily_loss}</span
                         >
@@ -134,10 +144,7 @@
                     <div
                         class="flex justify-between items-center text-green-400"
                     >
-                        <span
-                            >{$t("settings.risk.dailyGoalShort") ||
-                                "Meta Diária"}:</span
-                        >
+                        <span>{$t("settings.risk.profiles.dailyTarget")}:</span>
                         <span class="font-bold">R$ {profile.daily_target}</span>
                     </div>
                     <Separator class="my-2" />
@@ -159,32 +166,51 @@
                         </div>
                     {/if}
                 </Card.Content>
-                <Card.Footer class="justify-end gap-2 pt-2">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        class="h-8 w-8 hover:bg-muted"
-                        title={$t("settings.risk.edit")}
-                        onclick={(e) => {
-                            e.stopPropagation();
-                            openEdit(profile);
-                        }}
-                    >
-                        <Pencil class="w-4 h-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        class="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        title={$t("general.delete")}
-                        onclick={(e) => {
-                            e.stopPropagation();
-                            requestDelete(profile.id);
-                        }}
-                    >
-                        <Trash2 class="w-4 h-4" />
-                    </Button>
-                </Card.Footer>
+                <Card.Footer class="justify-between items-center pt-2">
+                    <div>
+                        {#if !profile.active}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                class="h-8 text-xs px-3"
+                                onclick={(e) => {
+                                    e.stopPropagation();
+                                    settingsStore.setActiveRiskProfile(
+                                        profile.id,
+                                    );
+                                }}
+                            >
+                                {$t("settings.risk.profiles.activate")}
+                            </Button>
+                        {/if}
+                    </div>
+                    <div class="flex gap-2">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            class="h-8 w-8 hover:bg-muted"
+                            title={$t("settings.risk.edit")}
+                            onclick={(e) => {
+                                e.stopPropagation();
+                                openEdit(profile);
+                            }}
+                        >
+                            <Pencil class="w-4 h-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            class="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            title={$t("general.delete")}
+                            onclick={(e) => {
+                                e.stopPropagation();
+                                requestDelete(profile.id);
+                            }}
+                        >
+                            <Trash2 class="w-4 h-4" />
+                        </Button>
+                    </div></Card.Footer
+                >
             </Card.Root>
         {/each}
     </div>

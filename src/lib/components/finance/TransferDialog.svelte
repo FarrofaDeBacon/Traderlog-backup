@@ -92,7 +92,7 @@
             date: fullIsoDate,
             description:
                 description ||
-                `Transf: ${fromAccount?.currency} -> ${toAccount?.currency} (Rate: ${exchangeRate.toFixed(4)})`,
+                `${$t("finance.transactionDialog.tabs.transfer")}: ${fromAccount?.currency} -> ${toAccount?.currency} (${$t("finance.transactionDialog.fxRate")}: ${exchangeRate.toFixed(4)})`,
         });
 
         if (result.success) {
@@ -100,7 +100,7 @@
             open = false;
             resetForm();
         } else {
-            toast.error(result.error || "Erro ao realizar transferência.");
+            toast.error(result.error || $t("finance.transferDialog.errorSave"));
         }
     }
 
@@ -342,7 +342,7 @@
                     class="bg-red-500/10 border border-red-500/20 rounded-lg p-3 flex items-center gap-3 text-red-500 text-xs"
                 >
                     <AlertCircle class="w-4 h-4 shrink-0" />
-                    As contas de origem e destino devem ser diferentes.
+                    {$t("finance.transferDialog.errorDifferentAccounts")}
                 </div>
             {/if}
         </div>

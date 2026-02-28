@@ -182,6 +182,8 @@ export type UserProfile = {
     birth_date: string | null;
     trial_start_date: string | null;
     license_key: string | null;
+    password_hash?: string;
+    recovery_hash?: string;
     utc_offset: number;
 };
 
@@ -326,7 +328,8 @@ export type RiskProfile = {
     max_trades_per_day: number;
     min_risk_reward: number;
     lock_on_loss: boolean;
-    account_type_applicability: 'All' | 'Prop' | 'Real' | 'Demo';
+    account_type_applicability: 'All' | 'Prop' | 'Real' | 'Demo' | 'Specific';
+    account_ids: string[];
     growth_plan_enabled: boolean;
     current_phase_index: number;
     growth_phases: GrowthPhase[];
@@ -339,6 +342,7 @@ export type RiskProfile = {
     psychological_threshold: number;
     lot_reduction_multiplier: number;
     psychological_search_strategy: 'Strict' | 'Sequence';
+    active: boolean;
 };
 
 

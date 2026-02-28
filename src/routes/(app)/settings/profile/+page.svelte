@@ -80,7 +80,7 @@
 
     let currentTZ = $derived(
         timezones.find((t) => t.offset === formData.utc_offset) || {
-            label: `Personalizado (${formData.utc_offset} min)`,
+            label: `${$t("general.custom")} (${formData.utc_offset} min)`,
             tz: formData.timezone,
             offset: formData.utc_offset,
         },
@@ -233,11 +233,17 @@
                                 >
                                 <Input
                                     bind:value={formData.cpf}
-                                    placeholder="000.000.000-00"
+                                    placeholder={$t(
+                                        "settings.profile.personalInfo.cpfPlaceholder",
+                                    )}
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label>Data de Nascimento</Label>
+                                <Label
+                                    >{$t(
+                                        "settings.profile.personalInfo.birthDate",
+                                    )}</Label
+                                >
                                 <Input
                                     type="date"
                                     bind:value={formData.birth_date}
@@ -329,7 +335,8 @@
                                 </AlertDialog.Description>
                             </AlertDialog.Header>
                             <AlertDialog.Footer>
-                                <AlertDialog.Cancel>Cancelar</AlertDialog.Cancel
+                                <AlertDialog.Cancel
+                                    >{$t("general.cancel")}</AlertDialog.Cancel
                                 >
                                 <AlertDialog.Action
                                     onclick={() => {
@@ -365,7 +372,9 @@
                                         bind:value={
                                             securityData.current_password
                                         }
-                                        placeholder="••••••••"
+                                        placeholder={$t(
+                                            "settings.profile.security.currentPasswordPlaceholder",
+                                        )}
                                     />
                                 </div>
                             </div>
@@ -379,7 +388,9 @@
                                     <Input
                                         type="password"
                                         bind:value={securityData.new_password}
-                                        placeholder="••••••••"
+                                        placeholder={$t(
+                                            "settings.profile.security.newPasswordPlaceholder",
+                                        )}
                                     />
                                 </div>
                                 <div class="space-y-2">
@@ -393,7 +404,9 @@
                                         bind:value={
                                             securityData.confirm_password
                                         }
-                                        placeholder="••••••••"
+                                        placeholder={$t(
+                                            "settings.profile.security.confirmPasswordPlaceholder",
+                                        )}
                                     />
                                 </div>
                                 <Button
@@ -481,33 +494,49 @@
                                             v as string,
                                         );
                                         toast.success(
-                                            `Language changed to ${v}`,
+                                            $t("settings.profile.success"),
                                         );
                                     }}
                                 >
                                     <Select.Trigger>
                                         {#if formData.language === "pt-BR"}
-                                            Português (Brasil)
+                                            {$t(
+                                                "settings.profile.preferences.langPT",
+                                            )}
                                         {:else if formData.language === "en"}
-                                            English
+                                            {$t(
+                                                "settings.profile.preferences.langEN",
+                                            )}
                                         {:else if formData.language === "es-ES"}
-                                            Español
+                                            {$t(
+                                                "settings.profile.preferences.langES",
+                                            )}
                                         {:else if formData.language === "fr-FR"}
-                                            Français
+                                            {$t(
+                                                "settings.profile.preferences.langFR",
+                                            )}
                                         {/if}
                                     </Select.Trigger>
                                     <Select.Content>
                                         <Select.Item value="pt-BR"
-                                            >Português (Brasil)</Select.Item
+                                            >{$t(
+                                                "settings.profile.preferences.langPT",
+                                            )}</Select.Item
                                         >
                                         <Select.Item value="en"
-                                            >English</Select.Item
+                                            >{$t(
+                                                "settings.profile.preferences.langEN",
+                                            )}</Select.Item
                                         >
                                         <Select.Item value="es-ES"
-                                            >Español</Select.Item
+                                            >{$t(
+                                                "settings.profile.preferences.langES",
+                                            )}</Select.Item
                                         >
                                         <Select.Item value="fr-FR"
-                                            >Français</Select.Item
+                                            >{$t(
+                                                "settings.profile.preferences.langFR",
+                                            )}</Select.Item
                                         >
                                     </Select.Content>
                                 </Select.Root>
@@ -552,7 +581,9 @@
                                     <span
                                         class="text-[10px] text-muted-foreground"
                                     >
-                                        Região: {formData.timezone}
+                                        {$t(
+                                            "settings.profile.preferences.region",
+                                        )}: {formData.timezone}
                                     </span>
                                 </div>
                             </div>
@@ -615,7 +646,7 @@
                         <ShieldCheck class="w-4 h-4 text-emerald-500" />
                     </div>
                     <h4 class="text-lg font-semibold tracking-tight uppercase">
-                        Gerenciamento de Licença
+                        {$t("settings.profile.license.title")}
                     </h4>
                 </div>
 
@@ -628,17 +659,18 @@
                                 <h4
                                     class="font-medium text-emerald-600 dark:text-emerald-400"
                                 >
-                                    Status: {settingsStore.licenseStatus ===
+                                    {$t("settings.profile.license.status")}: {settingsStore.licenseStatus ===
                                     "active"
-                                        ? "Ativado"
+                                        ? $t("settings.profile.license.active")
                                         : settingsStore.licenseStatus ===
                                             "trial"
-                                          ? "Trial"
-                                          : "Expirada"}
+                                          ? $t("settings.profile.license.trial")
+                                          : $t(
+                                                "settings.profile.license.expired",
+                                            )}
                                 </h4>
                                 <p class="text-xs text-muted-foreground">
-                                    Para ativar sua licença ou ver seu PIN de
-                                    solicitação, acesse a página dedicada.
+                                    {$t("settings.profile.license.prompt")}
                                 </p>
                             </div>
                             <Button
@@ -646,7 +678,7 @@
                                 class="w-full border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10"
                                 onclick={() => goto("/settings/license")}
                             >
-                                Ver Detalhes da Licença
+                                {$t("settings.profile.license.viewDetails")}
                             </Button>
                         </div>
                     </Card.Content>

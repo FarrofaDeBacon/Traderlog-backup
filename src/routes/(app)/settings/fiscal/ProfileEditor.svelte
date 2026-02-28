@@ -66,7 +66,7 @@
 
     async function handleSaveProfile() {
         if (!formData.name) {
-            toast.error("Nome do perfil é obrigatório");
+            toast.error($t("settings.fiscal.profiles.error.nameRequired"));
             return;
         }
 
@@ -77,7 +77,7 @@
             if (profileId) {
                 // Editando existente
                 await settingsStore.updateTaxProfile(profileId, formData);
-                toast.success("Perfil atualizado!");
+                toast.success($t("settings.fiscal.profiles.success.update"));
             } else {
                 // Criando novo
                 const newId = await settingsStore.addTaxProfile(formData);
@@ -90,7 +90,7 @@
                         tax_rule_id: entry.tax_rule_id,
                     });
                 }
-                toast.success("Perfil Fiscal criado com sucesso!");
+                toast.success($t("settings.fiscal.profiles.success.create"));
             }
 
             // FECHAR modal e resetar estado
@@ -100,7 +100,7 @@
             if (onSave) onSave();
         } catch (e) {
             console.error("Erro ao salvar perfil:", e);
-            toast.error("Erro ao salvar perfil.");
+            toast.error($t("settings.fiscal.profiles.error.saveError"));
         } finally {
             isSubmitting = false;
         }
@@ -110,7 +110,7 @@
 
     async function addEntry() {
         if (!newEntryData.modality_id || !newEntryData.tax_rule_id) {
-            toast.error("Selecione a Modalidade e a Regra.");
+            toast.error($t("settings.fiscal.profiles.error.selectRequired"));
             return;
         }
 
@@ -129,7 +129,7 @@
 
             if (exists) {
                 toast.error(
-                    "Já existe uma regra para esta modalidade neste perfil.",
+                    $t("settings.fiscal.profiles.error.duplicateModality"),
                 );
                 return;
             }
@@ -141,21 +141,23 @@
                     modality_id: newEntryData.modality_id,
                     tax_rule_id: newEntryData.tax_rule_id,
                 });
-                toast.success("Regra adicionada.");
+                toast.success($t("settings.fiscal.profiles.success.ruleAdded"));
             } else {
                 // Add to local list if creating
                 localEntries.push({
                     modality_id: newEntryData.modality_id,
                     tax_rule_id: newEntryData.tax_rule_id,
                 });
-                toast.success("Regra adicionada ao rascunho.");
+                toast.success(
+                    $t("settings.fiscal.profiles.success.ruleAddedDraft"),
+                );
             }
 
             // Reset inputs
             newEntryData = { modality_id: "", tax_rule_id: "" };
         } catch (e) {
             console.error("Erro ao adicionar entrada:", e);
-            toast.error("Erro ao adicionar entrada.");
+            toast.error($t("settings.fiscal.profiles.error.errorAddEntry"));
         } finally {
             isAddingEntry = false;
         }
@@ -164,12 +166,14 @@
     async function removeEntry(entry: any) {
         if (profileId) {
             await settingsStore.deleteTaxProfileEntry(entry.id);
-            toast.success("Regra removida.");
+            toast.success($t("settings.fiscal.profiles.success.ruleRemoved"));
         } else {
             localEntries = localEntries.filter(
                 (e) => e.modality_id !== entry.modality_id,
             );
-            toast.success("Regra removida do rascunho.");
+            toast.success(
+                $t("settings.fiscal.profiles.success.ruleRemovedDraft"),
+            );
         }
     }
 
@@ -190,10 +194,12 @@
         <div class="px-6 pt-6 pb-2">
             <Dialog.Header>
                 <Dialog.Title>
-                    {profileId ? "Editar Perfil Fiscal" : "Novo Perfil Fiscal"}
+                    {profileId
+                        ? $t("settings.fiscal.profiles.form.titleEdit")
+                        : $t("settings.fiscal.profiles.form.titleNew")}
                 </Dialog.Title>
                 <Dialog.Description>
-                    Agrupe regras fiscais para aplicar em seus ativos.
+                    {$t("settings.fiscal.profiles.form.description")}
                 </Dialog.Description>
             </Dialog.Header>
         </div>
@@ -203,19 +209,29 @@
                 <!-- Profile Basic Info -->
                 <div class="grid gap-3">
                     <div class="grid grid-cols-4 items-center gap-4">
-                        <Label class="text-right">Nome</Label>
+                        <Label class="text-right"
+                            >{$t("settings.fiscal.profiles.form.name")}</Label
+                        >
                         <Input
                             bind:value={formData.name}
                             class="col-span-3"
-                            placeholder="Ex: Renda Variável Brasil"
+                            placeholder={$t(
+                                "settings.fiscal.profiles.form.namePlaceholder",
+                            )}
                         />
                     </div>
                     <div class="grid grid-cols-4 items-center gap-4">
-                        <Label class="text-right">Descrição</Label>
+                        <Label class="text-right"
+                            >{$t(
+                                "settings.fiscal.profiles.form.descriptionLabel",
+                            )}</Label
+                        >
                         <Input
                             bind:value={formData.description}
                             class="col-span-3"
-                            placeholder="Opcional"
+                            placeholder={$t(
+                                "settings.fiscal.profiles.form.descriptionPlaceholder",
+                            )}
                         />
                     </div>
                 </div>
@@ -229,7 +245,9 @@
                             class="text-sm font-semibold flex items-center gap-2"
                         >
                             <Plus class="w-4 h-4 text-primary" />
-                            Regras por Modalidade
+                            {$t(
+                                "settings.fiscal.profiles.form.rulesByModality",
+                            )}
                         </h4>
                     </div>
 
@@ -240,7 +258,9 @@
                         <div class="space-y-1.5 flex-1">
                             <Label
                                 class="text-[10px] uppercase text-muted-foreground font-bold px-1"
-                                >Modalidade</Label
+                                >{$t(
+                                    "settings.fiscal.profiles.form.modality",
+                                )}</Label
                             >
                             <Select.Root
                                 type="single"
@@ -252,7 +272,10 @@
                                     {settingsStore.modalities.find(
                                         (m) =>
                                             m.id === newEntryData.modality_id,
-                                    )?.name || "Selecione"}
+                                    )?.name ||
+                                        $t(
+                                            "settings.fiscal.profiles.form.select",
+                                        )}
                                 </Select.Trigger>
                                 <Select.Content>
                                     {#each settingsStore.modalities as mod}
@@ -266,7 +289,9 @@
                         <div class="space-y-1.5 flex-1">
                             <Label
                                 class="text-[10px] uppercase text-muted-foreground font-bold px-1"
-                                >Regra</Label
+                                >{$t(
+                                    "settings.fiscal.profiles.form.rule",
+                                )}</Label
                             >
                             <Select.Root
                                 type="single"
@@ -278,7 +303,10 @@
                                     {settingsStore.taxRules.find(
                                         (r) =>
                                             r.id === newEntryData.tax_rule_id,
-                                    )?.name || "Selecione"}
+                                    )?.name ||
+                                        $t(
+                                            "settings.fiscal.profiles.form.select",
+                                        )}
                                 </Select.Trigger>
                                 <Select.Content>
                                     {#each settingsStore.taxRules as r}
@@ -344,12 +372,15 @@
                                     class="w-8 h-8 mb-2 text-muted-foreground/30"
                                 />
                                 <span class="text-sm text-muted-foreground"
-                                    >Nenhuma regra vinculada.</span
+                                    >{$t(
+                                        "settings.fiscal.profiles.form.emptyRules",
+                                    )}</span
                                 >
                                 <span
                                     class="text-[10px] text-muted-foreground/50"
-                                    >Adicione modalidades acima para definir o
-                                    cálculo fiscal.</span
+                                    >{$t(
+                                        "settings.fiscal.profiles.form.addModalityHint",
+                                    )}</span
                                 >
                             </div>
                         {/each}
@@ -361,7 +392,7 @@
         <div class="p-6 border-t bg-muted/10">
             <Dialog.Footer class="gap-2 sm:gap-0">
                 <Button variant="outline" onclick={() => (open = false)}
-                    >Cancelar</Button
+                    >{$t("general.cancel")}</Button
                 >
                 <Button
                     onclick={handleSaveProfile}
@@ -370,10 +401,12 @@
                 >
                     {#if isSubmitting}
                         <span class="loading loading-spinner loading-xs"></span>
-                        Salvando...
+                        {$t("settings.fiscal.profiles.form.saving")}
                     {:else}
                         <Save class="w-4 h-4" />
-                        {profileId ? "Atualizar" : "Salvar Perfil"}
+                        {profileId
+                            ? $t("settings.fiscal.profiles.form.update")
+                            : $t("settings.fiscal.profiles.form.save")}
                     {/if}
                 </Button>
             </Dialog.Footer>

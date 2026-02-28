@@ -23,5 +23,6 @@ pub mod user_profile_seed;
 // Expõe publicamente as funções que serão chamadas de fora
 pub use _master_seeder::force_reseed_all;
 pub use _master_seeder::run_all_seeds;
+pub use _master_seeder::run_base_seeds;
 pub use _master_seeder::run_minimal_seeds;
 pub use _master_seeder::run_selective_seeds;

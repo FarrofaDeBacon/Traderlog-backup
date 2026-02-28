@@ -5,6 +5,7 @@
     import { Search, User, LogOut, Settings } from "lucide-svelte";
     import * as Avatar from "$lib/components/ui/avatar";
     import ModeToggle from "$lib/components/mode-toggle/ModeToggle.svelte";
+    import { t } from "svelte-i18n";
 
     // Props for mobile trigger injection if needed, but Sidebar handles its own trigger currently.
     // We might want to move the trigger here if we want a unified header.
@@ -24,7 +25,7 @@
                 />
                 <Input
                     type="search"
-                    placeholder="Buscar trades, notas..."
+                    placeholder={$t("header.searchPlaceholder")}
                     class="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
                 />
             </div>
@@ -42,19 +43,26 @@
                 >
                     <Avatar.Root class="h-8 w-8">
                         <Avatar.Image src="" alt="User" />
-                        <Avatar.Fallback>FD</Avatar.Fallback>
+                        <Avatar.Fallback>U</Avatar.Fallback>
                     </Avatar.Root>
-                    <span class="sr-only">Toggle user menu</span>
+                    <span class="sr-only">{$t("header.toggleUserMenu")}</span>
                 </Button>
             {/snippet}
         </DropdownMenu.Trigger>
         <DropdownMenu.Content align="end">
-            <DropdownMenu.Label>Minha Conta</DropdownMenu.Label>
+            <DropdownMenu.Label
+                >{$t("header.userMenu.myAccount")}</DropdownMenu.Label
+            >
             <DropdownMenu.Separator />
-            <DropdownMenu.Item>Configurações</DropdownMenu.Item>
-            <DropdownMenu.Item>Suporte</DropdownMenu.Item>
+            <DropdownMenu.Item
+                >{$t("header.userMenu.settings")}</DropdownMenu.Item
+            >
+            <DropdownMenu.Item
+                >{$t("header.userMenu.support")}</DropdownMenu.Item
+            >
             <DropdownMenu.Separator />
-            <DropdownMenu.Item>Sair</DropdownMenu.Item>
+            <DropdownMenu.Item>{$t("header.userMenu.logout")}</DropdownMenu.Item
+            >
         </DropdownMenu.Content>
     </DropdownMenu.Root>
 </header>

@@ -144,8 +144,8 @@ pub fn run() {
                 println!("[STARTUP] Initializing Database...");
                 match db::init_db(&db_handle).await {
                     Ok(db) => {
-                        println!("[STARTUP] Database initialized. Running All Seeds (UPSERT mode)...");
-                        if let Err(e) = seed::run_all_seeds(&db).await {
+                        println!("[STARTUP] Database initialized. Running Base Seeds (UPSERT mode)...");
+                        if let Err(e) = seed::run_base_seeds(&db).await {
                              println!("[STARTUP] SEED ERROR: {}", e);
                         }
                         
@@ -166,6 +166,9 @@ pub fn run() {
             start_rtd_monitor_cmd,
             commands::get_user_profile,
             commands::save_user_profile,
+            commands::verify_password,
+            commands::verify_recovery_key,
+            commands::reset_password,
             commands::get_api_configs,
             commands::save_api_config,
             commands::get_accounts,

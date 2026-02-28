@@ -17,7 +17,6 @@
     import TransferDialog from "$lib/components/finance/TransferDialog.svelte";
     import AccountCard from "$lib/components/finance/AccountCard.svelte";
     import AccountEvolutionChart from "$lib/components/finance/AccountEvolutionChart.svelte";
-    import CurrencyTicker from "$lib/components/finance/CurrencyTicker.svelte";
     import { settingsStore } from "$lib/stores/settings.svelte";
     import { tradesStore } from "$lib/stores/trades.svelte";
     import * as Dialog from "$lib/components/ui/dialog";
@@ -83,9 +82,11 @@
         isSyncing = true;
         const result = await settingsStore.syncExchangeRates();
         if (result?.success) {
-            toast.success(`Câmbio atualizado!`);
+            toast.success($t("settings.api.integrations.currency.success"));
         } else if (result) {
-            toast.error(result.error || "Erro ao sincronizar moedas.");
+            toast.error(
+                result.error || $t("settings.api.integrations.currency.error"),
+            );
         }
         isSyncing = false;
     }
@@ -118,8 +119,6 @@
 </script>
 
 <div class="space-y-6 animate-in fade-in duration-500">
-    <CurrencyTicker />
-
     <div class="flex-1 flex flex-col space-y-8 p-4 md:p-8">
         <div
             class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
@@ -140,13 +139,7 @@
                     <Calculator class="w-4 h-4 mr-2" />
                     {$t("finance.dailyClosure")}
                 </Button>
-                <Button
-                    variant="outline"
-                    onclick={() => (showTransferDialog = true)}
-                >
-                    <ArrowRightLeft class="w-4 h-4 mr-2" />
-                    Transferir
-                </Button>
+
                 <Button
                     variant="outline"
                     onclick={handleSync}
@@ -155,7 +148,9 @@
                     <ArrowRightLeft
                         class={cn("w-4 h-4 mr-2", isSyncing && "animate-spin")}
                     />
-                    {isSyncing ? "Sincronizando..." : "Atualizar Câmbio"}
+                    {isSyncing
+                        ? $t("settings.api.integrations.currency.syncing")
+                        : $t("settings.api.integrations.currency.syncNow")}
                 </Button>
                 <Button onclick={() => (showTransactionDialog = true)}>
                     <Plus class="w-4 h-4 mr-2" />
@@ -170,27 +165,33 @@
         >
             <!-- Main Converted Balance -->
             <Card.Root
-                class="border-l-4 border-l-emerald-500 shadow-sm bg-card"
+                class="border-l-2 border-l-emerald-500 shadow-sm bg-card hover:shadow-md transition-shadow"
             >
-                <Card.Header
-                    class="flex flex-row items-center justify-between space-y-0 pb-2"
-                >
-                    <Card.Title class="text-sm font-medium">
-                        Patrimônio Total (BRL)
-                    </Card.Title>
-                    <Wallet class="h-4 w-4 text-emerald-500" />
-                </Card.Header>
-                <Card.Content>
-                    <div class="text-2xl font-bold text-emerald-600">
-                        {formatCurrency(
-                            totalBalanceBRL,
-                            "BRL",
-                            $locale || "pt-BR",
-                        )}
+                <Card.Content class="py-0.5 px-2">
+                    <div class="flex items-center justify-between">
+                        <span
+                            class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
+                        >
+                            {$t("finance.quickStats.totalEquity")} (BRL)
+                        </span>
+                        <Wallet class="w-3 h-3 text-emerald-500" />
                     </div>
-                    <p class="text-xs text-muted-foreground">
-                        Consolidado em conta principal
-                    </p>
+                    <div class="mt-0">
+                        <div
+                            class="text-base font-mono font-bold text-emerald-500 tabular-nums tracking-tight leading-none"
+                        >
+                            {formatCurrency(
+                                totalBalanceBRL,
+                                "BRL",
+                                $locale || "pt-BR",
+                            )}
+                        </div>
+                        <p
+                            class="text-[9px] text-muted-foreground/50 leading-none mt-0.5"
+                        >
+                            {$t("finance.quickStats.consolidated")}
+                        </p>
+                    </div>
                 </Card.Content>
             </Card.Root>
 
@@ -202,34 +203,42 @@
                 >
                     <Card.Root
                         class={cn(
-                            "border-l-4 shadow-sm bg-card transition-colors cursor-pointer",
+                            "border-l-2 shadow-sm bg-card transition-all cursor-pointer hover:shadow-md",
                             getCurrencyColor(currency),
                         )}
                     >
-                        <Card.Header
-                            class="flex flex-row items-center justify-between space-y-0 pb-2"
-                        >
-                            <Card.Title class="text-sm font-medium"
-                                >Saldo em {currency}</Card.Title
-                            >
-                            <Landmark
-                                class={cn(
-                                    "h-4 w-4",
-                                    getCurrencyTextColor(currency),
-                                )}
-                            />
-                        </Card.Header>
-                        <Card.Content>
-                            <div class="text-xl font-bold">
-                                {formatCurrency(
-                                    data.total,
-                                    currency,
-                                    $locale || "pt-BR",
-                                )}
+                        <Card.Content class="py-0.5 px-2">
+                            <div class="flex items-center justify-between">
+                                <span
+                                    class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
+                                >
+                                    {$t("finance.quickStats.balanceIn", {
+                                        values: { currency },
+                                    })}
+                                </span>
+                                <Landmark
+                                    class={cn(
+                                        "w-3 h-3",
+                                        getCurrencyTextColor(currency),
+                                    )}
+                                />
                             </div>
-                            <p class="text-[10px] text-muted-foreground mt-1">
-                                Ver detalhamento de contas
-                            </p>
+                            <div class="mt-0">
+                                <div
+                                    class="text-base font-mono font-bold tabular-nums tracking-tight leading-none"
+                                >
+                                    {formatCurrency(
+                                        data.total,
+                                        currency,
+                                        $locale || "pt-BR",
+                                    )}
+                                </div>
+                                <p
+                                    class="text-[9px] text-muted-foreground/50 leading-none mt-0.5"
+                                >
+                                    {$t("finance.quickStats.viewBreakdown")}
+                                </p>
+                            </div>
                         </Card.Content>
                     </Card.Root>
                 </button>
@@ -237,41 +246,48 @@
 
             <Card.Root
                 class={cn(
-                    "border-l-4 shadow-sm bg-card",
+                    "border-l-2 shadow-sm bg-card",
                     monthResultBRL >= 0
                         ? "border-l-emerald-500"
                         : "border-l-rose-500",
                 )}
             >
-                <Card.Header
-                    class="flex flex-row items-center justify-between space-y-0 pb-2"
-                >
-                    <Card.Title class="text-sm font-medium"
-                        >{$t("finance.quickStats.monthlyResult")}</Card.Title
-                    >
-                    <TrendingUp
-                        class={cn(
-                            "h-4 w-4",
-                            monthResultBRL >= 0
-                                ? "text-emerald-500"
-                                : "text-rose-500",
-                        )}
-                    />
-                </Card.Header>
-                <Card.Content>
-                    <div
-                        class={cn(
-                            "text-xl font-bold",
-                            monthResultBRL >= 0
-                                ? "text-emerald-500"
-                                : "text-rose-500",
-                        )}
-                    >
-                        {formatCurrency(
-                            monthResultBRL,
-                            "BRL",
-                            $locale || "pt-BR",
-                        )}
+                <Card.Content class="py-0.5 px-2">
+                    <div class="flex items-center justify-between">
+                        <span
+                            class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
+                        >
+                            {$t("finance.quickStats.monthlyResult")}
+                        </span>
+                        <TrendingUp
+                            class={cn(
+                                "w-3 h-3",
+                                monthResultBRL >= 0
+                                    ? "text-emerald-500"
+                                    : "text-rose-500",
+                            )}
+                        />
+                    </div>
+                    <div class="mt-0">
+                        <div
+                            class={cn(
+                                "text-base font-mono font-bold tabular-nums tracking-tight leading-none",
+                                monthResultBRL >= 0
+                                    ? "text-emerald-500"
+                                    : "text-rose-500",
+                            )}
+                        >
+                            {formatCurrency(
+                                monthResultBRL,
+                                "BRL",
+                                $locale || "pt-BR",
+                            )}
+                        </div>
+                        <p
+                            class="text-[9px] text-muted-foreground/50 leading-none mt-0.5"
+                        >
+                            {$t("finance.quickStats.monthlyResultDesc")}
+                        </p>
                     </div>
                 </Card.Content>
             </Card.Root>
@@ -288,10 +304,12 @@
                             class="text-base font-bold tracking-tight flex items-center gap-2"
                         >
                             <TrendingUp class="w-4 h-4 text-primary" />
-                            Evolução Patrimonial
+                            {$t("finance.charts.evolution")}
                         </Card.Title>
                         <Card.Description class="text-xs text-muted-foreground"
-                            >Evolução acumulada em {selectedChartCurrency}</Card.Description
+                            >{$t("finance.charts.evolutionSubtitle", {
+                                values: { currency: selectedChartCurrency },
+                            })}</Card.Description
                         >
                     </div>
                 </div>
@@ -310,7 +328,7 @@
                         )}
                         onclick={() => (selectedAccountId = "all")}
                     >
-                        Todas as Contas
+                        {$t("finance.statement.allAccounts")}
                     </button>
                     {#each settingsStore.accounts as acc}
                         <button
@@ -363,10 +381,14 @@
     <Dialog.Content class="sm:max-w-[425px]">
         <Dialog.Header>
             <Dialog.Title
-                >Detalhamento de Contas ({breakdownCurrency})</Dialog.Title
+                >{$t("finance.quickStats.breakdownTitle", {
+                    values: { currency: breakdownCurrency },
+                })}</Dialog.Title
             >
             <Dialog.Description>
-                Saldos individuais para a moeda {breakdownCurrency}.
+                {$t("finance.quickStats.breakdownDesc", {
+                    values: { currency: breakdownCurrency },
+                })}
             </Dialog.Description>
         </Dialog.Header>
         <div class="grid gap-4 py-4">
@@ -374,7 +396,7 @@
                 {#each breakdownData.accounts as account}
                     <div
                         class={cn(
-                            "flex items-center justify-between p-3 rounded-lg border border-l-4 bg-muted/50",
+                            "flex items-center justify-between p-1.5 px-2.5 rounded-lg border border-l-2 bg-muted/50",
                             getCurrencyColor(breakdownCurrency),
                         )}
                     >
@@ -400,15 +422,19 @@
                             </div>
                         </div>
                         <div class="text-right">
-                            <div class="text-sm font-bold">
+                            <div
+                                class="text-sm font-mono font-bold tabular-nums tracking-tight"
+                            >
                                 {formatCurrency(
                                     account.balance,
                                     breakdownCurrency,
                                     $locale || "pt-BR",
                                 )}
                             </div>
-                            <span class="text-[9px] text-muted-foreground"
-                                >{account.account_number || "Sem Nu."}</span
+                            <span
+                                class="text-[9px] font-mono font-medium text-muted-foreground"
+                                >{account.account_number ||
+                                    $t("finance.statement.noNumber")}</span
                             >
                         </div>
                     </div>
@@ -417,7 +443,7 @@
         </div>
         <Dialog.Footer>
             <Button variant="outline" onclick={() => (showBreakdown = false)}
-                >Fechar</Button
+                >{$t("general.close")}</Button
             >
         </Dialog.Footer>
     </Dialog.Content>

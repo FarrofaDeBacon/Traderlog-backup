@@ -183,14 +183,18 @@
 </script>
 
 <Card class="w-full">
-    <CardHeader>
+    <CardHeader class="py-1 px-3 border-b border-border/50">
         <div class="flex items-center justify-between">
             <div class="space-y-1">
-                <CardTitle class="flex items-center gap-2">
-                    <ClipboardCheck class="w-5 h-5 text-primary" />
+                <CardTitle
+                    class="text-[11px] font-black uppercase tracking-wider"
+                >
+                    <ClipboardCheck class="w-4 h-4 text-primary" />
                     {$t("strategy.dashboard.checklist.title")}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription
+                    class="text-[8px] mt-0 opacity-60 leading-none"
+                >
                     {$t("strategy.dashboard.checklist.subtitle")}
                 </CardDescription>
             </div>
@@ -210,13 +214,13 @@
             </div>
         </div>
     </CardHeader>
-    <CardContent class="space-y-6">
+    <CardContent class="p-2 space-y-2">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <!-- Coluna Esquerda: Checklist (Ocupa 3 colunas se Widget ativo, ou toda a largura se inativo) -->
             <div
                 class="{showWidget
                     ? 'lg:col-span-3'
-                    : 'lg:col-span-4'} space-y-6 transition-all duration-300"
+                    : 'lg:col-span-4'} space-y-2 transition-all duration-300"
             >
                 <!-- Progress Bar -->
                 <div class="space-y-2">
@@ -238,13 +242,13 @@
 
                 <!-- Checklist Items -->
                 <div
-                    class="grid gap-4 {showWidget
+                    class="grid gap-2 {showWidget
                         ? 'md:grid-cols-1'
                         : 'md:grid-cols-2'}"
                 >
                     {#each visibleItems as item}
                         <div
-                            class="flex flex-col p-3 rounded-lg border hover:bg-muted/50 transition-colors {item.checked
+                            class="flex flex-col py-0.5 px-2 rounded-lg border hover:bg-muted/50 transition-colors {item.checked
                                 ? 'bg-muted/20'
                                 : ''}"
                         >
@@ -293,7 +297,9 @@
                                                                 class="w-3 h-3"
                                                             />
                                                         {/if}
-                                                        Atualizar Notícias
+                                                        {$t(
+                                                            "strategy.dashboard.checklist.newsUpdate",
+                                                        )}
                                                     </Button>
                                                 </div>
                                             </div>
@@ -315,10 +321,14 @@
                                                 <AlertTriangle
                                                     class="w-3 h-3"
                                                 />
-                                                Alerta de Volatilidade:
+                                                {$t(
+                                                    "strategy.dashboard.checklist.volatilityAlert",
+                                                )}
                                                 <span
                                                     class="text-[10px] font-normal text-muted-foreground ml-auto"
-                                                    >(Role para ver mais)</span
+                                                    >{$t(
+                                                        "strategy.dashboard.checklist.scrollMore",
+                                                    )}</span
                                                 >
                                             </div>
                                             <ul
@@ -391,7 +401,7 @@
                         class="flex items-center gap-2 mb-3 text-sm font-semibold text-muted-foreground"
                     >
                         <CalendarDays class="w-4 h-4" />
-                        Calendário Econômico (Investing.com)
+                        {$t("strategy.dashboard.checklist.economicCalendar")}
                     </div>
 
                     <div
@@ -401,7 +411,9 @@
                             src="https://sslecal2.forexprostools.com/?columns=exc_flags,exc_currency,exc_importance,exc_actual,exc_forecast,exc_previous&features=datepicker,timezone&countries=110,17,37,12,25,32,6,36,5,72&calType=day&timeZone=12&lang=12"
                             width="100%"
                             height="100%"
-                            title="Calendário Econômico"
+                            title={$t(
+                                "strategy.dashboard.checklist.calendarTitle",
+                            )}
                             frameborder="0"
                             allowtransparency={null}
                             marginwidth="0"

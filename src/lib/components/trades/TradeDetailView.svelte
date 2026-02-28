@@ -83,7 +83,7 @@
         </div>
         <div class="text-right">
             <div
-                class={`text-2xl font-bold ${(trade.result || 0) >= 0 ? "text-green-500" : "text-red-500"}`}
+                class={`text-2xl font-mono font-bold ${(trade.result || 0) >= 0 ? "text-green-500" : "text-red-500"}`}
             >
                 {formatCurrency(
                     trade.result || 0,
@@ -114,7 +114,7 @@
                         <span class="text-xs text-muted-foreground block"
                             >{$t("trades.details.entry_price")}</span
                         >
-                        <span class="font-mono text-white text-sm"
+                        <span class="font-mono font-bold text-white text-sm"
                             >{trade.entry_price?.toLocaleString(
                                 $locale || "pt-BR",
                             )}</span
@@ -124,7 +124,7 @@
                         <span class="text-xs text-muted-foreground block"
                             >{$t("trades.details.exit_price")}</span
                         >
-                        <span class="font-mono text-white text-sm"
+                        <span class="font-mono font-bold text-white text-sm"
                             >{trade.exit_price?.toLocaleString(
                                 $locale || "pt-BR",
                             ) || "-"}</span
@@ -134,13 +134,15 @@
                         <span class="text-xs text-muted-foreground block"
                             >{$t("trades.table.quantity")}</span
                         >
-                        <span class="text-white text-sm">{trade.quantity}</span>
+                        <span class="text-white text-sm font-mono font-bold"
+                            >{trade.quantity}</span
+                        >
                     </div>
                     <div>
                         <span class="text-xs text-muted-foreground block"
                             >{$t("trades.details.fees")}</span
                         >
-                        <span class="text-red-400 text-sm"
+                        <span class="text-red-400 text-sm font-mono font-bold"
                             >{formatCurrency(
                                 trade.fee_total || 0,
                                 account?.currency || "BRL",
@@ -155,7 +157,8 @@
                         <span class="text-xs text-muted-foreground block"
                             >{$t("trades.details.stop_loss")}</span
                         >
-                        <span class="font-mono text-red-500/80 text-sm"
+                        <span
+                            class="font-mono font-bold text-red-500/80 text-sm"
                             >{trade.stop_loss || "-"}</span
                         >
                     </div>
@@ -163,7 +166,8 @@
                         <span class="text-xs text-muted-foreground block"
                             >{$t("trades.details.take_profit")}</span
                         >
-                        <span class="font-mono text-green-500/80 text-sm"
+                        <span
+                            class="font-mono font-bold text-green-500/80 text-sm"
                             >{trade.take_profit || "-"}</span
                         >
                     </div>

@@ -27,6 +27,7 @@
     import { toast } from "svelte-sonner";
     import { t } from "svelte-i18n";
     import { page } from "$app/stores";
+    import ModeToggle from "$lib/components/mode-toggle/ModeToggle.svelte";
 
     // Workspace Items (Principal)
     let workspaceItems = $derived([
@@ -44,12 +45,12 @@
     // Fiscal Items
     let fiscalItems = $derived([
         {
-            label: "Módulo IRPF",
+            label: $t("sidebar.irpf"),
             href: "/fiscal/irpf",
             icon: FileText,
         },
         {
-            label: "DARFs",
+            label: $t("sidebar.darfs"),
             href: "/fiscal/irpf/darf",
             icon: DollarSign,
         },
@@ -101,7 +102,7 @@
                     <div
                         class="px-3 py-2 text-[10px] font-bold uppercase text-muted-foreground tracking-widest"
                     >
-                        Workspace
+                        {$t("sidebar.categories.workspace")}
                     </div>
                     {#each workspaceItems as item}
                         <a
@@ -122,7 +123,7 @@
                     <div
                         class="px-3 py-2 text-[10px] font-bold uppercase text-muted-foreground tracking-widest"
                     >
-                        Análise & Mindset
+                        {$t("sidebar.categories.analysis")}
                     </div>
                     {#each analysisItems as item}
                         <a
@@ -143,7 +144,7 @@
                     <div
                         class="px-3 py-2 text-[10px] font-bold uppercase text-muted-foreground tracking-widest"
                     >
-                        Fiscal
+                        {$t("sidebar.categories.fiscal")}
                     </div>
                     {#each fiscalItems as item}
                         <a
@@ -185,7 +186,9 @@
         {/if}
     </Button>
 
-    <div class="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+    <div
+        class="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6 justify-between"
+    >
         <a
             href="/"
             class="flex items-center gap-2 font-semibold overflow-hidden"
@@ -195,6 +198,9 @@
                 <span class="truncate">TraderLog Pro</span>
             {/if}
         </a>
+        <div class="flex items-center gap-2">
+            <ModeToggle />
+        </div>
     </div>
     <div class="flex-1 overflow-y-auto overflow-x-hidden">
         <nav class="grid gap-1 px-2 pt-4">
@@ -202,7 +208,7 @@
                 <div
                     class="px-3 py-2 text-[10px] font-bold uppercase text-muted-foreground tracking-widest"
                 >
-                    Workspace
+                    {$t("sidebar.categories.workspace")}
                 </div>
             {/if}
             {#each workspaceItems as item}
@@ -251,7 +257,7 @@
                 <div
                     class="px-3 py-2 text-[10px] font-bold uppercase text-muted-foreground tracking-widest"
                 >
-                    Análise & Mindset
+                    {$t("sidebar.categories.analysis")}
                 </div>
             {/if}
             {#each analysisItems as item}
@@ -300,7 +306,7 @@
                 <div
                     class="px-3 py-2 text-[10px] font-bold uppercase text-muted-foreground tracking-widest"
                 >
-                    Fiscal
+                    {$t("sidebar.categories.fiscal")}
                 </div>
             {/if}
             {#each fiscalItems as item}
@@ -422,7 +428,9 @@
                     </AlertDialog.Description>
                 </AlertDialog.Header>
                 <AlertDialog.Footer>
-                    <AlertDialog.Cancel>Cancelar</AlertDialog.Cancel>
+                    <AlertDialog.Cancel
+                        >{$t("general.cancel")}</AlertDialog.Cancel
+                    >
                     <AlertDialog.Action
                         onclick={() => {
                             toast.success(

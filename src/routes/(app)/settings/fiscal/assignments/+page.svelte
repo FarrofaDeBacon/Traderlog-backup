@@ -11,20 +11,17 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div class="space-y-0.5">
-            <h3 class="text-lg font-medium">Atribuições (Ativos)</h3>
-            <p class="text-sm text-muted-foreground">
-                As atribuições de <strong>Perfil Fiscal</strong> e
-                <strong>Perfil de Corretagem</strong>
-                foram movidas para a tela de <strong>Tipos de Ativos</strong> para
-                facilitar a gestão centralizada.
-            </p>
+            <h3 class="text-lg font-medium">
+                {$t("settings.fiscal.assignments.title")}
+            </h3>
+            {$t("settings.fiscal.assignments.description")}
         </div>
         <Button
             onclick={() => goto("/settings/asset-types")}
             variant="secondary"
         >
             <ExternalLink class="w-4 h-4 mr-2" />
-            Ir para Tipos de Ativos
+            {$t("settings.fiscal.assignments.goToAssetTypes")}
         </Button>
     </div>
 
@@ -34,9 +31,17 @@
         <table class="w-full text-sm">
             <thead class="bg-muted text-muted-foreground border-b">
                 <tr>
-                    <th class="text-left p-3 font-medium">Mercado</th>
-                    <th class="text-left p-3 font-medium">Tipo de Ativo</th>
-                    <th class="text-left p-3 font-medium">Perfil Fiscal</th>
+                    <th class="text-left p-3 font-medium"
+                        >{$t("settings.fiscal.assignments.table.market")}</th
+                    >
+                    <th class="text-left p-3 font-medium"
+                        >{$t("settings.fiscal.assignments.table.assetType")}</th
+                    >
+                    <th class="text-left p-3 font-medium"
+                        >{$t(
+                            "settings.fiscal.assignments.table.fiscalProfile",
+                        )}</th
+                    >
                 </tr>
             </thead>
             <tbody class="divide-y">
@@ -57,10 +62,15 @@
                             {#if at.tax_profile_id}
                                 {settingsStore.taxProfiles.find(
                                     (p) => p.id === at.tax_profile_id,
-                                )?.name || "Perfil Desconhecido"}
+                                )?.name ||
+                                    $t(
+                                        "settings.fiscal.assignments.table.unknownProfile",
+                                    )}
                             {:else}
                                 <span class="text-muted-foreground italic"
-                                    >Padrão (Isento)</span
+                                    >{$t(
+                                        "settings.fiscal.assignments.table.defaultExempt",
+                                    )}</span
                                 >
                             {/if}
                         </td>
@@ -71,7 +81,7 @@
                             colspan="3"
                             class="p-6 text-center text-muted-foreground"
                         >
-                            Nenhum tipo de ativo cadastrado.
+                            {$t("settings.fiscal.assignments.table.empty")}
                         </td>
                     </tr>
                 {/each}
@@ -82,8 +92,7 @@
     <div
         class="p-4 bg-primary/5 border border-primary/20 rounded-lg text-sm text-primary/80"
     >
-        <strong>Dica:</strong> Centralizamos essas configurações para que você possa
-        definir o comportamento fiscal e as taxas de corretagem no mesmo lugar onde
-        configura os multiplicadores de pontos.
+        <strong>{$t("settings.fiscal.assignments.tip.title")}</strong>
+        {$t("settings.fiscal.assignments.tip.text")}
     </div>
 </div>

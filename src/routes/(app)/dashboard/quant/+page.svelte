@@ -10,6 +10,7 @@
     import IntentionBar from "$lib/components/dashboard/quant/IntentionBar.svelte";
     import { Separator } from "$lib/components/ui/separator";
     import { Activity, Users, BarChart3, Clock } from "lucide-svelte";
+    import { t } from "svelte-i18n";
 
     let win = $derived(rtdStore.winQuote);
     let wdo = $derived(rtdStore.wdoQuote);
@@ -27,10 +28,10 @@
     <div class="flex items-center justify-between">
         <div>
             <h2 class="text-3xl font-bold tracking-tight">
-                Super Tela de Dados (Quant)
+                {$t("dashboard.quant.title")}
             </h2>
             <p class="text-muted-foreground">
-                Monitoramento em tempo real via RTD (Profit Chart)
+                {$t("dashboard.quant.subtitle")}
             </p>
         </div>
         <div class="flex items-center gap-2">
@@ -52,7 +53,9 @@
             <CardHeader
                 class="flex flex-row items-center justify-between space-y-0 pb-2"
             >
-                <CardTitle class="text-sm font-medium">ÍNDICE (WIN)</CardTitle>
+                <CardTitle class="text-sm font-medium"
+                    >{$t("dashboard.quant.index")}</CardTitle
+                >
                 <Activity class="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -65,7 +68,7 @@
 
                 <div class="mt-6">
                     <IntentionBar
-                        label="INTENÇÃO (BOOK DEPTH)"
+                        label={$t("dashboard.quant.intention")}
                         buy={winBook?.bid || 0}
                         sell={winBook?.ask || 0}
                     />
@@ -78,7 +81,9 @@
             <CardHeader
                 class="flex flex-row items-center justify-between space-y-0 pb-2"
             >
-                <CardTitle class="text-sm font-medium">DÓLAR (WDO)</CardTitle>
+                <CardTitle class="text-sm font-medium"
+                    >{$t("dashboard.quant.dollar")}</CardTitle
+                >
                 <Activity class="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -91,7 +96,7 @@
 
                 <div class="mt-6">
                     <IntentionBar
-                        label="INTENÇÃO (BOOK DEPTH)"
+                        label={$t("dashboard.quant.intention")}
                         buy={wdoBook?.bid || 0}
                         sell={wdoBook?.ask || 0}
                     />
@@ -108,7 +113,7 @@
                     class="text-sm font-medium leading-none flex items-center gap-2"
                 >
                     <Users class="h-4 w-4" />
-                    SALDO DE PLAYERS (RANKING)
+                    {$t("dashboard.quant.ranking")}
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -136,7 +141,7 @@
                         <div
                             class="col-span-full h-20 flex items-center justify-center text-muted-foreground text-sm italic"
                         >
-                            Aguardando dados dos players...
+                            {$t("dashboard.quant.waitingData")}
                         </div>
                     {/if}
                 </div>

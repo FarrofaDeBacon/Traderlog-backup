@@ -13,7 +13,7 @@
         addWeeks,
         subWeeks,
     } from "date-fns";
-    import { ptBR } from "date-fns/locale";
+    import { ptBR, enUS, es, fr } from "date-fns/locale";
     import {
         ChevronLeft,
         ChevronRight,
@@ -22,10 +22,18 @@
     import { Button } from "$lib/components/ui/button";
     import { cn } from "$lib/utils";
     import { goto } from "$app/navigation";
+    import { t, locale } from "svelte-i18n";
 
-    let { trades = [], onFilterChange } = $props<{
+    let {
+        trades = [],
+        onFilterChange,
+        onDateClick,
+        compact = false,
+    } = $props<{
         trades: any[];
         onFilterChange?: (start: Date, end: Date) => void;
+        onDateClick?: (day: Date) => void;
+        compact?: boolean;
     }>();
 
     let viewMode = $state<"month" | "week">("month");
@@ -67,8 +75,12 @@
     }
 
     function handleDateClick(day: Date) {
-        const dateStr = format(day, "yyyy-MM-dd");
-        goto(`/journal?date=${dateStr}`);
+        if (onDateClick) {
+            onDateClick(day);
+        } else {
+            const dateStr = format(day, "yyyy-MM-dd");
+            goto(`/journal?date=${dateStr}`);
+        }
     }
 
     $effect(() => {
@@ -85,22 +97,41 @@
         }
     });
 
-    const weekDayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    const weekDayLabels = $derived([
+        $t("calendar.days.sun"),
+        $t("calendar.days.mon"),
+        $t("calendar.days.tue"),
+        $t("calendar.days.wed"),
+        $t("calendar.days.thu"),
+        $t("calendar.days.fri"),
+        $t("calendar.days.sat"),
+    ]);
+    const dateLocale = $derived.by(() => {
+        const currentLocale = $locale;
+        if (currentLocale?.startsWith("en")) return enUS;
+        if (currentLocale?.startsWith("es")) return es;
+        if (currentLocale?.startsWith("fr")) return fr;
+        return ptBR;
+    });
 </script>
 
-<div class="space-y-4">
-    <div class="flex items-center justify-between mb-4">
+<div class={cn("flex flex-col", compact ? "gap-2" : "gap-4")}>
+    <div
+        class={cn(
+            "flex items-center justify-between",
+            compact ? "mb-1" : "mb-4",
+        )}
+    >
         <div class="flex items-center gap-2">
             <span
-                class="text-sm font-bold text-foreground uppercase tracking-tighter"
-            >
-                {format(
-                    currentDate,
-                    viewMode === "month"
-                        ? "MMMM yyyy"
-                        : "'Semana de' dd 'de' MMMM",
-                    { locale: ptBR },
+                class={cn(
+                    "font-bold text-foreground uppercase tracking-widest",
+                    compact ? "text-[10px]" : "text-sm",
                 )}
+            >
+                {viewMode === "month"
+                    ? format(currentDate, "MMMM yyyy", { locale: dateLocale })
+                    : `${$t("calendar.weekOf")} ${format(currentDate, "dd", { locale: dateLocale })} ${$t("calendar.of")} ${format(currentDate, "MMMM", { locale: dateLocale })}`}
             </span>
         </div>
         <div
@@ -109,35 +140,47 @@
             <Button
                 variant={viewMode === "month" ? "secondary" : "ghost"}
                 size="sm"
-                class="h-7 text-[10px] uppercase font-bold px-3 transition-all"
+                class={cn(
+                    "font-bold px-3 transition-all",
+                    compact ? "h-6 text-[8px]" : "h-7 text-[10px]",
+                )}
                 onclick={() => (viewMode = "month")}
             >
-                Mensal
+                {compact ? $t("calendar.monthlyShort") : $t("calendar.monthly")}
             </Button>
             <Button
                 variant={viewMode === "week" ? "secondary" : "ghost"}
                 size="sm"
-                class="h-7 text-[10px] uppercase font-bold px-3 transition-all"
+                class={cn(
+                    "font-bold px-3 transition-all",
+                    compact ? "h-6 text-[8px]" : "h-7 text-[10px]",
+                )}
                 onclick={() => (viewMode = "week")}
             >
-                Semanal
+                {compact ? $t("calendar.weeklyShort") : $t("calendar.weekly")}
             </Button>
             <div class="w-px h-4 bg-border mx-1"></div>
             <Button
                 variant="ghost"
                 size="icon"
-                class="h-7 w-7 text-muted-foreground hover:text-foreground"
+                class={cn(
+                    "text-muted-foreground hover:text-foreground",
+                    compact ? "h-6 w-6" : "h-7 w-7",
+                )}
                 onclick={prev}
             >
-                <ChevronLeft class="w-4 h-4" />
+                <ChevronLeft class={compact ? "w-3 h-3" : "w-4 h-4"} />
             </Button>
             <Button
                 variant="ghost"
                 size="icon"
-                class="h-7 w-7 text-muted-foreground hover:text-foreground"
+                class={cn(
+                    "text-muted-foreground hover:text-foreground",
+                    compact ? "h-6 w-6" : "h-7 w-7",
+                )}
                 onclick={next}
             >
-                <ChevronRight class="w-4 h-4" />
+                <ChevronRight class={compact ? "w-3 h-3" : "w-4 h-4"} />
             </Button>
         </div>
     </div>
@@ -163,7 +206,8 @@
 
                 <button
                     class={cn(
-                        "min-h-[85px] p-3 border-r border-b border-border group transition-all relative flex flex-col text-left",
+                        compact ? "min-h-[55px] p-1.5" : "min-h-[85px] p-3",
+                        "border-r border-b border-border group transition-all relative flex flex-col text-left",
                         !isCurrentMonth &&
                             viewMode === "month" &&
                             "bg-muted/10 opacity-30",
@@ -176,7 +220,7 @@
                         class={cn(
                             "text-[10px] font-black transition-all",
                             isToday
-                                ? "bg-emerald-600 text-white px-2 py-0.5 rounded-full"
+                                ? "bg-emerald-600 text-white px-1.5 py-0.5 rounded-full"
                                 : "text-muted-foreground group-hover:text-foreground",
                         )}
                     >
@@ -184,10 +228,11 @@
                     </span>
 
                     {#if pnl !== 0}
-                        <div class="mt-auto pt-2 flex flex-col">
+                        <div class="mt-auto pt-1 flex flex-col">
                             <span
                                 class={cn(
-                                    "text-[11px] font-black tracking-tight",
+                                    compact ? "text-[9px]" : "text-[11px]",
+                                    "font-black tracking-tight",
                                     pnl > 0
                                         ? "text-emerald-600"
                                         : "text-rose-600",
@@ -198,16 +243,20 @@
                                     { style: "currency", currency: "BRL" },
                                 )}
                             </span>
-                            <div
-                                class={cn(
-                                    "w-full h-1 rounded-full mt-1.5 opacity-20",
-                                    pnl > 0 ? "bg-emerald-500" : "bg-rose-500",
-                                )}
-                                style="width: {Math.min(
-                                    Math.abs(pnl) / 10,
-                                    100,
-                                )}%"
-                            ></div>
+                            {#if !compact}
+                                <div
+                                    class={cn(
+                                        "w-full h-1 rounded-full mt-1.5 opacity-20",
+                                        pnl > 0
+                                            ? "bg-emerald-500"
+                                            : "bg-rose-500",
+                                    )}
+                                    style="width: {Math.min(
+                                        Math.abs(pnl) / 10,
+                                        100,
+                                    )}%"
+                                ></div>
+                            {/if}
                         </div>
                     {/if}
                 </button>

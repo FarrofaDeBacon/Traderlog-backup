@@ -387,6 +387,10 @@ pub struct UserProfile {
     pub birth_date: Option<String>,
     pub trial_start_date: Option<String>, // ISO Date
     pub license_key: Option<String>,      // Signed license string or file path
+    #[serde(default)]
+    pub password_hash: Option<String>, // Local authentication hash
+    #[serde(default)]
+    pub recovery_hash: Option<String>, // Recovery key hash
     #[serde(default = "default_utc_offset")]
     pub utc_offset: i32, // Offset in minutes (e.g., -180 for Brasilia)
 }
@@ -705,7 +709,9 @@ pub struct RiskProfile {
     pub max_trades_per_day: i32,
     pub min_risk_reward: f64,
     pub lock_on_loss: bool,
-    pub account_type_applicability: String, // "All" | "Prop" | "Real" | "Demo"
+    pub account_type_applicability: String, // "All" | "Prop" | "Real" | "Demo" | "Specific"
+    #[serde(default)]
+    pub account_ids: Vec<String>,
     pub growth_plan_enabled: bool,
     pub current_phase_index: i32,
     pub growth_phases: Vec<GrowthPhase>,
@@ -727,6 +733,8 @@ pub struct RiskProfile {
     pub lot_reduction_multiplier: f64,
     #[serde(default = "default_psyc_strategy")]
     pub psychological_search_strategy: String, // "Strict" | "Sequence"
+    #[serde(default)]
+    pub active: bool,
 }
 
 fn default_psyc_lookback() -> i32 {

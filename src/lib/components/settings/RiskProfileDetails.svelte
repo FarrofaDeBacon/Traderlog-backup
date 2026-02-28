@@ -38,7 +38,7 @@
                         class="bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-500/20"
                     >
                         <TrendingUp class="w-3 h-3 mr-1" />
-                        Plano de Crescimento Ativo
+                        {$t("settings.risk.growthPlan.activeStatus")}
                     </Badge>
                 {/if}
             </div>
@@ -125,7 +125,7 @@
             <div class="space-y-1">
                 <span
                     class="text-xs text-muted-foreground block uppercase font-bold"
-                    >Max Trades / Dia</span
+                    >{$t("settings.risk.maxTradesDay")}</span
                 >
                 <div class="flex items-center gap-2">
                     <Clock class="w-4 h-4 text-muted-foreground" />
@@ -138,22 +138,18 @@
             <div class="space-y-1">
                 <span
                     class="text-xs text-muted-foreground block uppercase font-bold"
-                    >Bloqueio de Plataforma</span
+                    >{$t("settings.risk.platformLock")}</span
                 >
                 <div class="flex items-center gap-2">
                     {#if profile.lock_on_loss}
                         <Ban class="w-4 h-4 text-red-500" />
                         <span class="font-medium text-red-500">
-                            {$t("general.yes").includes("general.yes")
-                                ? "Sim"
-                                : $t("general.yes")}
+                            {$t("general.yes")}
                         </span>
                     {:else}
                         <CheckCircle2 class="w-4 h-4 text-muted-foreground" />
                         <span class="font-medium text-muted-foreground">
-                            {$t("general.no").includes("general.no")
-                                ? "Não"
-                                : $t("general.no")}
+                            {$t("general.no")}
                         </span>
                     {/if}
                 </div>
@@ -177,7 +173,7 @@
                 class="text-sm font-medium flex items-center gap-2 text-muted-foreground"
             >
                 <TrendingUp class="w-4 h-4" />
-                Fases do Plano de Crescimento
+                {$t("settings.risk.growthPlan.phasesTitle")}
             </h3>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {#each profile.growth_phases as phase, i}
@@ -196,12 +192,14 @@
                             {phase.name}
                         </div>
                         <div class="text-muted-foreground">
-                            Max Lote: <span class="font-mono text-foreground"
+                            {$t("settings.risk.growthPlan.maxLotLabel")}
+                            <span class="font-mono text-foreground"
                                 >{phase.max_lots}</span
                             >
                         </div>
                         <div class="text-muted-foreground">
-                            Loss: <span class="font-mono text-foreground"
+                            {$t("settings.risk.growthPlan.lossLabel")}
+                            <span class="font-mono text-foreground"
                                 >R$ {phase.max_daily_loss}</span
                             >
                         </div>

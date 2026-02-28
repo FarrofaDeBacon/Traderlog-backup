@@ -232,7 +232,7 @@ class FiscalStore {
                 const totalWithholding = monthDetails.reduce((sum, d) => sum + d.withholding_tax, 0);
                 const totalNet = monthDetails.reduce((sum, d) => sum + d.net_tax_due, 0);
                 // Total accumulated loss across all buckets
-                const totalLoss = Object.values(lossBuckets).reduce((sum, v) => sum + v, 0);
+                const totalLoss = Object.values(lossBuckets || {}).reduce((sum, v) => sum + v, 0);
 
                 finalReport = {
                     month: targetMonth,

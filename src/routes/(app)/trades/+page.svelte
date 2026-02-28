@@ -73,7 +73,11 @@
         key: string | null;
         label: string;
         data?: any;
-    }>({ type: "global", key: null, label: "Todo o Período" });
+    }>({
+        type: "global",
+        key: null,
+        label: $t("trades.messages.all_period") || "Todo o Período",
+    });
 
     const allTrades = $derived(tradesStore.trades);
 
@@ -136,6 +140,7 @@
     }
 
     const hierarchicalTradesData = $derived.by(() => {
+        if (settingsStore.isLoadingData) return [];
         const monthsMap: Record<string, any> = {};
 
         // Build the hierarchy: Month -> Week -> Day
@@ -165,7 +170,16 @@
             if (!month.weeks[weekKey]) {
                 month.weeks[weekKey] = {
                     key: weekKey,
-                    label: `Semana de ${new Date(weekKey + "T12:00:00").toLocaleDateString($locale || "pt-BR", { day: "numeric", month: "short" })}`,
+                    label: $t("trades.dashboard.weekOf", {
+                        values: {
+                            date: new Date(
+                                weekKey + "T12:00:00",
+                            ).toLocaleDateString($locale || "pt-BR", {
+                                day: "numeric",
+                                month: "short",
+                            }),
+                        },
+                    }).toUpperCase(),
                     days: {},
                     totalPnlByCurrency: {},
                     trades: [],
@@ -206,40 +220,50 @@
         }
 
         // Convert Objects back to sorted arrays
-        return Object.values(monthsMap)
-            .sort((a, b) => b.key.localeCompare(a.key))
-            .map((month) => {
-                const weeks = Object.values(month.weeks)
-                    .sort((a: any, b: any) => b.key.localeCompare(a.key))
-                    .map((week: any) => {
-                        const days = Object.values(week.days)
-                            .sort((a: any, b: any) =>
-                                b.date.localeCompare(a.date),
-                            )
-                            .map((day: any) => ({
-                                ...day,
+        try {
+            return Object.values(monthsMap)
+                .sort((a, b) => (b.key || "").localeCompare(a.key || ""))
+                .map((month) => {
+                    const weeks = Object.values(month.weeks || {})
+                        .sort((a: any, b: any) =>
+                            (b.key || "").localeCompare(a.key || ""),
+                        )
+                        .map((week: any) => {
+                            const days = Object.values(week.days || {})
+                                .sort((a: any, b: any) =>
+                                    (b.date || "").localeCompare(a.date || ""),
+                                )
+                                .map((day: any) => ({
+                                    ...day,
+                                    pnlEntries: Object.entries(
+                                        day.totalPnlByCurrency || {},
+                                    ).map(([curr, val]) => ({ curr, val })),
+                                }));
+
+                            return {
+                                ...week,
+                                days,
                                 pnlEntries: Object.entries(
-                                    day.totalPnlByCurrency,
+                                    week.totalPnlByCurrency || {},
                                 ).map(([curr, val]) => ({ curr, val })),
-                            }));
+                            };
+                        });
 
-                        return {
-                            ...week,
-                            days,
-                            pnlEntries: Object.entries(
-                                week.totalPnlByCurrency,
-                            ).map(([curr, val]) => ({ curr, val })),
-                        };
-                    });
-
-                return {
-                    ...month,
-                    weeks,
-                    pnlEntries: Object.entries(month.totalPnlByCurrency).map(
-                        ([curr, val]) => ({ curr, val }),
-                    ),
-                };
-            });
+                    return {
+                        ...month,
+                        weeks,
+                        pnlEntries: Object.entries(
+                            month.totalPnlByCurrency || {},
+                        ).map(([curr, val]) => ({ curr, val })),
+                    };
+                });
+        } catch (err) {
+            console.error(
+                "[TradesHub] Error processing results hierarchy:",
+                err,
+            );
+            return [];
+        }
     });
 
     $effect(() => {
@@ -641,33 +665,37 @@
     <!-- KPI Row -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <Card.Root
-            class="border-l-4 {kpis.profitTotal >= 0
+            class="border-l-2 {kpis.profitTotal >= 0
                 ? 'border-l-emerald-500'
-                : 'border-l-rose-500'} shadow-sm bg-card"
+                : 'border-l-rose-500'} shadow-sm bg-card hover:shadow-md transition-shadow"
         >
-            <Card.Header
-                class="flex flex-row items-center justify-between space-y-0 pb-2"
-            >
-                <Card.Title class="text-sm font-medium">Saldo Total</Card.Title>
-                <Coins
-                    class="w-4 h-4 {kpis.profitTotal >= 0
-                        ? 'text-emerald-500'
-                        : 'text-rose-500'}"
-                />
-            </Card.Header>
-            <Card.Content>
+            <Card.Content class="py-0.5 px-2">
                 <div class="flex items-center justify-between">
-                    <div>
+                    <span
+                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
+                    >
+                        {$t("trades.quickStats.totalBalance")}
+                    </span>
+                    <Coins
+                        class="w-3 h-3 {kpis.profitTotal >= 0
+                            ? 'text-emerald-500'
+                            : 'text-rose-500'}"
+                    />
+                </div>
+                <div
+                    class="mt-1 flex items-center justify-between gap-2 overflow-hidden"
+                >
+                    <div class="flex flex-col">
                         {#each Object.entries(kpis.pnlByCurrency) as [curr, val]}
-                            <div class="flex items-baseline gap-1.5">
+                            <div class="flex items-baseline gap-1 leading-none">
                                 <span
-                                    class="text-[10px] font-medium text-muted-foreground uppercase"
+                                    class="text-[8px] font-black uppercase text-muted-foreground/40"
                                     >{curr}</span
                                 >
                                 <span
-                                    class="text-sm font-bold {(val as number) >=
+                                    class="text-sm font-mono font-bold tabular-nums tracking-tight {(val as number) >=
                                     0
-                                        ? 'text-emerald-600'
+                                        ? 'text-emerald-500'
                                         : 'text-rose-500'}"
                                 >
                                     {formatNumber(val as number)}
@@ -676,79 +704,110 @@
                         {/each}
                     </div>
                     {#if Object.keys(kpis.pnlByCurrency).length > 1}
-                        <div class="text-right border-l border-border pl-3">
+                        <div
+                            class="text-right border-l border-border pl-2 leading-none shrink-0"
+                        >
                             <span
-                                class="text-sm font-bold {kpis.consolidatedTotal >=
+                                class="text-sm font-mono font-bold tabular-nums tracking-tight {kpis.consolidatedTotal >=
                                 0
-                                    ? 'text-emerald-600'
+                                    ? 'text-emerald-500'
                                     : 'text-rose-500'}"
                             >
                                 {formatCurrency(
                                     kpis.consolidatedTotal,
                                     kpis.mainCurrency,
+                                    $locale || "pt-BR",
                                 )}
                             </span>
-                            <p class="text-[10px] text-muted-foreground">
-                                Convertido em {kpis.mainCurrency}
-                            </p>
                         </div>
                     {/if}
                 </div>
             </Card.Content>
         </Card.Root>
 
-        <Card.Root class="border-l-4 border-l-blue-500 shadow-sm bg-card">
-            <Card.Header
-                class="flex flex-row items-center justify-between space-y-0 pb-2"
-            >
-                <Card.Title class="text-sm font-medium"
-                    >Taxa de Acerto</Card.Title
-                >
-                <Activity class="w-4 h-4 text-blue-500" />
-            </Card.Header>
-            <Card.Content>
-                <div class="text-2xl font-bold">
-                    {kpis.winRate}%
+        <Card.Root
+            class="border-l-2 border-l-blue-500 shadow-sm bg-card hover:shadow-md transition-shadow"
+        >
+            <Card.Content class="py-0.5 px-2">
+                <div class="flex items-center justify-between">
+                    <span
+                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
+                    >
+                        {$t("trades.quickStats.winRate")}
+                    </span>
+                    <Activity class="w-3 h-3 text-blue-500" />
                 </div>
-                <p class="text-xs text-muted-foreground mt-1">
-                    {kpis.winners} de {kpis.total} Trades
-                </p>
+                <div class="mt-1">
+                    <div
+                        class="text-sm font-mono font-bold text-foreground tabular-nums tracking-tight leading-none"
+                    >
+                        {kpis.winRate}%
+                    </div>
+                    <p
+                        class="text-[9px] text-muted-foreground/50 leading-none mt-0.5"
+                    >
+                        {$t("trades.quickStats.winRateDesc", {
+                            values: {
+                                winners: kpis.winners,
+                                total: kpis.total,
+                            },
+                        })}
+                    </p>
+                </div>
             </Card.Content>
         </Card.Root>
 
-        <Card.Root class="border-l-4 border-l-teal-500 shadow-sm bg-card">
-            <Card.Header
-                class="flex flex-row items-center justify-between space-y-0 pb-2"
-            >
-                <Card.Title class="text-sm font-medium"
-                    >Profit Factor</Card.Title
-                >
-                <TrendingUp class="w-4 h-4 text-teal-500" />
-            </Card.Header>
-            <Card.Content>
-                <div class="text-2xl font-bold">
-                    {kpis.profitFactor}
+        <Card.Root
+            class="border-l-2 border-l-teal-500 shadow-sm bg-card hover:shadow-md transition-shadow"
+        >
+            <Card.Content class="py-0.5 px-2">
+                <div class="flex items-center justify-between">
+                    <span
+                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
+                    >
+                        {$t("trades.quickStats.profitFactor")}
+                    </span>
+                    <TrendingUp class="w-3 h-3 text-teal-500" />
                 </div>
-                <p class="text-xs text-muted-foreground mt-1">
-                    Fator de Lucratividade
-                </p>
+                <div class="mt-1">
+                    <div
+                        class="text-sm font-mono font-bold text-foreground tabular-nums tracking-tight leading-none"
+                    >
+                        {kpis.profitFactor}
+                    </div>
+                    <p
+                        class="text-[9px] text-muted-foreground/50 leading-none mt-0.5"
+                    >
+                        {$t("trades.quickStats.profitFactorDesc")}
+                    </p>
+                </div>
             </Card.Content>
         </Card.Root>
 
-        <Card.Root class="border-l-4 border-l-amber-500 shadow-sm bg-card">
-            <Card.Header
-                class="flex flex-row items-center justify-between space-y-0 pb-2"
-            >
-                <Card.Title class="text-sm font-medium">Em Aberto</Card.Title>
-                <Clock class="w-4 h-4 text-amber-500" />
-            </Card.Header>
-            <Card.Content>
-                <div class="text-2xl font-bold">
-                    {kpis.openCount}
+        <Card.Root
+            class="border-l-2 border-l-amber-500 shadow-sm bg-card hover:shadow-md transition-shadow"
+        >
+            <Card.Content class="py-0.5 px-2">
+                <div class="flex items-center justify-between">
+                    <span
+                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
+                    >
+                        {$t("trades.quickStats.openTrades")}
+                    </span>
+                    <Clock class="w-3 h-3 text-amber-500" />
                 </div>
-                <p class="text-xs text-muted-foreground mt-1">
-                    Posições Atuais
-                </p>
+                <div class="mt-1">
+                    <div
+                        class="text-sm font-mono font-bold text-foreground tabular-nums tracking-tight leading-none"
+                    >
+                        {kpis.openCount}
+                    </div>
+                    <p
+                        class="text-[9px] text-muted-foreground/50 leading-none mt-0.5"
+                    >
+                        {$t("trades.quickStats.openTradesDesc")}
+                    </p>
+                </div>
             </Card.Content>
         </Card.Root>
     </div>
@@ -988,13 +1047,16 @@
                                             {month.label}
                                         </h4>
                                         <div
-                                            class="flex items-center gap-2 mt-0.5"
+                                            class="flex items-center gap-2 mt-0"
                                         >
                                             <Badge
                                                 variant="outline"
                                                 class="text-[9px] px-1.5 h-4 bg-zinc-800 border-zinc-700 font-bold uppercase"
                                             >
-                                                {month.trades.length} TRADES
+                                                {month.trades.length}
+                                                {$t(
+                                                    "trades.messages.trades_count",
+                                                )}
                                             </Badge>
                                             <div class="flex gap-2">
                                                 {#each month.pnlEntries as entry}
@@ -1006,7 +1068,7 @@
                                                             >{entry.curr}</span
                                                         >
                                                         <span
-                                                            class="text-[9px] font-bold {entry.val >=
+                                                            class="text-[9px] font-mono font-bold {entry.val >=
                                                             0
                                                                 ? 'text-emerald-500'
                                                                 : 'text-red-500'}"
@@ -1054,7 +1116,7 @@
                                                         class="p-1.5 rounded-lg bg-zinc-800 border border-zinc-700"
                                                     >
                                                         <Activity
-                                                            class="w-3.5 h-3.5 text-zinc-400"
+                                                            class="w-3 h-3 text-zinc-400"
                                                         />
                                                     </div>
                                                     <div class="text-left">
@@ -1070,7 +1132,10 @@
                                                                 class="text-[8px] text-zinc-500 font-bold uppercase"
                                                             >
                                                                 {week.trades
-                                                                    .length} Operações
+                                                                    .length}
+                                                                {$t(
+                                                                    "trades.messages.trades_count",
+                                                                )}
                                                             </span>
                                                             <div
                                                                 class="flex gap-2"
@@ -1084,7 +1149,7 @@
                                                                             >{entry.curr}</span
                                                                         >
                                                                         <span
-                                                                            class="text-[8px] font-bold {entry.val >=
+                                                                            class="text-[8px] font-mono font-bold {entry.val >=
                                                                             0
                                                                                 ? 'text-emerald-500'
                                                                                 : 'text-rose-500'}"
@@ -1177,7 +1242,9 @@
                                                                                 >({day
                                                                                     .trades
                                                                                     .length}
-                                                                                trades)</span
+                                                                                {$t(
+                                                                                    "trades.messages.trades_count",
+                                                                                )})</span
                                                                             >
                                                                             {#each day.pnlEntries as entry}
                                                                                 <div
@@ -1188,7 +1255,7 @@
                                                                                         >{entry.curr}</span
                                                                                     >
                                                                                     <span
-                                                                                        class="text-[8px] font-bold {entry.val >=
+                                                                                        class="text-[8px] font-mono font-bold {entry.val >=
                                                                                         0
                                                                                             ? 'text-emerald-500'
                                                                                             : 'text-rose-500'}"
@@ -1297,22 +1364,44 @@
                                                                                     <Table.Cell
                                                                                         class="py-2"
                                                                                     >
-                                                                                        <Badge
-                                                                                            variant="outline"
-                                                                                            class="text-[8px] font-black px-1.5 h-4 border-none {trade.direction ===
-                                                                                            'Buy'
-                                                                                                ? 'bg-emerald-500/10 text-emerald-500'
-                                                                                                : 'bg-rose-500/10 text-rose-500'}"
+                                                                                        <div
+                                                                                            class="flex flex-col gap-1 items-start"
                                                                                         >
-                                                                                            {trade.direction ===
-                                                                                            "Buy"
-                                                                                                ? $t(
-                                                                                                      "trades.table.buy",
-                                                                                                  )
-                                                                                                : $t(
-                                                                                                      "trades.table.sell",
-                                                                                                  )}
-                                                                                        </Badge>
+                                                                                            <Badge
+                                                                                                variant="secondary"
+                                                                                                class="text-[9px] font-black uppercase h-5 {trade.exit_price ||
+                                                                                                trade.exit_date
+                                                                                                    ? 'bg-emerald-500/10 text-emerald-500'
+                                                                                                    : 'bg-amber-500/10 text-amber-500'}"
+                                                                                            >
+                                                                                                {trade.exit_price ||
+                                                                                                trade.exit_date
+                                                                                                    ? $t(
+                                                                                                          "trades.table.status_closed",
+                                                                                                      ) ||
+                                                                                                      "Fechado"
+                                                                                                    : $t(
+                                                                                                          "trades.table.status_open",
+                                                                                                      ) ||
+                                                                                                      "Aberto"}
+                                                                                            </Badge>
+                                                                                            <Badge
+                                                                                                variant="outline"
+                                                                                                class="text-[8px] font-black px-1.5 h-4 border-none {trade.direction ===
+                                                                                                'Buy'
+                                                                                                    ? 'bg-blue-500/10 text-blue-500'
+                                                                                                    : 'bg-orange-500/10 text-orange-500'}"
+                                                                                            >
+                                                                                                {trade.direction ===
+                                                                                                "Buy"
+                                                                                                    ? $t(
+                                                                                                          "trades.table.buy",
+                                                                                                      )
+                                                                                                    : $t(
+                                                                                                          "trades.table.sell",
+                                                                                                      )}
+                                                                                            </Badge>
+                                                                                        </div>
                                                                                     </Table.Cell>
                                                                                     <Table.Cell
                                                                                         class="py-2"
@@ -1321,7 +1410,7 @@
                                                                                             class="flex flex-col"
                                                                                         >
                                                                                             <span
-                                                                                                class="text-xs font-mono"
+                                                                                                class="text-xs font-mono font-bold tabular-nums"
                                                                                                 >{trade.entry_price}</span
                                                                                             >
                                                                                             <span
@@ -1342,7 +1431,7 @@
                                                                                             class="flex flex-col"
                                                                                         >
                                                                                             <span
-                                                                                                class="text-xs font-mono"
+                                                                                                class="text-xs font-mono font-bold tabular-nums"
                                                                                                 >{trade.exit_price ||
                                                                                                     "-"}</span
                                                                                             >
@@ -1363,7 +1452,7 @@
                                                                                         class="py-2 text-right"
                                                                                     >
                                                                                         <span
-                                                                                            class="text-xs font-black font-mono {trade.result >=
+                                                                                            class="text-xs font-mono font-bold {trade.result >=
                                                                                             0
                                                                                                 ? 'text-emerald-500'
                                                                                                 : 'text-rose-500'}"
@@ -1456,7 +1545,7 @@
                     class="text-sm font-bold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-2"
                 >
                     <Activity class="w-4 h-4" />
-                    Resumo Lateral
+                    {$t("trades.sidebar.summary")}
                 </h3>
                 <div class="flex items-center gap-2">
                     <Badge
@@ -1474,7 +1563,9 @@
                                 (activeContext = {
                                     type: "global",
                                     key: null,
-                                    label: "Todo o Período",
+                                    label:
+                                        $t("trades.messages.all_period") ||
+                                        "Todo o Período",
                                 })}
                         >
                             <X class="w-3 h-3" />
@@ -1561,7 +1652,7 @@
                     >
                         <span
                             class="text-[10px] font-black uppercase tracking-tighter text-muted-foreground"
-                            >Desempenho</span
+                            >{$t("trades.sidebar.performance")}</span
                         >
                         <TrendingUp
                             class="w-3 h-3 text-emerald-500 opacity-50"
@@ -1576,7 +1667,7 @@
                                         >Profit Factor</span
                                     >
                                     <div
-                                        class="text-sm font-black tracking-tighter text-teal-400"
+                                        class="text-sm font-mono font-bold tracking-tighter text-teal-400"
                                     >
                                         {activeContextStats.profitFactor}
                                     </div>
@@ -1587,11 +1678,12 @@
                                         >Drawdown</span
                                     >
                                     <div
-                                        class="text-[11px] font-black text-rose-500 tracking-tighter"
+                                        class="text-[11px] font-mono font-bold text-rose-500 tracking-tighter"
                                     >
                                         {formatCurrency(
                                             activeContextStats.maxDrawdown,
                                             activeContextStats.mainCurrency,
+                                            $locale || "pt-BR",
                                         ).replace(/[^\d.,+-]/g, "")}
                                     </div>
                                 </div>
@@ -1606,7 +1698,7 @@
                                         >Win Rate</span
                                     >
                                     <div
-                                        class="text-sm font-black tracking-tighter"
+                                        class="text-sm font-mono font-bold tracking-tighter"
                                     >
                                         {activeContextStats.winRate}%
                                     </div>
@@ -1617,7 +1709,7 @@
                                         >Risco:Retorno</span
                                     >
                                     <div
-                                        class="text-[11px] font-black tracking-tighter {parseFloat(
+                                        class="text-[11px] font-mono font-bold tracking-tighter {parseFloat(
                                             activeContextStats.riskReward,
                                         ) >= 1
                                             ? 'text-emerald-500'
@@ -1640,9 +1732,11 @@
                     >
                         <span
                             class="text-[10px] font-black uppercase tracking-tighter text-muted-foreground"
-                            >Distribuição</span
+                            >{$t("trades.sidebar.distribution")}</span
                         >
-                        <div class="text-[9px] font-bold opacity-30 uppercase">
+                        <div
+                            class="text-[9px] font-mono font-bold opacity-30 uppercase"
+                        >
                             {activeContextStats.total} Trades
                         </div>
                     </Card.Header>
@@ -1663,7 +1757,7 @@
                 >
                     <span
                         class="text-[10px] font-black uppercase tracking-tighter text-muted-foreground"
-                        >Curva de Capital + Drawdown</span
+                        >{$t("trades.sidebar.equityCurve")}</span
                     >
                 </Card.Header>
                 <Card.Content class="p-2">
@@ -1713,8 +1807,8 @@
                     isEditOpen = false;
                     toast.success(
                         selectedTrade
-                            ? "Operação atualizada!"
-                            : "Operação criada!",
+                            ? $t("trades.messages.trade_updated")
+                            : $t("trades.messages.trade_created"),
                     );
                 }}
             />

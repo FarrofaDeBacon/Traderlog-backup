@@ -103,8 +103,9 @@
                             `{total|${tradesData.length}}\n{label|${$t("trades.wizard.charts.outcome.trades_label")}}`,
                         rich: {
                             total: {
-                                fontSize: 10,
+                                fontSize: 11,
                                 fontWeight: "black",
+                                fontFamily: "JetBrains Mono, monospace",
                                 color: "#fff",
                             },
                             label: {

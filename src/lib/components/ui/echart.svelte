@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
+    import { mode } from "mode-watcher";
     import * as echarts from "echarts";
 
     // Props
@@ -8,18 +9,18 @@
     let chartContainer: HTMLDivElement;
     let chartInstance: echarts.ECharts | null = null;
 
-    // Initialize Chart
-    const initChart = () => {
-        if (!chartContainer) return;
+    // Determine effective theme
+    const effectiveTheme = $derived(theme || mode.current || "light");
 
-        // Dispose existing if any
+    // Initialize/Update Chart when theme changes
+    $effect(() => {
+        if (!chartContainer || !effectiveTheme) return;
+
+        // Dispose and re-init to apply new theme properly (ECharts requirement)
         if (chartInstance) chartInstance.dispose();
-
-        chartInstance = echarts.init(chartContainer, theme);
+        chartInstance = echarts.init(chartContainer, effectiveTheme);
         chartInstance.setOption(options);
-
-        // Resize observer setup is handled below
-    };
+    });
 
     // Use snapshot for all options passed to ECharts
     let snapshottedOptions = $derived($state.snapshot(options));
@@ -35,8 +36,6 @@
     });
 
     onMount(() => {
-        initChart();
-
         // Responsive Resizing
         const resizeObserver = new ResizeObserver(() => {
             if (chartInstance && !chartInstance.isDisposed()) {

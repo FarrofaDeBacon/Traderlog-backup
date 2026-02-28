@@ -1,0 +1,1468 @@
+﻿{
+    "general": {
+        "loading": "Carregando...",
+        "error": "Erro",
+        "save": "Salvar",
+        "cancel": "Cancelar",
+        "back": "Voltar",
+        "next": "Pr├│ximo",
+        "finish": "Finalizar",
+        "saving": "Salvando...",
+        "delete": "Excluir",
+        "confirmDeleteTitle": "Tem certeza?",
+        "confirmDeleteDescription": "Essa a├º├úo n├úo pode ser desfeita.",
+        "success": "Opera├º├úo realizada com sucesso!",
+        "deleteSuccess": "Item exclu├¡do com sucesso!",
+        "weekdays": {
+            "sun": "Dom",
+            "mon": "Seg",
+            "tue": "Ter",
+            "wed": "Qua",
+            "thu": "Qui",
+            "fri": "Sex",
+            "sat": "S├íb"
+        },
+        "all": "Todos",
+        "items": "Itens",
+        "day": "Dia",
+        "week": "Semana",
+        "month": "M├¬s",
+        "origin": "Origem",
+        "destination": "Destino",
+        "balance": "Saldo",
+        "description": "Descri├º├úo",
+        "date": "Data",
+        "details": "Detalhes",
+        "status": "Status",
+        "type": "Tipo",
+        "value": "Valor",
+        "quantity": "Qtd",
+        "result": "Resultado",
+        "actions": "A├º├Áes",
+        "from": "De",
+        "to": "Para",
+        "show": "Mostrar",
+        "optional": "Opcional",
+        "close": "Fechar",
+        "time": {
+            "month": "m├¬s",
+            "months": "meses",
+            "year": "ano",
+            "years": "anos"
+        }
+    },
+    "filters": {
+        "date": {
+            "today": "Hoje",
+            "yesterday": "Ontem",
+            "this_week": "Esta Semana",
+            "last_week": "Semana Passada",
+            "this_month": "Este M├¬s",
+            "last_month": "M├¬s Passado",
+            "this_year": "Este Ano",
+            "last_year": "Ano Passado",
+            "all": "Todo o Per├¡odo",
+            "custom": "Personalizado",
+            "select": "Selecionar Per├¡odo"
+        }
+    },
+    "strategy": {
+        "notFound": "Estrat├®gia n├úo encontrada",
+        "dashboard": {
+            "tabs": {
+                "dashboard": "Dashboard",
+                "dossier": "Dossi├¬ da Estrat├®gia"
+            },
+            "title": "Dashboard",
+            "subtitle": "Bem-vindo ao seu centro de comando.",
+            "checklist": {
+                "title": "Check-in Pr├®-Mercado (Oliver Velez)",
+                "subtitle": "Verifique os fundamentos antes do primeiro clique.",
+                "ready": "PRONTO PARA OPERAR",
+                "verified": "verificados",
+                "start": "Iniciar Sess├úo de Trading",
+                "reset": "Resetar",
+                "success": "Excelente! Voc├¬ est├í preparado. Boas opera├º├Áes!",
+                "items": {
+                    "newsDetected": "ÔÜá´©Å Not├¡cias de Alto Impacto Detectadas:",
+                    "newsNone": "Sem not├¡cias relevantes no calend├írio hoje.",
+                    "riskInput": "Limite de Perda Hoje (R$):",
+                    "trend_20ma": "Tend├¬ncia (20MA): Pre├ºo est├í respeitando a m├®dia de 20?",
+                    "trend_200ma": "Territ├│rio (200MA): Acima (Touro) ou Abaixo (Urso)?",
+                    "gap_analysis": "Gap de Abertura: Identifiquei se ├® Gap de Novato ou Profissional?",
+                    "prior_levels": "N├¡veis Chave: Marquei M├íxima e M├¡nima de ontem?",
+                    "news": "Not├¡cias: Verifiquei o Calend├írio Econ├┤mico do dia?",
+                    "risk_limit": "Risco: Defini meu Stop Loss m├íximo para hoje?",
+                    "mindset": "Mental: Estou calmo e focado para operar?"
+                }
+            },
+            "summary": {
+                "title": "Resumo do Dia",
+                "noTrades": "Nenhum trade realizado hoje.",
+                "chartPlaceholder": "Gr├ífico de Performance (Em breve)"
+            },
+            "messages": {
+                "noTrades": "Sem opera├º├Áes no per├¡odo selecionado."
+            },
+            "charts": {
+                "equity": "Capital L├¡quido",
+                "drawdown": "Drawdown",
+                "equityStrategy": "Capital (Estrat├®gia)",
+                "drawdownStrategy": "Drawdown (Estrat├®gia)"
+            },
+            "heatmap": {
+                "title": "Mapa de Calor (P&L)",
+                "subtitle": "Desempenho acumulado por Dia da Semana e Hora",
+                "noMarket": "Nenhum mercado vinculado",
+                "legend": {
+                    "strongLoss": "Preju├¡zo Alto",
+                    "loss": "Preju├¡zo",
+                    "breakeven": "Breakeven",
+                    "profit": "Lucro",
+                    "strongProfit": "Lucro Alto"
+                },
+                "days": {
+                    "sun": "Dom",
+                    "mon": "Seg",
+                    "tue": "Ter",
+                    "wed": "Qua",
+                    "thu": "Qui",
+                    "fri": "Sex",
+                    "sat": "S├íb"
+                },
+                "tooltip": {
+                    "profit": "Lucro",
+                    "loss": "Preju├¡zo",
+                    "neutral": "Neutro",
+                    "status": "Status"
+                }
+            },
+            "stats": {
+                "netResult": "Resultado L├¡quido",
+                "winRate": "Taxa de Acerto",
+                "profitFactor": "Profit Factor",
+                "payoff": "Payoff",
+                "mathExpectation": "Expectativa Matem├ítica",
+                "maxDrawdown": "Max Drawdown",
+                "operations": "Opera├º├Áes",
+                "consecutiveWins": "Wins Consecutivos",
+                "consecutiveLosses": "Losses Consecutivos",
+                "averageWin": "M├®dia de Ganho",
+                "averageLoss": "M├®dia de Perda",
+                "recoveryFactor": "Fator de Recupera├º├úo",
+                "planAdherence": "Ader├¬ncia ao Plano",
+                "totalTrades": "Total de Trades",
+                "winningTrades": "Trades Vencedores",
+                "bestTrade": "Melhor Trade",
+                "worstTrade": "Pior Trade",
+                "avgDurationWin": "Dura├º├úo M├®dia (Lucro)",
+                "avgDurationLoss": "Dura├º├úo M├®dia (Preju├¡zo)",
+                "avgTimeBetweenTrades": "Tempo M├®dio entre Trades"
+            }
+        },
+        "list": {
+            "title": "Estrat├®gias",
+            "description": "Acompanhe o desempenho estat├¡stico dos seus setups operacionais.",
+            "searchPlaceholder": "Buscar estrat├®gia...",
+            "new": "Nova",
+            "notFound": {
+                "title": "Nenhuma estrat├®gia encontrada",
+                "description": "N├úo encontramos setups com os filtros atuais. Que tal criar um novo em Configura├º├Áes?",
+                "action": "Ir para Configura├º├Áes"
+            }
+        },
+        "card": {
+            "tradesSuffix": "trades",
+            "totalResult": "Resultado Total",
+            "viewAnalysis": "Ver An├ílise Completa"
+        },
+        "dossier": {
+            "context": "Contexto Operacional",
+            "timeframes": "Timeframes",
+            "indicators": "Indicadores",
+            "assetTypes": "Tipos de Ativo",
+            "specificAssets": "Ativos Espec├¡ficos",
+            "all": "Todos",
+            "linkedMarkets": "Mercados Vinculados",
+            "noLinkedMarket": "Nenhum mercado vinculado especificamente (Hor├írio Livre).",
+            "entryTriggers": "Gatilhos de Entrada",
+            "exit": "Stop / Sa├¡da",
+            "management": "Condu├º├úo / Gest├úo",
+            "partials": "Sa├¡das Parciais",
+            "visualExamples": "Exemplos Visuais",
+            "noImages": "Nenhuma imagem anexada.",
+            "noCriteria": "Nenhum crit├®rio definido.",
+            "daysSuffix": "dias",
+            "multi": "MULTI"
+        }
+    },
+    "strategies": {
+        "currency_modes": {
+            "original": "Original",
+            "main": "Principal"
+        }
+    },
+    "sidebar": {
+        "dashboard": "Dashboard",
+        "finance": "Hub Financeiro",
+        "strategies": "Estrat├®gias",
+        "journal": "Di├írio",
+        "trades": "Trades",
+        "psychology": "Psicologia",
+        "irpf": "Fiscal",
+        "fiscalDashboard": "Vis├úo Geral",
+        "fiscalRules": "Regras Fiscais",
+        "quant": "Tela Quant",
+        "settings": "Configura├º├Áes"
+    },
+    "auth": {
+        "login": {
+            "title": "Bem-vindo de volta",
+            "description": "Entre com suas credenciais para acessar o TraderLog Pro.",
+            "email": "Email",
+            "password": "Senha",
+            "forgotPassword": "Esqueceu a senha?",
+            "submit": "Entrar na Plataforma",
+            "loading": "Entrando...",
+            "orContinueWith": "Ou continue com",
+            "noAccount": "Ainda n├úo tem uma conta?",
+            "createAccount": "Criar conta",
+            "success": "Login realizado com sucesso!",
+            "error": {
+                "fillAll": "Preencha todos os campos.",
+                "invalidCredentials": "Credenciais inv├ílidas."
+            }
+        }
+    },
+    "home": {
+        "subtitle": "A evolu├º├úo do seu di├írio de trading.",
+        "newTrade": "Novo Trade",
+        "viewDashboard": "Ver Dashboard"
+    },
+    "journal": {
+        "title": "Di├írio de Trading",
+        "newNote": "Nova Nota",
+        "empty": {
+            "title": "Sem notas ainda",
+            "description": "Comece a registrar seu mindset hoje."
+        }
+    },
+    "trades": {
+        "title": "Trades",
+        "subtitle": "Visualize e gerencie seu hist├│rico detalhado de opera├º├Áes.",
+        "import": "Importar Trades",
+        "actions": {
+            "new_trade": "Novo Trade",
+            "edit": "Editar",
+            "delete": "Excluir",
+            "view": "Ver Detalhes",
+            "import": "Importar Trades",
+            "clear_filters": "Limpar Filtros"
+        },
+        "stats": {
+            "total_trades": "Opera├º├Áes Realizadas",
+            "open_trades": "abertas",
+            "closed_trades": "Opera├º├Áes Fechadas",
+            "win_rate": "Taxa de Acerto",
+            "total_pl": "Resultado Acumulado",
+            "total_pnl": "P&L Total",
+            "profit_factor": "Profit Factor",
+            "avg_rr": "R:R M├®dio",
+            "winners": "acertos",
+            "daily_pnl": "P&L Di├írio",
+            "trades": "trades"
+        },
+        "filters": {
+            "status": "Status",
+            "asset": "Ativo",
+            "account": "Conta",
+            "strategy": "Estrat├®gia",
+            "modality": "Modalidade",
+            "market": "Mercado",
+            "assetType": "Tipo de Ativo",
+            "period": "Per├¡odo",
+            "title": "Filtros"
+        },
+        "messages": {
+            "delete_success": "Opera├º├úo exclu├¡da com sucesso."
+        },
+        "table": {
+            "date": "Data",
+            "asset": "Ativo",
+            "direction": "Dire├º├úo",
+            "entry": "Entrada",
+            "exit": "Sa├¡da",
+            "quantity": "Qtd",
+            "pl": "Resultado",
+            "status": "Status",
+            "strategy": "Estrat├®gia",
+            "actions": "A├º├Áes",
+            "buy": "Compra",
+            "sell": "Venda",
+            "status_open": "Aberto",
+            "status_closed": "Fechado",
+            "notes": "Anota├º├Áes do Dia",
+            "asset_type": "Tipo de Ativo"
+        },
+        "placeholders": {
+            "search": "Buscar por ativo ou estrat├®gia..."
+        },
+        "delete": {
+            "title": "Excluir Opera├º├úo",
+            "confirmation": "Tem certeza que deseja excluir esta opera├º├úo? Esta a├º├úo n├úo pode ser desfeita."
+        },
+        "details": {
+            "title": "Detalhes da Opera├º├úo",
+            "basic_info": "Informa├º├Áes B├ísicas",
+            "execution": "Execu├º├úo",
+            "psychology": "Psicologia",
+            "media": "M├¡dia e Notas",
+            "entry_price": "Pre├ºo de Entrada",
+            "exit_price": "Pre├ºo de Sa├¡da",
+            "stop_loss": "Stop Loss",
+            "take_profit": "Take Profit",
+            "fees": "Taxas",
+            "net_result": "Resultado L├¡quido",
+            "gross_result": "Resultado Bruto",
+            "emotional_entry": "Emo├º├úo na Entrada",
+            "emotional_exit": "Emo├º├úo na Sa├¡da",
+            "notes": "Notas da Opera├º├úo",
+            "no_notes": "Nenhuma nota registrada.",
+            "no_media": "Nenhuma imagem anexada.",
+            "no_records": "Nenhum registro"
+        },
+        "empty": {
+            "title": "Hist├│rico Vazio",
+            "description": "Conecte sua plataforma ou adicione trades manualmente."
+        },
+        "wizard": {
+            "title_new": "Nova Opera├º├úo",
+            "title_edit": "Editar Opera├º├úo",
+            "subtitle": "Preencha os detalhes da sua jornada operacional.",
+            "steps": {
+                "basic": "B├üSICO",
+                "conduction": "CONDU├ç├âO",
+                "psychology": "PSICOLOGIA",
+                "media": "M├ìDIA",
+                "review": "REVIS├âO"
+            },
+            "sections": {
+                "context": "Contexto da Opera├º├úo",
+                "asset_direction": "Ativo e Dire├º├úo",
+                "execution_details": "Detalhes da Execu├º├úo",
+                "partial_management": {
+                    "title": "Gest├úo de Parciais (Adi├º├Áes e Sa├¡das)",
+                    "volume_executed": "Volume Executado",
+                    "remaining": "Restantes",
+                    "exit": "SA├ìDA",
+                    "addition": "ADI├ç├âO",
+                    "add_partial": "Adicionar Parcial",
+                    "no_partials": "Nenhuma parcial registrada",
+                    "type": "Tipo",
+                    "date_time": "Data/Hora",
+                    "price": "Pre├ºo",
+                    "quantity": "Qtd",
+                    "result": "Resultado",
+                    "observation": "Observa├º├úo"
+                },
+                "closing_data": "Dados de Fechamento",
+                "psychology_analysis": "An├ílise Psicol├│gica e Contextual",
+                "visual_evidence": {
+                    "title": "Evid├¬ncias Visuais",
+                    "drag_drop": "Arraste ou Clique",
+                    "description": "Adicione prints do Profit, TradingView ou fotos do setup.",
+                    "select_files": "Selecionar Arquivos",
+                    "attachment": "Anexo",
+                    "invalid_image": "n├úo ├® uma imagem v├ílida",
+                    "process_error": "Erro ao processar",
+                    "images_added": "imagem(ns) adicionada(s)"
+                },
+                "final_summary": "Resumo Final",
+                "calc_memory": "Mem├│ria de C├ílculo"
+            },
+            "fields": {
+                "account": "Conta",
+                "strategy": "Estrat├®gia",
+                "timeframe": "Tempo Gr├ífico",
+                "volatility": "Volatilidade",
+                "asset_type": "Tipo de Ativo",
+                "asset": "Ativo / Contrato",
+                "direction": "Dire├º├úo",
+                "buy": "Compra",
+                "sell": "Venda",
+                "entry": "Entrada",
+                "exit": "Sa├¡da",
+                "date_time": "Data e Hora",
+                "entry_price": "Pre├ºo de Entrada",
+                "quantity": "Qtd",
+                "emotional_state": "Emocional",
+                "stop_loss": "Stop Loss",
+                "take_profit": "Take Profit",
+                "exit_price": "P. Sa├¡da",
+                "exit_date": "Data Sa├¡da",
+                "exit_reason": "Motivo",
+                "entry_rationale": "Racional da Entrada",
+                "confirmation_signals": "Sinais de Confirma├º├úo",
+                "market_context": "Contexto de Mercado / Not├¡cias",
+                "improvements": "O que funcionou / Melhorias",
+                "followed_plan": "Seguiu o Plano?",
+                "notes": "Notas"
+            },
+            "placeholders": {
+                "select": "Selecionar...",
+                "all_types": "Todos os Tipos",
+                "no_states": "Nenhum estado",
+                "rationale": "Por que voc├¬ entrou nesse trade?",
+                "signals": "Quais sinais o setup confirmou?",
+                "context": "Tend├¬ncia, suportes/resist├¬ncias, not├¡cias relevantes...",
+                "improvements": "O que poderia ter sido melhor?",
+                "visual_desc": "Screenshots do gr├ífico e contexto (m├íx 5MB).",
+                "select_asset": "Selecione um ativo"
+            },
+            "messages": {
+                "select_asset": "Selecione um ativo",
+                "entry_price_required": "Informe o pre├ºo de entrada",
+                "save_success": "Trade salvo com sucesso!",
+                "save_error": "Erro ao salvar trade",
+                "update_success": "Opera├º├úo atualizada!",
+                "update_error": "Erro ao atualizar opera├º├úo.",
+                "rtd_sync_success": "Pre├ºo e Hor├írio atualizados ({symbol}): {price}",
+                "rtd_not_available": "Pre├ºo n├úo dispon├¡vel no RTD - Verifique o Profit",
+                "no_status": "Nenhum estado",
+                "required_fields": "Preencha os campos obrigat├│rios.",
+                "valid_asset_type": "Por favor, selecione um Tipo de Ativo v├ílido.",
+                "asset_type_required": "Tipo de Ativo ├® obrigat├│rio. Por favor, selecione um."
+            },
+            "tooltips": {
+                "risk": "Risco",
+                "target": "Alvo"
+            },
+            "unit_labels": {
+                "contracts": "CTR"
+            },
+            "volatility_options": {
+                "low": "Baixa",
+                "normal": "Normal",
+                "high": "Alta",
+                "extreme": "Extrema"
+            },
+            "timeframe_options": {
+                "1m": "1 Minuto",
+                "5m": "5 Minutos",
+                "15m": "15 Minutos",
+                "60m": "60 Minutos",
+                "d": "Di├írio"
+            },
+            "exit_reasons": {
+                "tp": "Take Profit Atingido",
+                "sl": "Stop Loss Atingido",
+                "manual": "Encerramento Manual",
+                "time": "Tempo Operacional",
+                "strategy": "Mudan├ºa de Setup",
+                "take_profit": "Take Profit",
+                "stop_loss": "Stop Loss"
+            },
+            "summary": {
+                "gross_result": "Resultado Bruto",
+                "total_fees": "Total de Taxas",
+                "net_result": "Resultado L├¡quido",
+                "images": "Imagens",
+                "plan": "Plano",
+                "entry": "Entrada",
+                "exit": "Sa├¡da",
+                "calc_desc": "Descri├º├úo",
+                "calc_value": "Valor",
+                "save_btn": "SALVAR TRADE",
+                "saving": "Salvando...",
+                "save_trade": "Salvar Trade",
+                "recording": "Gravando Opera├º├úo...",
+                "finish": "Finalizar Registro",
+                "next": "Pr├│ximo",
+                "prev": "Anterior",
+                "cancel": "Cancelar",
+                "addition": "Adi├º├úo",
+                "partial_exit": "Sa├¡da Parcial",
+                "final_exit": "Sa├¡da Final",
+                "fixed_fee": "Corretagem Fixa",
+                "variable_fee": "Taxa Vari├ível",
+                "na": "N/A",
+                "yes": "Sim",
+                "no": "N├úo",
+                "s": "S",
+                "n": "N"
+            },
+            "risk": {
+                "alerts_title": "Alertas de Risco",
+                "emotional_warning": "Estado emocional recente ({weight}) abaixo do limite ({threshold}). Sugest├úo: reduzir lote em {percent}%.",
+                "outlier_warning": "Perda 'outlier' detectada na janela de an├ílise. Recomendado pausar e revisar estrat├®gia.",
+                "sniper_warning": "Limite de seletividade atingido ({current}/{limit} trades).",
+                "reduce_lot_button": "Reduzir Lote em {percent}% Agora",
+                "toast_lot_adjusted": "Lote ajustado preventivamente conforme sugest├úo do Motor de Risco."
+            },
+            "partials": {
+                "executed_volume": "Volume Executado",
+                "remaining": "Restantes",
+                "add_partial": "Adicionar Parcial",
+                "no_partials": "Nenhuma parcial registrada",
+                "exit": "SA├ìDA",
+                "entry": "ADI├ç├âO",
+                "type": "Tipo",
+                "date_time": "Data/Hora",
+                "price": "Pre├ºo",
+                "quantity": "Qtd",
+                "result": "Resultado",
+                "observation": "Obs"
+            },
+            "media": {
+                "drag_drop": "Arraste ou Clique",
+                "description": "Adicione prints do Profit, TradingView ou fotos do setup.",
+                "select_files": "Selecionar Arquivos",
+                "attachment": "Anexo #",
+                "images": "Imagens"
+            },
+            "emotions": {
+                "light": "Leve",
+                "moderate": "Moderada",
+                "extreme": "Extrema",
+                "intense": "Intenso",
+                "intensity_label": "Intensidade Emocional",
+                "intensity_hint": "O quanto voc├¬ estava sentindo essa emo├º├úo (0-10)"
+            },
+            "checklist": {
+                "sleep": "Dormi pelo menos 7h?",
+                "calm": "Estado emocional equilibrado?",
+                "plan": "Cen├írios de trade definidos?",
+                "distraction": "Foco total / Sem distra├º├Áes?",
+                "risk": "Aceito o stop do dia?",
+                "ideal_condition": "Condi├º├úo Ideal",
+                "ready": "PRONTO PARA O MERCADO!"
+            },
+            "auto_detection": {
+                "title": "Nova Execu├º├úo Detectada!",
+                "source": "Via Profit RTD",
+                "ignore": "Ignorar",
+                "register": "Registrar Agora"
+            },
+            "charts": {
+                "equity": {
+                    "capital": "Capital",
+                    "drawdown": "Drawdown",
+                    "empty": "Sem opera├º├Áes no per├¡odo"
+                },
+                "outcome": {
+                    "gain": "Gain",
+                    "loss": "Loss",
+                    "be": "BE",
+                    "empty": "Sem opera├º├Áes",
+                    "trades_label": "TRADES",
+                    "vazio": "Vazio"
+                }
+            },
+            "adherence": {
+                "title": "Ader├¬ncia ao Plano",
+                "yes_msg": "Opera├º├úo executada conforme a estrat├®gia.",
+                "no_msg": "Houve desvio nas regras do setup."
+            }
+        }
+    },
+    "finance": {
+        "title": "Hub Financeiro",
+        "description": "Gest├úo centralizada de caixa, extratos e fechamentos.",
+        "dailyClosure": "Fechamento Di├írio",
+        "newTransaction": "Novo Aporte/Retirada",
+        "darfDetails": {
+            "title": "Detalhes do Pagamento DARF",
+            "description": "Informa├º├Áes detalhadas sobre o imposto recolhido.",
+            "loading": "Buscando dados do DARF...",
+            "period": "Per├¡odo de Apura├º├úo",
+            "statusPaid": "Pago",
+            "statusPending": "Pendente",
+            "complementaryBadge": "DARF Complementar",
+            "revenueCode": "C├│digo da Receita",
+            "dueDate": "Vencimento",
+            "calculationInfo": "Detalhamento da Base de C├ílculo",
+            "grossResult": "Resultado Bruto",
+            "compensatedLosses": "Preju├¡zos Compensados",
+            "calculationBasis": "Base de C├ílculo",
+            "taxRate": "Al├¡quota Aplicada",
+            "principalValue": "Valor do Principal",
+            "fine": "Multa",
+            "interest": "Juros",
+            "totalPaid": "Total Pago",
+            "paidAt": "Pago em",
+            "dateNotAvailable": "Data n├úo dispon├¡vel",
+            "errorMessage": "N├úo foi poss├¡vel carregar os detalhes deste DARF."
+        },
+        "quickStats": {
+            "totalBalance": "Saldo Total (Est.)",
+            "activeAccounts": "Contas Ativas",
+            "monthlyResult": "Resultado do M├¬s"
+        },
+        "statement": {
+            "title": "Extrato de Movimenta├º├Áes",
+            "searchPlaceholder": "Buscar na descri├º├úo ou valor...",
+            "allAccounts": "Todas as Contas",
+            "allCurrencies": "Todas as Moedas",
+            "account": "Conta",
+            "entries": "Lan├ºamentos",
+            "noTransactions": "Nenhuma transa├º├úo encontrada no per├¡odo.",
+            "columns": {
+                "date": "Data",
+                "type": "TIPO",
+                "description": "DESCRI├ç├âO",
+                "account": "CONTA",
+                "amount": "VALOR"
+            },
+            "types": {
+                "deposit": "Aporte",
+                "withdraw": "Retirada",
+                "adjustment": "Ajuste",
+                "transfer": "Transfer├¬ncia",
+                "result": "RESULTADO"
+            },
+            "summary": {
+                "title": "Resumo do Dia",
+                "totalDeposits": "Total Entradas",
+                "totalWithdrawals": "Total Sa├¡das",
+                "netResult": "Resultado L├¡quido",
+                "periodEntries": "Lan├ºamentos do Per├¡odo"
+            },
+            "messages": {
+                "systemLinked": "Esta transa├º├úo foi gerada pelo sistema e s├│ pode ser alterada no m├│dulo de origem (ex: IRPF)."
+            }
+        },
+        "details": {
+            "title": "Detalhes da Transa├º├úo",
+            "date": "Data",
+            "account": "Conta",
+            "totalAmount": "Valor Total",
+            "noTrades": "Nenhum trade vinculado a esta transa├º├úo.",
+            "columns": {
+                "asset": "Ativo",
+                "side": "Lado",
+                "result": "Resultado"
+            }
+        },
+        "transferDialog": {
+            "title": "Nova Transfer├¬ncia",
+            "description": "Mova saldo entre contas, com suporte a c├ómbio.",
+            "fromAccount": "Conta de Origem",
+            "toAccount": "Conta de Destino",
+            "amount": "Valor de Sa├¡da",
+            "fee": "Taxas de Transfer├¬ncia",
+            "finalAmount": "Valor de Entrada",
+            "rate": "Taxa de C├ómbio",
+            "autoRate": "C├ómbio Autom├ítico",
+            "date": "Data da Transfer├¬ncia",
+            "confirm": "Confirmar Transfer├¬ncia",
+            "success": "Transfer├¬ncia realizada com sucesso!",
+            "errorDifferentAccounts": "As contas de origem e destino devem ser diferentes.",
+            "errorPositiveValue": "O valor deve ser maior que zero.",
+            "finalAmountHint": "Valor ap├│s taxas e convers├úo cambial"
+        },
+        "closureWizard": {
+            "title": "Fechamento Di├írio",
+            "description": "Consolide o resultado dos seus trades no saldo das contas.",
+            "step1": {
+                "label": "Selecione a Data",
+                "hint": "Geralmente realizado para o dia anterior (ontem) ou dias passados."
+            },
+            "stepEmotion": {
+                "title": "Check-in Emocional",
+                "stateLabel": "Como voc├¬ se sentiu hoje?",
+                "statePlaceholder": "Selecione uma emo├º├úo...",
+                "intensityLabel": "Intensidade ({value})",
+                "notesLabel": "Notas do Dia",
+                "notesPlaceholder": "Descreva brevemente como foi seu dia, disciplina, foco..."
+            },
+            "step2": {
+                "columns": {
+                    "select": "Sel.",
+                    "account": "Conta",
+                    "trades": "Trades",
+                    "result": "Resultado"
+                },
+                "noTrades": "Nenhum trade encontrado nesta data.",
+                "confirm": "Confirmar Lan├ºamentos",
+                "processing": "Processando..."
+            },
+            "step3": {
+                "successTitle": "Fechamento Conclu├¡do!",
+                "successDescription": "Os valores foram lan├ºados no extrato das contas selecionadas.",
+                "finish": "Concluir"
+            }
+        },
+        "transactionDialog": {
+            "title": "Novo Lancamento",
+            "subtitle": "Registre aportes ou retiradas manualmente.",
+            "type": "Tipo de Transa├º├úo",
+            "types": {
+                "deposit": "Aporte / Dep├│sito",
+                "withdraw": "Retirada / Saque",
+                "adjustment": "Ajuste de Saldo"
+            },
+            "account": "Conta de Destino",
+            "amount": "Valor",
+            "date": "Data",
+            "description": "Descri├º├úo",
+            "descriptionPlaceholder": "Ex: Aporte Mensal",
+            "cancel": "Cancelar",
+            "confirm": "Confirmar",
+            "newOperation": "Nova Opera├º├úo",
+            "operationShortDesc": "Registre aportes, retiradas ou transfer├¬ncias entre contas.",
+            "tabs": {
+                "transaction": "Transa├º├úo",
+                "transfer": "Transfer├¬ncia"
+            },
+            "errors": {
+                "requiredFields": "Preencha os campos obrigat├│rios.",
+                "differentAccounts": "Contas devem ser diferentes.",
+                "saveError": "Erro ao salvar transa├º├úo.",
+                "transferError": "Erro ao realizar transfer├¬ncia."
+            },
+            "defaults": {
+                "deposit": "Aporte Manual",
+                "withdraw": "Retirada Manual",
+                "adjustment": "Ajuste",
+                "transfer": "Transfer├¬ncia"
+            },
+            "labels": {
+                "amountWithCurrency": "Valor ({currency})",
+                "entryWithCurrency": "Entrada ({currency})",
+                "feePercent": "Taxa (%)"
+            }
+        }
+    },
+    "psychology": {
+        "title": "An├ílise Psicol├│gica",
+        "description": "Entenda como suas emo├º├Áes impactam seu resultado financeiro.",
+        "filters": {
+            "groupBy": "Agrupar por"
+        },
+        "kpi": {
+            "bestMindset": "Melhor Mindset",
+            "worstMindset": "Pior Mindset",
+            "tiltCost": "Custo do Descontrole",
+            "tiltDescription": "Em {count} trades com emo├º├Áes negativas",
+            "unregistered": "Trades sem Registro",
+            "unregisteredDescription": "Opera├º├Áes sem estado emocional"
+        },
+        "charts": {
+            "winRateTitle": "Taxa de Acerto por Emo├º├úo (%)",
+            "resultTitle": "Resultado Financeiro por Emo├º├úo (R$)"
+        },
+        "list": {
+            "title": "├Ültimos Trades Registrados",
+            "date": "Data",
+            "asset": "Ativo",
+            "entryState": "Estado (Entrada)",
+            "exitState": "Estado (Sa├¡da)",
+            "result": "Resultado",
+            "unknown": "N├úo Registrado",
+            "unknownBadge": "Desconhecido",
+            "noTrades": "Nenhum trade registrado."
+        },
+        "syncWeights": "Sincronizar Pesos",
+        "journalList": {
+            "title": "Di├írio Emocional",
+            "date": "Data",
+            "emotion": "Emo├º├úo",
+            "intensity": "Intensidade",
+            "notes": "Notas",
+            "noEntries": "Nenhum registro encontrado."
+        },
+        "checkin": {
+            "button": "Novo Registro",
+            "title": "Registro Emocional Di├írio",
+            "description": "Acompanhe seu estado mental independente dos trades.",
+            "date": "Data",
+            "stateLabel": "Como voc├¬ se sente?",
+            "statePlaceholder": "Selecione...",
+            "intensityLabel": "Intensidade",
+            "notesLabel": "Notas / Di├írio",
+            "notesPlaceholder": "Escreva sobre seu dia...",
+            "save": "Salvar Registro",
+            "success": "Registro salvo com sucesso!"
+        },
+        "deleteDialog": {
+            "title": "Confirmar Exclus├úo",
+            "description": "Tem certeza que deseja excluir este registro emocional? Esta a├º├úo n├úo pode ser desfeita.",
+            "confirm": "Excluir",
+            "cancel": "Cancelar"
+        }
+    },
+    "settings": {
+        "nav": {
+            "sections": {
+                "general": "Geral",
+                "registration": "Cadastro",
+                "operational": "Operacional",
+                "analysis": "An├ílise",
+                "system": "Sistema"
+            },
+            "profile": "Meu Perfil",
+            "accounts": "Contas",
+            "currencies": "Moedas",
+            "fees": "Taxas",
+            "markets": "Mercados Base",
+            "assetTypes": "Tipos de Ativo",
+            "assets": "Ativos",
+            "risk": "Risco e Metas",
+            "strategies": "Estrat├®gias",
+            "modalities": "Modalidades",
+            "emotionalStates": "Estados Emocionais",
+            "tags": "Tags",
+            "indicators": "Indicadores",
+            "timeframes": "Timeframes",
+            "chartTypes": "Tipos de Gr├ífico",
+            "integrations": "API & Integra├º├Áes"
+        },
+        "general": {
+            "title": "Geral",
+            "description": "Informa├º├Áes do sistema e prefer├¬ncias globais.",
+            "version": "Vers├úo do Aplicativo",
+            "checkUpdates": "Verificar Atualiza├º├Áes"
+        },
+        "profile": {
+            "title": "Meu Perfil",
+            "description": "Gerencie suas informa├º├Áes pessoais e prefer├¬ncias do sistema.",
+            "save": "Salvar Altera├º├Áes",
+            "personalInfo": {
+                "title": "Informa├º├Áes Pessoais",
+                "avatar": "Foto de Perfil",
+                "avatarHint": "Clique para alterar sua foto.",
+                "removePhoto": "Remover foto",
+                "fullName": "Nome Completo",
+                "cpf": "CPF",
+                "email": "Email",
+                "phone": "Telefone"
+            },
+            "security": {
+                "title": "Seguran├ºa e Acesso",
+                "logout": "Sair da Conta",
+                "confirmLogout": "Deseja realmente sair?",
+                "loggingOut": "Saindo do sistema...",
+                "currentPassword": "Senha Atual",
+                "newPassword": "Nova Senha",
+                "confirmPassword": "Confirmar Nova Senha",
+                "changePassword": "Alterar Senha",
+                "error": {
+                    "minChars": "A nova senha deve ter no m├¡nimo 6 caracteres.",
+                    "mismatch": "As novas senhas n├úo conferem."
+                },
+                "success": "Senha alterada com sucesso! (Simula├º├úo)"
+            },
+            "preferences": {
+                "title": "Configura├º├Áes",
+                "theme": "Tema",
+                "themeDark": "Escuro",
+                "themeLight": "Claro",
+                "language": "Idioma",
+                "timezone": "Fuso Hor├írio",
+                "mainCurrency": "Moeda Principal",
+                "convertAll": "Converter todos os saldos para a moeda principal"
+            },
+            "license": {
+                "title": "Licen├ºa do Produto",
+                "lifetime": "TraderLog Pro - Vital├¡cio",
+                "keyStatus": "Status da Chave",
+                "active": "ATIVA E VERIFICADA"
+            },
+            "success": "Perfil atualizado com sucesso!"
+        },
+        "api": {
+            "form": {
+                "editTitle": "Editar Chave",
+                "newTitle": "Novo Item",
+                "description": "Configure o acesso ao provedor externo.",
+                "provider": "Provedor",
+                "apiKey": "Chave da API",
+                "apiKeyPlaceholder": "Sua chave de API",
+                "test": "Testar",
+                "dailyLimit": "Limite Di├írio de Requisi├º├Áes",
+                "dailyLimitHint": "N├║mero m├íximo de chamadas ├á API por dia",
+                "enabled": "API Ativa",
+                "enabledHint": "Habilitar/desabilitar o uso desta API",
+                "noteTitle": "Nota sobre Limites:",
+                "noteBody": "Verifique o limite gratuito do seu provedor para evitar bloqueios.",
+                "save": "Salvar Configura├º├úo",
+                "cancel": "Cancelar",
+                "testInfo": "Testando chave... (Simula├º├úo)",
+                "testSuccess": "Chave Validada com sucesso!",
+                "enterKeyError": "Insira uma chave para testar.",
+                "viewOpenAIPrices": "Ver pre├ºos da OpenAI",
+                "viewPolygonPlans": "Ver planos da Polygon",
+                "providerCustom": "Personalizado",
+                "providers": {
+                    "exchangerate-api": "ExchangeRate-API (C├ómbio)",
+                    "polygon": "Polygon.io (Mercado)",
+                    "openai": "OpenAI (GPT-4 / GPT-3.5)",
+                    "google_gemini": "Google Gemini (Flash/Pro)",
+                    "anthropic": "Anthropic (Claude)",
+                    "alpha_vantage": "Alpha Vantage (Dados de Mercado)",
+                    "mock": "Simula├º├úo (Mock)",
+                    "profit": "Profit Chart (RTD)",
+                    "custom": "Personalizado"
+                },
+                "getGeminiApiKey": "Obter chave do Gemini",
+                "getOpenAIApiKey": "Obter chave da OpenAI",
+                "getPolygonApiKey": "Obter chave da Polygon.io",
+                "errors": {
+                    "keyRequired": "Chave API obrigat├│ria",
+                    "enterKeyFirst": "Informe a chave primeiro.",
+                    "testSuccess": "Conex├úo estabelecida com sucesso!"
+                },
+                "messages": {
+                    "connectionSuccess": "Conex├úo testada com sucesso! (Simulado)"
+                }
+            },
+            "integrations": {
+                "serviceMapping": {
+                    "title": "Mapeamento de Servi├ºos",
+                    "description": "Escolha qual intelig├¬ncia ou fonte de dados alimentar├í cada m├│dulo.",
+                    "psychology": "Intelig├¬ncia Psicol├│gica (Mentor IA)",
+                    "psychologyHint": "Quem analisa seus di├írios e gera insights.",
+                    "marketData": "Dados de Mercado",
+                    "marketDataHint": "Fonte de atualiza├º├Áes de pre├ºos e gr├íficos.",
+                    "calendarSource": "Fonte do Calend├írio (URL)",
+                    "calendarSourceHint": "Site para buscar not├¡cias (Scraping + IA).",
+                    "calendarSave": "Salvar URL",
+                    "save": "Salvar Mapeamento",
+                    "success": "Mapeamento de servi├ºos salvo!",
+                    "mockLabel": "Simula├º├úo (Mock)",
+                    "mockDataLabel": "Dados Simulados"
+                },
+                "keys": {
+                    "title": "Chaves de API",
+                    "description": "Gerencie suas credenciais para provedores externos",
+                    "searchPlaceholder": "Buscar...",
+                    "newItem": "Novo Item",
+                    "table": {
+                        "provider": "Provedor",
+                        "status": "Status",
+                        "usage": "Uso Hoje",
+                        "limit": "Limite Di├írio",
+                        "actions": "A├º├Áes",
+                        "active": "Ativa",
+                        "inactive": "Inativa",
+                        "empty": "Nenhum resultado encontrado."
+                    }
+                },
+                "profit": {
+                    "title": "Conex├úo Profit RTD",
+                    "description": "Receba cota├º├Áes em tempo real diretamente do Profit Chart atrav├®s do Excel.",
+                    "connect": "Conectar Profit",
+                    "disconnect": "Desconectar",
+                    "status": "Status da Conex├úo",
+                    "connected": "Conectado",
+                    "disconnected": "Desconectado",
+                    "connecting": "Conectando...",
+                    "error": "Erro na Conex├úo",
+                    "setupGuide": "Ver Guia de Configura├º├úo",
+                    "excelFile": "Arquivo do Excel",
+                    "selectFile": "Selecionar Arquivo",
+                    "fileSelected": "Arquivo selecionado",
+                    "noFileSelected": "Nenhum arquivo selecionado",
+                    "allAssetsSupport": "Suporte a qualquer ativo B3 (PETR4, VALE3, etc)",
+                    "requirementTitle": "Configura├º├úo no Excel",
+                    "requirementDesc": "O arquivo deve conter as abas: DADOS, BOOK [ATIVO], PLAYERS. O Profit deve estar exportando para este arquivo."
+                }
+            }
+        },
+        "assets": {
+            "title": "Ativos",
+            "description": "Cadastre os ativos que voc├¬ opera (S├¡mbolo, Valor do Ponto, etc).",
+            "importRTD": "Importar do RTD",
+            "importDialog": {
+                "title": "Importar Ativos do Profit RTD",
+                "description": "Selecione os ativos detectados no seu arquivo do Profit para adicionar ao cadastro.",
+                "symbol": "S├¡mbolo",
+                "suggestedName": "Nome Sugerido",
+                "type": "Tipo",
+                "importSelected": "Importar Selecionados ({count})",
+                "noAssets": "Nenhum ativo novo detectado no RTD.",
+                "selectExcel": "Selecionar Arquivo Excel",
+                "excelRequirement": "O Excel deve estar aberto com as abas DADOS e BOOK configuradas.",
+                "fileSelected": "Arquivo selecionado: {path}"
+            },
+            "new": "Novo Ativo",
+            "edit": "Editar Ativo",
+            "searchPlaceholder": "Buscar ativo...",
+            "empty": "Nenhum ativo encontrado",
+            "labels": {
+                "pointValue": "VALOR PONTO",
+                "invalid": "Inv├ílido"
+            },
+            "form": {
+                "symbol": "S├¡mbolo",
+                "symbolPlaceholder": "WIN",
+                "name": "Nome",
+                "namePlaceholder": "Mini ├ìndice",
+                "type": "Tipo",
+                "typePlaceholder": "Selecione",
+                "pointValue": "Valor Ponto",
+                "specificFee": "Taxa Espec├¡fica",
+                "specificFeePlaceholder": "Usar do Tipo de Ativo",
+                "useTypeDefault": "Usar do Tipo de Ativo",
+                "save": "Salvar"
+            }
+        },
+        "assetTypes": {
+            "title": "Tipos de Ativos",
+            "description": "Categorias de ativos (A├º├Áes, Futuros, Op├º├Áes, Forex...).",
+            "new": "Novo Tipo",
+            "edit": "Editar Tipo",
+            "form": {
+                "name": "Nome",
+                "namePlaceholder": "Futuros",
+                "code": "C├│digo",
+                "codePlaceholder": "Selecione",
+                "market": "Mercado",
+                "marketPlaceholder": "Selecione",
+                "unitLabel": "R├│tulo da Unidade",
+                "resultType": "Tipo de Resultado",
+                "defaultFee": "Taxa Padr├úo",
+                "defaultFeePlaceholder": "Selecione (Opcional)",
+                "none": "Nenhum",
+                "save": "Salvar"
+            }
+        },
+        "accounts": {
+            "title": "Contas de Trading",
+            "description": "Gerencie suas contas de corretoras e mesas propriet├írias.",
+            "new": "Nova Conta",
+            "searchPlaceholder": "Buscar conta...",
+            "empty": "Nenhuma conta encontrada.",
+            "types": {
+                "Real": "Contas Reais",
+                "Prop": "Mesas Propriet├írias",
+                "Demo": "Simuladores / Demo"
+            },
+            "form": {
+                "titleNew": "Nova Conta",
+                "titleEdit": "Editar Conta",
+                "icon": "├ìcone da Conta",
+                "addIcon": "Adicionar ├ìcone",
+                "iconHint": "PNG, JPG ou SVG. M├íximo 500KB.",
+                "nickname": "Apelido da Conta*",
+                "nicknamePlaceholder": "Ex: Conta Principal",
+                "type": "Tipo de Conta",
+                "broker": "Corretora / Mesa*",
+                "brokerPlaceholder": "Ex: Binance, XP...",
+                "number": "N├║mero da Conta",
+                "numberPlaceholder": "Ex: 12345-6",
+                "currency": "Moeda Base*",
+                "balance": "Saldo Inicial",
+                "save": "Salvar"
+            }
+        },
+        "currencies": {
+            "title": "Moedas",
+            "description": "Cadastre as moedas utilizadas em suas contas (BRL, USD, etc).",
+            "new": "Nova Moeda",
+            "edit": "Editar Moeda",
+            "searchPlaceholder": "Buscar moeda...",
+            "empty": "Nenhuma moeda encontrada",
+            "form": {
+                "code": "C├│digo",
+                "codePlaceholder": "Ex: BRL",
+                "symbol": "S├¡mbolo",
+                "symbolPlaceholder": "Ex: R$",
+                "name": "Nome",
+                "namePlaceholder": "Ex: Real Brasileiro",
+                "save": "Salvar Moeda"
+            }
+        },
+        "fiscal": {
+            "title": "Regras Fiscais",
+            "description": "Configure as al├¡quotas de imposto (IRPF) para cada tipo de ativo e modalidade.",
+            "tabs": {
+                "rules": "Regras de Imposto",
+                "mappings": "Atribui├º├Áes"
+            },
+            "rules": {
+                "new": "Nova Regra",
+                "empty": "Nenhuma regra fiscal configurada.",
+                "form": {
+                    "titleNew": "Nova Regra Fiscal",
+                    "titleEdit": "Editar Regra Fiscal",
+                    "name": "Nome da Regra",
+                    "namePlaceholder": "Ex: Day Trade A├º├Áes",
+                    "rate": "Al├¡quota (%)",
+                    "rateHint": "Taxa do imposto sobre o lucro l├¡quido (Ex: 20%).",
+                    "withholding": "IRRF (Dedo-duro)",
+                    "withholdingHint": "Percentual retido na fonte que pode ser abatido.",
+                    "basis": "Base de C├ílculo",
+                    "basisOptions": {
+                        "netProfit": "Lucro L├¡quido",
+                        "saleAmount": "Valor da Venda"
+                    },
+                    "exemption": "Limite de Isen├º├úo",
+                    "exemptionHint": "Vendas mensais abaixo deste valor isentam o IR sobre lucros.",
+                    "cumulative": "Compensa Preju├¡zos",
+                    "save": "Salvar Regra"
+                }
+            },
+            "mappings": {
+                "description": "Associe cada Tipo de Ativo e Modalidade a uma Regra Fiscal.",
+                "assetType": "Tipo de Ativo",
+                "modality": "Modalidade",
+                "rule": "Regra Aplic├ível",
+                "noRule": "Sem Regra (Isento/Ignorado)"
+            }
+        },
+        "fees": {
+            "title": "Taxas e Custos Operacionais",
+            "description": "Crie perfis de custos para aplicar em suas estrat├®gias e trades.",
+            "new": "Novo Perfil",
+            "empty": "Nenhum perfil de taxas encontrado",
+            "labels": {
+                "fixed": "FIXO",
+                "brokerage": "CORRETAGEM",
+                "exchange": "BOLSA"
+            },
+            "form": {
+                "titleNew": "Novo Perfil de Taxas",
+                "titleEdit": "Editar Perfil de Taxas",
+                "description": "Configure todos os custos envolvidos na opera├º├úo.",
+                "name": "Nome do Perfil",
+                "namePlaceholder": "Ex: A├º├Áes Swing Trade",
+                "broker": "Corretora/Exchange",
+                "fixedFee": "Taxa Fixa (Valor)",
+                "fixedFeeHint": "Por ordem/contrato",
+                "percentageFee": "Taxa (%)",
+                "percentageFeeHint": "Corretagem vari├ível",
+                "exchangeFee": "Emolumentos (%)",
+                "exchangeFeeHint": "Taxa da Bolsa",
+                "iss": "ISS (%)",
+                "issHint": "Imposto servi├ºo",
+                "currencySpread": "Spread C├ómbio (%)",
+                "currencySpreadHint": "Envio internacional",
+                "withholdingTax": "Imposto Dedo-Duro (%)",
+                "withholdingTaxHint": "Retido na fonte (0.005% normal, 1% Day Trade)",
+                "incomeTaxRate": "Al├¡quota de IR (%)",
+                "incomeTaxRateHint": "Al├¡quota para DARF (15% normal, 20% Day Trade)",
+                "simulation": "Simula├º├úo (Opera├º├úo de {value})",
+                "simFixed": "Fixo:",
+                "simPercent": "% Corretagem:",
+                "simExchange": "Emolumentos:",
+                "totalCosts": "Total Custos:",
+                "notes": "Observa├º├Áes",
+                "notesPlaceholder": "Detalhes adicionais...",
+                "save": "Salvar Perfil",
+                "costs": "Custos Operacionais",
+                "operationalCosts": "Custos de Transa├º├úo",
+                "taxes": "Impostos",
+                "taxConfiguration": "Configura├º├úo de Impostos (IR)",
+                "customCosts": "Custos Personalizados",
+                "linkTaxRule": "Vincular Regra Fiscal",
+                "linkTaxRuleHint": "Selecione uma regra para aplicar impostos automaticamente.",
+                "manualConfiguration": "Configura├º├úo Manual",
+                "noRule": "Sem Regra",
+                "customTaxes": "Impostos Personalizados",
+                "addItem": "Adicionar Item",
+                "noCustomItems": "Nenhum item personalizado.",
+                "itemNamePlaceholder": "Nome do custo/imposto",
+                "fixed": "Fixo ($)",
+                "percentage": "Porcentagem (%)"
+            }
+        },
+        "risk": {
+            "title": "Gerenciamento de Risco",
+            "description": "Defina seus limites de perda e metas para proteger seu capital.",
+            "new": "Novo Perfil",
+            "edit": "Editar Perfil",
+            "name": "Nome do Perfil",
+            "namePlaceholder": "Ex: Conservador",
+            "downside": "Prote├º├úo (Downside)",
+            "upside": "Metas (Upside)",
+            "dailyLossLimit": "Limite de Perda Di├íria (R$)",
+            "dailyLossLimitShort": "Limite Loss",
+            "maxRiskPerTrade": "Risco M├íximo por Trade (%)",
+            "maxRiskPerTradeShort": "Risco/Trade",
+            "dailyGoal": "Meta Di├íria (R$)",
+            "dailyGoalShort": "Meta Di├íria",
+            "minRiskReward": "Risco/Retorno M├¡nimo",
+            "discipline": "Disciplina e Travas",
+            "maxTradesDay": "M├íximo de Trades/Dia",
+            "applicability": "Aplicabilidade",
+            "lockOnLoss": "Bloquear Plataforma ao Atingir Loss",
+            "lockOnLossShort": "Bloqueia Plataforma (Loss)",
+            "lockWarning": "O usu├írio n├úo poder├í abrir novas ordens at├® o dia seguinte.",
+            "accountTypes": {
+                "All": "Todas as Contas",
+                "Prop": "Mesa Propriet├íria",
+                "Real": "Conta Real",
+                "Demo": "Conta Demo"
+            },
+            "engine": {
+                "title": "Motor de Risco",
+                "psychological": {
+                    "title": "Acoplamento Psicol├│gico",
+                    "description": "Ajusta o risco baseado na mentalidade (lookback de {count} trades).",
+                    "strategy": "Estrat├®gia de Busca",
+                    "strategyStrict": "Apenas com dados",
+                    "strategySequence": "├Ültimos trades",
+                    "lookback": "Quantidade Amostras",
+                    "threshold": "Gatilho (Peso)",
+                    "multiplier": "Redu├º├úo de Lote (X)"
+                },
+                "outlier": {
+                    "title": "Regress├úo de Outlier",
+                    "description": "Bloqueia trades se detectar perda desproporcional.",
+                    "lookback": "Amostras de Janela"
+                },
+                "sniper": {
+                    "title": "Modo Sniper",
+                    "description": "Foco em seletividade extrema.",
+                    "selectivity": "M├íximo de Trades/Dia",
+                    "selectivityTip": "Sugerido: 2 a 3 trades para alta performance."
+                }
+            }
+        },
+        "modalities": {
+            "title": "Modalidades",
+            "description": "Defina os tipos de opera├º├Áes que voc├¬ realiza (Day Trade, Swing Trade, etc.).",
+            "new": "Nova Modalidade",
+            "edit": "Editar Modalidade",
+            "searchPlaceholder": "Buscar modalidade...",
+            "empty": "Nenhuma modalidade encontrada",
+            "form": {
+                "name": "Nome",
+                "namePlaceholder": "Ex: Day Trade",
+                "description": "Descri├º├úo",
+                "descriptionPlaceholder": "Descri├º├úo da modalidade...",
+                "save": "Salvar"
+            }
+        },
+        "tags": {
+            "title": "Tags",
+            "description": "Crie etiquetas para categorizar seus trades e di├írios.",
+            "new": "Nova Tag",
+            "edit": "Editar Tag",
+            "searchPlaceholder": "Buscar tag...",
+            "empty": "Nenhuma tag encontrada",
+            "form": {
+                "name": "Nome",
+                "namePlaceholder": "Ex: Setup A, Erro Operacional...",
+                "color": "Cor",
+                "preview": "Preview da Tag",
+                "save": "Salvar Tag"
+            }
+        },
+        "timeframes": {
+            "title": "Timeframes",
+            "description": "Configure os tempos gr├íficos operacionais.",
+            "new": "Novo Intervalo",
+            "edit": "Editar Timeframe",
+            "searchPlaceholder": "Buscar timeframe...",
+            "empty": "Nenhum timeframe encontrado",
+            "displayName": "Nome de Exibi├º├úo",
+            "namePlaceholder": "Ex: 5 Minutos",
+            "value": "Valor / C├│digo",
+            "valuePlaceholder": "Ex: 5m, 1H, 1D"
+        },
+        "indicators": {
+            "title": "Indicadores",
+            "description": "Cadastre seus indicadores t├®cnicos favoritos e configura├º├Áes padr├úo.",
+            "new": "Novo Indicador",
+            "edit": "Editar Indicador",
+            "searchPlaceholder": "Buscar indicador...",
+            "empty": "Nenhum indicador encontrado",
+            "quickModel": "Modelo R├ípido",
+            "selectModel": "Selecione um modelo...",
+            "modelHint": "Selecione um modelo para preencher automaticamente os campos abaixo.",
+            "name": "Nome do Indicador",
+            "namePlaceholder": "Ex: MMA 20, RSI...",
+            "category": "Categoria",
+            "plotType": "Tipo de Plotagem",
+            "defaultColor": "Cor Padr├úo",
+            "previewColor": "Preview de Cor",
+            "usage": "Descri├º├úo de Uso",
+            "usagePlaceholder": "Como voc├¬ usa este indicador? (Ex: Compro quando cruza pra cima...)",
+            "parameters": "Par├ómetros",
+            "add": "Adicionar",
+            "noParams": "Nenhum par├ómetro definido.",
+            "addFirst": "Adicionar o primeiro",
+            "paramName": "Nome",
+            "paramNameLabel": "Nome",
+            "paramNamePlaceholder": "Ex: Per├¡odo",
+            "params": {
+                "Fast": "R├ípida",
+                "Slow": "Lenta",
+                "Signal": "Sinal",
+                "Deviation": "Desvio",
+                "Anchorage": "Ancoragem",
+                "Daily": "Di├íria"
+            },
+            "paramValue": "Valor",
+            "categories": {
+                "Trend": "Tend├¬ncia",
+                "Oscillator": "Oscilador",
+                "Volume": "Volume",
+                "Other": "Outros"
+            },
+            "plotTypes": {
+                "Overlay": "Sobreposto ao Gr├ífico",
+                "SubWindow": "Janela Separada"
+            },
+            "presets": {
+                "custom": "Personalizado",
+                "sma": "M├®dia M├│vel Simples (SMA)",
+                "ema": "M├®dia M├│vel Exponencial (EMA)",
+                "rsi": "RSI (├ìndice de For├ºa Relativa)",
+                "macd": "MACD",
+                "bb": "Bandas de Bollinger",
+                "vol": "Volume Financeiro",
+                "vwap": "VWAP"
+            }
+        },
+        "chartTypes": {
+            "title": "Tipos de Gr├ífico",
+            "description": "Defina os tipos de gr├ífico que utiliza (Candle, Renko, etc.).",
+            "new": "Novo Tipo",
+            "edit": "Editar Tipo",
+            "searchPlaceholder": "Buscar tipo de gr├ífico...",
+            "empty": "Nenhum tipo de gr├ífico encontrado",
+            "name": "Nome do Gr├ífico",
+            "namePlaceholder": "Ex: Renko 10R, 5 Minutos...",
+            "methodology": "Metodologia",
+            "parameter": "Par├ómetro (Opcional)",
+            "parameterPlaceholder": "Ex: 10, 5, 21...",
+            "types": {
+                "TimeBased": "Temporal (Candle/Barra)",
+                "Renko": "Renko",
+                "Range": "Range Bar"
+            }
+        },
+        "emotionalStates": {
+            "title": "Estados Emocionais",
+            "description": "Registre os estados emocionais que afetam seu trading.",
+            "new": "Novo Estado",
+            "edit": "Editar Estado",
+            "searchPlaceholder": "Buscar estado...",
+            "empty": "Nenhum estado emocional encontrado",
+            "form": {
+                "name": "Nome",
+                "namePlaceholder": "Ex: Frustra├º├úo, Ansiedade...",
+                "impact": "Impacto",
+                "impactOptions": {
+                    "Positive": "Positivo",
+                    "Negative": "Negativo",
+                    "Neutral": "Neutro"
+                },
+                "description": "Descri├º├úo",
+                "descriptionPlaceholder": "Descreva o sentimento...",
+                "potentialImpact": "Impacto Potencial no Trade",
+                "potentialImpactPlaceholder": "Ex: Entradas antecipadas, aumento de m├úo...",
+                "save": "Salvar Estado",
+                "weight": "Peso (0-10)"
+            }
+        },
+        "strategies": {
+            "title": "Estrat├®gias Operacionais",
+            "description": "Documente seus setups, regras de entrada, sa├¡da e gest├úo.",
+            "new": "Novo Setup",
+            "edit": "Editar Estrat├®gia",
+            "empty": "Nenhum setup encontrado",
+            "form": {
+                "name": "Nome da Estrat├®gia",
+                "namePlaceholder": "Ex: Pullback MME9",
+                "description": "Descri├º├úo Resumida",
+                "descriptionPlaceholder": "Ex: Setup de corre├º├úo...",
+                "operationalContext": "Contexto Operacional",
+                "timeframes": "Timeframes",
+                "indicators": "Indicadores",
+                "assetTypes": "Tipos de Ativo",
+                "specificAssets": "Ativos Espec├¡ficos",
+                "linkedMarkets": "Mercados Vinculados",
+                "select": "Selecionar",
+                "noMarketSelected": "Nenhum mercado selecionado.",
+                "entryTriggers": "1. Gatilhos de Entrada",
+                "entryPlaceholder": "O que define a entrada?",
+                "stopExit": "2. Stop / Sa├¡da",
+                "stopPlaceholder": "Onde fica o stop?",
+                "management": "3. Condu├º├úo / Gest├úo",
+                "managementPlaceholder": "Trailing stop? Breakeven?",
+                "partials": {
+                    "switch": "Realizar Sa├¡das Parciais?",
+                    "placeholder": "Descreva a regra da parcial..."
+                },
+                "visualExamples": "Exemplos Visuais",
+                "addImage": "Adicionar",
+                "tips": {
+                    "noImages": "Sem imagens"
+                },
+                "save": "Salvar Estrat├®gia",
+                "cancel": "Cancelar"
+            }
+        },
+        "database": {
+            "title": "Gerenciar Banco de Dados",
+            "description": "Ferramentas para diagnosticar e gerenciar o banco de dados.",
+            "status": {
+                "title": "Verificar Status do Banco",
+                "description": "Veja quantos registros existem em cada tabela principal.",
+                "button": "Verificar Status",
+                "checking": "Verificando...",
+                "success": "Status verificado com sucesso!",
+                "error": "Erro ao verificar"
+            },
+            "defaults": {
+                "title": "Restaurar Padr├Áes do Sistema",
+                "description": "Use esta op├º├úo caso note que op├º├Áes como \"Tipos de Ativo\" ou \"Estados Emocionais\" est├úo faltando.",
+                "warning": "Seguro para uso: Esta a├º├úo verifica a integridade dos dados essenciais do sistema e recria apenas o que estiver faltando ou incorreto. Seus trades e contas N├âO ser├úo apagados.",
+                "button": "Verificar e Restaurar Padr├Áes",
+                "restoring": "Restaurando...",
+                "confirm": "Isso ir├í verificar e corrigir dados padr├úo faltantes (Moedas, Tipos de Ativo, etc.), sem apagar seus dados. Deseja continuar?"
+            },
+            "demo": {
+                "title": "Dados de Demonstra├º├úo (Demo)",
+                "description": "Gere ou remova trades de exemplo para testar as funcionalidades.",
+                "cleanAll": "Limpar Todos os Dados Demo",
+                "cleaning": "Limpando...",
+                "generate": "Gerar Dados de Exemplo",
+                "generating": "Gerando...",
+                "delete": "Apagar Selecionados",
+                "deleting": "Apagando...",
+                "deleteWarning": "Aten├º├úo: Esta a├º├úo remover├í permanentemente os trades das contas selecionadas.",
+                "confirmDeleteTitle": "Confirmar Exclus├úo",
+                "confirmDeleteDescription": "Tem certeza que deseja apagar os dados de demonstra├º├úo? Esta a├º├úo n├úo pode ser desfeita.",
+                "successGenerate": "Dados demo gerados com sucesso!",
+                "successClean": "Todos os trades demo foram removidos!",
+                "selectAccount": "Selecione pelo menos uma conta"
+            },
+            "danger": {
+                "title": "Zona de Perigo: Reset Total",
+                "description": "Apaga todos os dados e recria o banco do zero com dados de f├íbrica.",
+                "warning": "CUIDADO: Todos os seus trades, contas e personaliza├º├Áes ser├úo perdidos.",
+                "button": "Resetar Banco de Dados (Completo)",
+                "resetting": "Resetando...",
+                "confirm": "ATEN├ç├âO: Isso apagar├í TODOS os dados (Trades, Contas, Configura├º├Áes) e recriar├í o banco do zero com dados de exemplo. Tem certeza absoluta?"
+            }
+        },
+        "markets": {
+            "title": "Mercados",
+            "description": "Cadastre as bolsas e mercados onde voc├¬ opera (B3, Nasdaq, Forex...).",
+            "new": "Novo Mercado",
+            "edit": "Editar Mercado",
+            "searchPlaceholder": "Buscar mercado...",
+            "form": {
+                "titleNew": "Novo Mercado",
+                "titleEdit": "Editar Mercado",
+                "description": "Configure as informa├º├Áes b├ísicas e os hor├írios de negocia├º├úo.",
+                "code": "C├│digo",
+                "codePlaceholder": "B3",
+                "timezone": "Fuso Hor├írio",
+                "fullName": "Nome Completo",
+                "fullNamePlaceholder": "Brasil Bolsa Balc├úo",
+                "tradingDays": "Dias de Opera├º├úo",
+                "tradingSessions": "Sess├Áes de Negocia├º├úo",
+                "start": "In├¡cio",
+                "end": "Fim",
+                "addSession": "Adicionar Sess├úo",
+                "save": "Salvar Mercado"
+            }
+        }
+    }
+}

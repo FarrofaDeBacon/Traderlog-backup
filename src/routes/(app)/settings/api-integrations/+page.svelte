@@ -148,17 +148,22 @@
         const result = await settingsStore.syncExchangeRates();
         if (result?.success) {
             toast.success(
-                `Câmbio atualizado! ${result.count} moedas sincronizadas.`,
+                $t("settings.api.integrations.currency.successSync", {
+                    values: { count: result.count },
+                }),
             );
         } else if (result) {
-            toast.error(result.error || "Erro ao sincronizar moedas.");
+            toast.error(
+                result.error ||
+                    $t("settings.api.integrations.currency.errorSync"),
+            );
         }
         isSyncing = false;
     }
 
     function saveCurrencyUrl() {
         settingsStore.saveUserProfile();
-        toast.success("URL de Câmbio salva com sucesso!");
+        toast.success($t("settings.api.integrations.currency.successSave"));
     }
 </script>
 
@@ -252,24 +257,29 @@
                 <div class="flex items-center gap-2">
                     <ArrowRightLeft class="w-5 h-5 text-blue-500" />
                     <Card.Title class="text-base"
-                        >Serviço de Câmbio (Moedas)</Card.Title
+                        >{$t(
+                            "settings.api.integrations.currency.title",
+                        )}</Card.Title
                     >
                 </div>
                 <Badge
                     variant="outline"
                     class="bg-blue-500/10 text-blue-500 border-blue-500/20"
                 >
-                    Público & Gratuito
+                    {$t("settings.api.integrations.currency.tag")}
                 </Badge>
             </div>
             <Card.Description>
-                Utilizado para converter seus saldos e resultados para BRL no
-                Hub Financeiro. Usamos a <strong>AwesomeAPI</strong> por padrão.
+                {@html $t("settings.api.integrations.currency.description")}
             </Card.Description>
         </Card.Header>
         <Card.Content class="space-y-4">
             <div class="space-y-2">
-                <Label for="currency-url">Endereço da API (Endpoint)</Label>
+                <Label for="currency-url"
+                    >{$t(
+                        "settings.api.integrations.currency.endpointLabel",
+                    )}</Label
+                >
                 <div class="flex gap-2">
                     <Input
                         id="currency-url"
@@ -279,12 +289,11 @@
                     />
                     <Button variant="secondary" onclick={saveCurrencyUrl}>
                         <Save class="w-4 h-4 mr-2" />
-                        Salvar URL
+                        {$t("settings.api.integrations.currency.saveUrl")}
                     </Button>
                 </div>
                 <p class="text-xs text-muted-foreground">
-                    Se o endereço mudar no futuro, você pode atualizá-lo aqui
-                    sem mexer no código.
+                    {$t("settings.api.integrations.currency.hint")}
                 </p>
             </div>
         </Card.Content>
@@ -298,7 +307,9 @@
                 <RefreshCw
                     class={cn("w-4 h-4 mr-2", isSyncing && "animate-spin")}
                 />
-                {isSyncing ? "Sincronizando..." : "Sincronizar Agora"}
+                {isSyncing
+                    ? $t("settings.api.integrations.currency.syncing")
+                    : $t("settings.api.integrations.currency.syncNow")}
             </Button>
         </Card.Footer>
     </Card.Root>

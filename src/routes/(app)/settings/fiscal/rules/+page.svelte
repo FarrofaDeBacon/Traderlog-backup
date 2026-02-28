@@ -56,7 +56,7 @@
 
     async function saveRule() {
         if (!formData.name) {
-            toast.error("Nome é obrigatório");
+            toast.error($t("settings.fiscal.rules.form.nameRequired"));
             return;
         }
 
@@ -71,10 +71,10 @@
             }
             // FECHAR modal
             isDialogOpen = false;
-            toast.success("Regra salva com sucesso!");
+            toast.success($t("settings.fiscal.rules.form.successSave"));
         } catch (e) {
             console.error("Erro ao salvar regra:", e);
-            toast.error("Erro ao salvar regra.");
+            toast.error($t("settings.fiscal.rules.form.errorSave"));
         } finally {
             isSubmittingRule = false;
         }
@@ -102,10 +102,11 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div class="space-y-0.5">
-            <h3 class="text-lg font-medium">Regras de Imposto</h3>
+            <h3 class="text-lg font-medium">
+                {$t("settings.fiscal.rules.title")}
+            </h3>
             <p class="text-sm text-muted-foreground">
-                Defina as alíquotas e regras de cálculo (ex: 20% para Day Trade,
-                15% para Swing Trade).
+                {$t("settings.fiscal.rules.description")}
             </p>
         </div>
         <Button onclick={openNew}>
@@ -133,8 +134,12 @@
                                 class="text-[10px] uppercase text-muted-foreground tracking-wider"
                             >
                                 {rule.basis === "NetProfit"
-                                    ? "Lucro Líquido"
-                                    : "Lucro Bruto"}
+                                    ? $t(
+                                          "settings.fiscal.rules.form.basisOptions.netProfit",
+                                      )
+                                    : $t(
+                                          "settings.fiscal.rules.form.basisOptions.saleAmount",
+                                      )}
                             </span>
                         </div>
                     </div>
@@ -143,13 +148,17 @@
                 <!-- Stats -->
                 <div class="space-y-2 mb-4 flex-1">
                     <div class="flex justify-between items-center text-sm">
-                        <span class="text-muted-foreground">Alíquota:</span>
+                        <span class="text-muted-foreground"
+                            >{$t("settings.fiscal.rules.form.rate")}:</span
+                        >
                         <span class="font-mono font-bold">{rule.tax_rate}%</span
                         >
                     </div>
                     <div class="flex justify-between items-center text-sm">
                         <span class="text-muted-foreground"
-                            >IRRF (Dedo-duro):</span
+                            >{$t(
+                                "settings.fiscal.rules.form.withholding",
+                            )}:</span
                         >
                         <span class="font-mono">{rule.withholding_rate}%</span>
                     </div>
@@ -157,7 +166,11 @@
                         <div
                             class="flex justify-between items-center text-sm text-green-500"
                         >
-                            <span>Isenção até:</span>
+                            <span
+                                >{$t(
+                                    "settings.fiscal.rules.form.exemption",
+                                )}:</span
+                            >
                             <span class="font-mono"
                                 >R$ {rule.exemption_threshold.toLocaleString()}</span
                             >
@@ -165,14 +178,18 @@
                     {/if}
                     <div class="flex justify-between items-center text-sm">
                         <span class="text-muted-foreground"
-                            >Compensa Prejuízo:</span
+                            >{$t(
+                                "settings.fiscal.rules.form.cumulative",
+                            )}:</span
                         >
                         <span
                             class={rule.cumulative_losses
                                 ? "text-green-500"
                                 : "text-red-500"}
                         >
-                            {rule.cumulative_losses ? "Sim" : "Não"}
+                            {rule.cumulative_losses
+                                ? $t("general.yes")
+                                : $t("general.no")}
                         </span>
                     </div>
                 </div>
@@ -187,7 +204,8 @@
                         class="h-8"
                         onclick={() => openEdit(rule)}
                     >
-                        <Pencil class="w-3.5 h-3.5 mr-1" /> Editar
+                        <Pencil class="w-3.5 h-3.5 mr-1" />
+                        {$t("general.edit")}
                     </Button>
                     <Button
                         variant="ghost"
@@ -195,7 +213,8 @@
                         class="h-8 text-destructive hover:text-destructive"
                         onclick={() => requestDelete(rule.id)}
                     >
-                        <Trash2 class="w-3.5 h-3.5 mr-1" /> Excluir
+                        <Trash2 class="w-3.5 h-3.5 mr-1" />
+                        {$t("general.delete")}
                     </Button>
                 </div>
             </div>
@@ -206,7 +225,7 @@
                 <Scale class="w-8 h-8 mb-2 opacity-20" />
                 <span>{$t("settings.fiscal.rules.empty")}</span>
                 <Button variant="link" onclick={openNew}
-                    >Criar primeira regra</Button
+                    >{$t("settings.fiscal.rules.new")}</Button
                 >
             </div>
         {/each}
@@ -299,8 +318,7 @@
                     </Select.Content>
                 </Select.Root>
                 <p class="text-[10px] text-muted-foreground">
-                    Define sobre qual valor o imposto será calculado (Day Trade
-                    vs Swing Trade).
+                    {$t("settings.fiscal.rules.form.basisHint")}
                 </p>
             </div>
 
@@ -331,8 +349,7 @@
                         >{$t("settings.fiscal.rules.form.cumulative")}</Label
                     >
                     <p class="text-[10px] text-muted-foreground">
-                        Permite abater prejuízos de meses anteriores nesta
-                        regra.
+                        {$t("settings.fiscal.rules.form.cumulativeHint")}
                     </p>
                 </div>
                 <Switch bind:checked={formData.cumulative_losses} />
@@ -343,7 +360,7 @@
             <Button onclick={saveRule} disabled={isSubmittingRule}>
                 {#if isSubmittingRule}
                     <span class="loading loading-spinner loading-xs"></span>
-                    Salvando...
+                    {$t("general.saving")}
                 {:else}
                     {$t("settings.fiscal.rules.form.save")}
                 {/if}

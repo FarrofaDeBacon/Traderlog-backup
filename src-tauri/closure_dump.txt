@@ -1,0 +1,36 @@
+--- [DIAGNOSTIC DUMP: CLOSURE] ---
+
+[TRADES]
+SAMPLE TRADE DATA: {
+  "account_id": "account:demo_b3_acoes",
+  "date": "2026-02-23T23:03:00Z",
+  "exit_date": "2026-02-23T23:04:00Z",
+  "exit_price": 200.0,
+  "id": "trade:`ba5e62c9-6767-42fb-a32f-6efde0e4203e`",
+  "result": 200.0
+}
+
+[CASH TRANSACTIONS]
+Tx: id="cash_transaction:`726c0353-ae88-4bea-b859-bff3ddada2ce`", date=String("2026-02-23"), amt=Number(-764.0), desc=String("Fechamento Diário (4 trades)"), acc=String("account:demo_b3_futuros"), linked=Bool(true)
+Tx: id="cash_transaction:`5d9249fd-6d91-402c-be68-ffd25e102e7c`", date=String("2026-02-23"), amt=Number(200.0), desc=String("Fechamento Diário (1 trades)"), acc=String("account:demo_b3_acoes"), linked=Bool(true)
+Tx: id="cash_transaction:`2152c0ae-3b5f-4fa5-8653-7464351bdd53`", date=String("2026-02-23"), amt=Number(-764.0), desc=String("Fechamento Diário (4 trades)"), acc=String("account:demo_b3_futuros"), linked=Bool(true)
+Tx: id="cash_transaction:`2e44b88a-b386-4b92-8c1b-aec79c831101`", date=String("2026-02-12"), amt=Number(305.0), desc=String("Fechamento Diário (4 trades)"), acc=String("account:demo_b3_futuros"), linked=Bool(true)
+Tx: id="cash_transaction:`760f527c-10d2-4b51-aa36-54d804956c1c`", date=String("2026-02-10"), amt=Number(-207.0), desc=String("Fechamento Diário (5 trades)"), acc=String("account:demo_b3_futuros"), linked=Bool(true)
+Tx: id="cash_transaction:`d4ca61d6-a38b-4903-b6a5-34067ba2f48a`", date=String("2026-02-09"), amt=Number(54.0), desc=String("Fechamento Diário (2 trades)"), acc=String("account:demo_b3_futuros"), linked=Bool(true)
+Tx: id="cash_transaction:`1f557dd6-5004-476d-a66d-5960919f7a1f`", date=String("2026-02-09"), amt=Number(54.0), desc=String("Fechamento Diário (2 trades)"), acc=String("account:demo_b3_futuros"), linked=Bool(true)
+Tx: id="cash_transaction:`02858407-2d48-4eb4-8e65-524359602c56`", date=String("2026-02-03"), amt=Number(-67.0), desc=String("Fechamento Diário (3 trades)"), acc=String("account:demo_b3_futuros"), linked=Bool(true)
+Tx: id="cash_transaction:`592029fb-2e96-4e26-aa2b-cf944558faae`", date=String("2026-02-02"), amt=Number(462.0), desc=String("Fechamento Diário (2 trades)"), acc=String("account:demo_b3_futuros"), linked=Bool(true)
+Tx: id="cash_transaction:initial_teste", date=String("2025-11-20T04:14:12.857584300+00:00"), amt=Number(100000.0), desc=String("Initial Balance"), acc=String("account:teste"), linked=Null
+Tx: id="cash_transaction:initial_simulador", date=String("2025-11-20T04:14:12.855747200+00:00"), amt=Number(100000.0), desc=String("Initial Balance"), acc=String("account:simulador"), linked=Null
+Tx: id="cash_transaction:initial_demo_b3_futuros", date=String("2025-11-20T04:14:12.854479300+00:00"), amt=Number(25000.0), desc=String("Initial Balance"), acc=String("account:demo_b3_futuros"), linked=Null
+Tx: id="cash_transaction:initial_demo_b3_acoes", date=String("2025-11-20T04:14:12.852968+00:00"), amt=Number(50000.0), desc=String("Initial Balance"), acc=String("account:demo_b3_acoes"), linked=Null
+Tx: id="cash_transaction:`c9d56c9a-1845-4c70-af69-5fcabd134f0a`", date=String("2025-07-23"), amt=Number(11.0), desc=String("Fechamento Diário (2 trades)"), acc=String("account:demo_b3_futuros"), linked=Bool(true)
+
+[ACCOUNTS]
+Account: id="account:demo_b3_acoes", name=String("Conta B3 - Ações"), bal=Number(50200.0)
+Account: id="account:demo_b3_futuros", name=String("Conta B3 - Futuros"), bal=Number(24084.0)
+Account: id="account:real", name=String("Conta Real"), bal=Number(0.0)
+Account: id="account:simulador", name=String("Conta Simulador"), bal=Number(100000.0)
+Account: id="account:teste", name=String("Conta Teste"), bal=Number(100000.0)
+
+--- [DUMP END] ---

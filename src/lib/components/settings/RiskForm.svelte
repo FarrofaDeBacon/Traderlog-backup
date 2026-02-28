@@ -30,9 +30,9 @@
     }>();
 
     // Presets Configuration
-    const presets = {
+    const presets = $derived({
         conservative: {
-            name: "Conservador",
+            name: $t("settings.risk.form.presets.conservative"),
             max_daily_loss: 500,
             daily_target: 300,
             max_risk_per_trade_percent: 1.0,
@@ -41,7 +41,7 @@
             lock_on_loss: true,
         },
         moderate: {
-            name: "Moderado",
+            name: $t("settings.risk.form.presets.moderate"),
             max_daily_loss: 1000,
             daily_target: 800,
             max_risk_per_trade_percent: 2.0,
@@ -50,7 +50,7 @@
             lock_on_loss: true,
         },
         aggressive: {
-            name: "Agressivo",
+            name: $t("settings.risk.form.presets.aggressive"),
             max_daily_loss: 2000,
             daily_target: 2000,
             max_risk_per_trade_percent: 5.0,
@@ -58,7 +58,7 @@
             min_risk_reward: 1.0,
             lock_on_loss: false,
         },
-    };
+    });
 
     let selectedPreset = $state<string>("custom");
 
@@ -89,6 +89,8 @@
         lot_reduction_multiplier: initialData?.lot_reduction_multiplier ?? 0.5,
         psychological_search_strategy:
             initialData?.psychological_search_strategy ?? "Strict",
+        account_ids: initialData?.account_ids ?? [],
+        active: initialData?.active ?? false,
     });
 
     function applyPreset(key: string) {
@@ -148,6 +150,8 @@
                     initialData.lot_reduction_multiplier ?? 0.5,
                 psychological_search_strategy:
                     initialData.psychological_search_strategy ?? "Strict",
+                account_ids: initialData.account_ids ?? [],
+                active: initialData.active ?? false,
             };
             selectedPreset = "custom";
         }
@@ -170,18 +174,25 @@
             value: "Demo",
             label: $t("settings.risk.accountTypes.Demo") || "Conta Demo",
         },
+        {
+            value: "Specific",
+            label:
+                $t("settings.risk.accountTypes.Specific") ||
+                "Specific Accounts",
+        },
     ]);
 
+    import { settingsStore } from "$lib/stores/settings.svelte";
+
     // Growth Plan Presets
-    const growthPresets = {
+    const growthPresets = $derived({
         conservative: {
-            name: "Lento e Consistente",
-            description:
-                "Aumenta a mão a cada 5 dias de meta batida. Regride ao atingir 50% do drawdown.",
+            name: $t("settings.risk.form.presets.conservative"),
+            description: $t("settings.risk.growthPlan.enableDesc"),
             phases: Array.from({ length: 5 }, (_, i) => ({
                 id: crypto.randomUUID(),
-                name: `Nível ${i + 1}`,
-                description: `Fase ${i + 1} do plano conservador`,
+                name: `${$t("general.items")} ${i + 1}`,
+                description: `Fase ${i + 1}`,
                 max_lots: i + 1,
                 max_daily_loss: (i + 1) * 200, // Grows 200 per level
                 progression_rules: [
@@ -196,13 +207,12 @@
             })),
         },
         moderate: {
-            name: "Crescimento Equilibrado",
-            description:
-                "Aumenta a mão a cada 3 dias de meta. Regride com 1 dia de loss total.",
+            name: $t("settings.risk.form.presets.moderate"),
+            description: $t("settings.risk.growthPlan.enableDesc"),
             phases: Array.from({ length: 8 }, (_, i) => ({
                 id: crypto.randomUUID(),
-                name: `Nível ${i + 1}`,
-                description: `Fase ${i + 1} do plano moderado`,
+                name: `${$t("general.items")} ${i + 1}`,
+                description: `Fase ${i + 1}`,
                 max_lots: (i + 1) * 2, // Grows by 2 lots
                 max_daily_loss: (i + 1) * 500,
                 progression_rules: [
@@ -214,13 +224,12 @@
             })),
         },
         aggressive: {
-            name: "Alavancagem Rápida",
-            description:
-                "Aumenta lote a cada 2 dias de meta. Suporta drawdowns maiores.",
+            name: $t("settings.risk.form.presets.aggressive"),
+            description: $t("settings.risk.growthPlan.enableDesc"),
             phases: Array.from({ length: 10 }, (_, i) => ({
                 id: crypto.randomUUID(),
-                name: `Nível ${i + 1}`,
-                description: `Fase ${i + 1} agressiva`,
+                name: `${$t("general.items")} ${i + 1}`,
+                description: `Fase ${i + 1}`,
                 max_lots: (i + 1) * 5, // Grows fast
                 max_daily_loss: (i + 1) * 1000,
                 progression_rules: [
@@ -234,7 +243,7 @@
                 ],
             })),
         },
-    };
+    });
 
     let selectedGrowthPreset = $state<string>("custom");
 
@@ -256,7 +265,7 @@
             ...formData.growth_phases,
             {
                 id: crypto.randomUUID(),
-                name: `Fase ${formData.growth_phases.length}`,
+                name: `${$t("settings.risk.growthPlan.phases")} ${formData.growth_phases.length}`,
                 description: "",
                 max_lots: 1,
                 max_daily_loss: formData.max_daily_loss,
@@ -283,7 +292,7 @@
     <!-- Presets Selection -->
     <div class="space-y-2">
         <Label class="text-xs text-muted-foreground uppercase font-bold"
-            >Modelos (Presets)</Label
+            >{$t("settings.risk.form.presets.title")}</Label
         >
         <div class="flex flex-wrap gap-2">
             {#each Object.entries(presets) as [key, p]}
@@ -304,7 +313,7 @@
                     : 'bg-muted/40 text-muted-foreground hover:bg-muted border-transparent'}"
                 onclick={() => (selectedPreset = "custom")}
             >
-                Personalizado
+                {$t("general.custom") || "Personalizado"}
             </button>
         </div>
     </div>
@@ -320,9 +329,15 @@
 
     <Tabs.Root value="general" class="w-full">
         <Tabs.List class="grid w-full grid-cols-3">
-            <Tabs.Trigger value="general">Geral</Tabs.Trigger>
-            <Tabs.Trigger value="risk-engine">Motor de Risco</Tabs.Trigger>
-            <Tabs.Trigger value="growth">Plano de Crescimento</Tabs.Trigger>
+            <Tabs.Trigger value="general"
+                >{$t("settings.risk.form.tabs.general")}</Tabs.Trigger
+            >
+            <Tabs.Trigger value="risk-engine"
+                >{$t("settings.risk.form.tabs.engine")}</Tabs.Trigger
+            >
+            <Tabs.Trigger value="growth"
+                >{$t("settings.risk.form.tabs.growth")}</Tabs.Trigger
+            >
         </Tabs.List>
 
         <Tabs.Content value="general" class="space-y-4 pt-4">
@@ -421,6 +436,58 @@
                         </Select.Root>
                     </div>
                 </div>
+
+                {#if formData.account_type_applicability === "Specific"}
+                    <div
+                        class="space-y-2 pt-2 border-t animate-in fade-in slide-in-from-top-1"
+                    >
+                        <Label class="text-xs font-semibold"
+                            >{$t("settings.risk.form.accounts.title")}</Label
+                        >
+                        <div class="grid grid-cols-2 gap-2">
+                            {#each settingsStore.accounts as account}
+                                <div
+                                    class="flex items-center space-x-2 p-2 rounded border bg-background/50"
+                                >
+                                    <Switch
+                                        id="acc-{account.id}"
+                                        checked={formData.account_ids.includes(
+                                            account.id,
+                                        )}
+                                        onCheckedChange={(checked) => {
+                                            if (checked) {
+                                                formData.account_ids = [
+                                                    ...formData.account_ids,
+                                                    account.id,
+                                                ];
+                                            } else {
+                                                formData.account_ids =
+                                                    formData.account_ids.filter(
+                                                        (id) =>
+                                                            id !== account.id,
+                                                    );
+                                            }
+                                        }}
+                                    />
+                                    <Label
+                                        for="acc-{account.id}"
+                                        class="text-xs cursor-pointer truncate"
+                                    >
+                                        {account.nickname}
+                                    </Label>
+                                </div>
+                            {/each}
+                        </div>
+                        {#if formData.account_ids.length === 0}
+                            <p class="text-[10px] text-amber-500 italic">
+                                {$t(
+                                    "settings.risk.form.accounts.noneSelected",
+                                ) ||
+                                    "Nenhuma conta selecionada. O perfil não será aplicado a nenhuma conta."}
+                            </p>
+                        {/if}
+                    </div>
+                {/if}
 
                 <div class="flex items-center space-x-4 pt-2">
                     <div class="flex items-center space-x-2">
@@ -645,10 +712,10 @@
                     <TrendingUp class="w-5 h-5 text-primary" />
                     <div class="space-y-0.5">
                         <h4 class="font-medium text-sm">
-                            Habilitar Plano de Crescimento
+                            {$t("settings.risk.growthPlan.enable")}
                         </h4>
                         <p class="text-xs text-muted-foreground">
-                            Regras automáticas para aumentar ou diminuir a mão.
+                            {$t("settings.risk.growthPlan.enableDesc")}
                         </p>
                     </div>
                 </div>
@@ -663,7 +730,7 @@
                     >
                         <Label
                             class="text-xs text-muted-foreground uppercase font-bold"
-                            >Modelos (Presets)</Label
+                            >{$t("settings.risk.form.presets.title")}</Label
                         >
                         <div class="flex flex-wrap gap-2">
                             {#each Object.entries(growthPresets) as [key, p]}
@@ -686,7 +753,7 @@
                                 onclick={() =>
                                     (selectedGrowthPreset = "custom")}
                             >
-                                Personalizado
+                                {$t("general.custom") || "Personalizado"}
                             </button>
                         </div>
                         {#if selectedGrowthPreset !== "custom"}
@@ -700,11 +767,12 @@
 
                     <div class="flex items-center justify-between">
                         <h4 class="text-sm font-medium">
-                            Fases ({formData.growth_phases.length})
+                            {$t("settings.risk.growthPlan.phases")} ({formData
+                                .growth_phases.length})
                         </h4>
                         <Button size="sm" variant="outline" onclick={addPhase}>
                             <Plus class="w-3 h-3 mr-1" />
-                            Adicionar Fase
+                            {$t("settings.risk.growthPlan.addPhase")}
                         </Button>
                     </div>
 
@@ -736,7 +804,9 @@
                                     <div class="grid grid-cols-2 gap-3">
                                         <div class="space-y-1">
                                             <Label class="text-[10px]"
-                                                >Lote Máx.</Label
+                                                >{$t(
+                                                    "settings.risk.growthPlan.maxLots",
+                                                )}</Label
                                             >
                                             <Input
                                                 type="number"
@@ -746,7 +816,9 @@
                                         </div>
                                         <div class="space-y-1">
                                             <Label class="text-[10px]"
-                                                >Loss Diário (R$)</Label
+                                                >{$t(
+                                                    "settings.risk.growthPlan.dailyLoss",
+                                                )}</Label
                                             >
                                             <Input
                                                 type="number"
@@ -765,12 +837,18 @@
                                         <div>
                                             <span
                                                 class="font-semibold block text-green-500"
-                                                >Progressão:</span
+                                                >{$t(
+                                                    "settings.risk.growthPlan.progression",
+                                                )}</span
                                             >
                                             <div
                                                 class="flex items-center gap-1 mt-1"
                                             >
-                                                <span>Meta de Lucro: R$</span>
+                                                <span
+                                                    >{$t(
+                                                        "settings.risk.growthPlan.profitTarget",
+                                                    )}</span
+                                                >
                                                 <Input
                                                     type="number"
                                                     class="h-6 w-16 px-1 text-xs"
@@ -815,7 +893,11 @@
                                             <div
                                                 class="flex items-center gap-1 mt-1"
                                             >
-                                                <span>Consistência: </span>
+                                                <span
+                                                    >{$t(
+                                                        "settings.risk.growthPlan.consistency",
+                                                    )}</span
+                                                >
                                                 <Input
                                                     type="number"
                                                     class="h-6 w-12 px-1 text-xs"
@@ -857,19 +939,27 @@
                                                     }}
                                                 />
                                                 <span class="text-[10px]"
-                                                    >pregões</span
+                                                    >{$t(
+                                                        "settings.risk.growthPlan.tradingSessions",
+                                                    )}</span
                                                 >
                                             </div>
                                         </div>
                                         <div>
                                             <span
                                                 class="font-semibold block text-red-500"
-                                                >Regressão:</span
+                                                >{$t(
+                                                    "settings.risk.growthPlan.regression",
+                                                )}</span
                                             >
                                             <div
                                                 class="flex items-center gap-1 mt-1"
                                             >
-                                                <span>Drawdown: R$</span>
+                                                <span
+                                                    >{$t(
+                                                        "settings.risk.growthPlan.drawdown",
+                                                    )}</span
+                                                >
                                                 <Input
                                                     type="number"
                                                     class="h-6 w-16 px-1 text-xs"
@@ -920,8 +1010,7 @@
                             <div
                                 class="text-center py-8 text-muted-foreground text-sm border border-dashed rounded-lg"
                             >
-                                Nenhuma fase configurada. Adicione a "Fase 0"
-                                para começar.
+                                {$t("settings.risk.growthPlan.noPhases")}
                             </div>
                         {/if}
                     </div>

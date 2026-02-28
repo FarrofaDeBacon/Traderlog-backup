@@ -51,6 +51,35 @@ pub async fn run_all_seeds(db: &Surreal<Db>) -> Result<(), String> {
     Ok(())
 }
 
+/// Inicialização base (Configurações, Sem dados operacionais/trades)
+pub async fn run_base_seeds(db: &Surreal<Db>) -> Result<(), String> {
+    println!("\n[SEED] 🚀 Iniciando seeding base (Configurações)...\n");
+
+    // Nível 1: Dados básicos sem dependências
+    currencies_seed::seed_currencies(db).await?;
+    markets_seed::seed_markets(db, None).await?;
+    emotional_states_seed::seed_emotional_states(db, None).await?;
+    modalities_seed::seed_modalities(db, None).await?;
+    timeframes_seed::seed_timeframes(db, None).await?;
+    user_profile_seed::seed_user_profile(db).await?;
+    tags_seed::seed_tags(db, None).await?;
+    chart_types_seed::seed_chart_types(db, None).await?;
+    fees_seed::seed_fees(db, None).await?;
+    risk_seed::seed_risk_profiles(db, None).await?;
+    tax_seed::seed_tax_rules(db).await?;
+
+    // Nível 2: Dados que dependem do Nível 1
+    asset_types_seed::seed_asset_types(db, None).await?;
+
+    // Nível 3: Dados que dependem do Nível 2
+    assets_seed::seed_assets(db, None).await?;
+    indicators_seed::seed_indicators(db, None).await?;
+    strategies_seed::seed_strategies(db, None).await?;
+
+    println!("\n[SEED] ✅ Seeding base concluído!\n");
+    Ok(())
+}
+
 /// Força o reseeding completo (deleta tudo e popula novamente)
 pub async fn force_reseed_all(db: &Surreal<Db>) -> Result<(), String> {
     println!("\n[SEED] 🔥 FORCE RESEED: Deletando todos os dados...\n");

@@ -40,7 +40,9 @@
     let groupedAccounts = $derived(
         filteredItems.reduce(
             (acc, account) => {
-                const type = account.account_type || "Outros";
+                const type =
+                    account.account_type ||
+                    $t("settings.accounts.groups.others");
                 if (!acc[type]) acc[type] = [];
                 acc[type].push(account);
                 return acc;
@@ -106,26 +108,6 @@
         }
     }
 
-    async function handleDeduplicate() {
-        if (
-            !confirm(
-                $t("settings.accounts.confirmDeduplicate") ||
-                    "Isso removerá contas duplicadas VAZIAS (sem trades). Deseja continuar?",
-            )
-        )
-            return;
-        isProcessing = true;
-        try {
-            await settingsStore.deduplicateAccounts();
-            toast.success("Limpeza de duplicatas concluída.");
-        } catch (e) {
-            console.error(e);
-            toast.error("Erro ao limpar duplicatas.");
-        } finally {
-            isProcessing = false;
-        }
-    }
-
     function requestDelete(id: string) {
         deleteId = id;
         isDeleteOpen = true;
@@ -141,7 +123,7 @@
                     isDeleteOpen = false;
                     deleteId = null;
                 } else {
-                    toast.error(result.error || "Erro ao deletar conta");
+                    toast.error(result.error || $t("general.error"));
                 }
             } finally {
                 isProcessing = false;
@@ -157,14 +139,6 @@
             <Button onclick={openNew}>
                 <Plus class="w-4 h-4 mr-2" />
                 {$t("settings.accounts.new")}
-            </Button>
-            <Button
-                variant="outline"
-                onclick={handleDeduplicate}
-                disabled={isProcessing}
-            >
-                <Trash2 class="w-4 h-4 mr-2" />
-                Remover Duplicadas
             </Button>
         </div>
     </div>
@@ -252,7 +226,9 @@
                                 >
                                     <span
                                         class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider"
-                                        >SALDO</span
+                                        >{$t(
+                                            "settings.accounts.form.balanceLabel",
+                                        )}</span
                                     >
                                     <span
                                         class="font-bold text-lg text-foreground tracking-tight"
@@ -495,7 +471,7 @@
             >
             <Button type="submit" onclick={saveAccount} disabled={isProcessing}>
                 {isProcessing
-                    ? "Salvando..."
+                    ? $t("settings.accounts.form.saving")
                     : $t("settings.accounts.form.save")}
             </Button>
         </Dialog.Footer>

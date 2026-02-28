@@ -39,7 +39,7 @@
         },
         {
             href: "/settings/license",
-            title: "Licença",
+            title: $t("settings.nav.license"),
             icon: Crown,
         },
         {
@@ -78,22 +78,22 @@
         },
 
         {
-            title: "Fiscal",
+            title: $t("settings.nav.sections.fiscal"),
             href: "sep",
         },
         {
             href: "/settings/fiscal/rules",
-            title: "Regras de Imposto",
+            title: $t("settings.nav.fiscal.rules"),
             icon: Scale,
         },
         {
             href: "/settings/fiscal/profiles",
-            title: "Perfis Fiscais",
+            title: $t("settings.nav.fiscal.profiles"),
             icon: Layers, // Using Layers for profiles/grouping
         },
         {
             href: "/settings/fiscal/assignments",
-            title: "Atribuições Fiscais",
+            title: $t("settings.nav.fiscal.assignments"),
             icon: Tag, // Using Tag for assignments
         },
 
@@ -152,7 +152,7 @@
         },
         {
             href: "/settings/database",
-            title: "Banco de Dados",
+            title: $t("settings.nav.database"),
             icon: Database,
         },
     ]);

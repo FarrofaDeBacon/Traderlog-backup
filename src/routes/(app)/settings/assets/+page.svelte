@@ -126,9 +126,11 @@
     });
 
     function getTypeName(typeId: string) {
-        if (typeId === "unknown") return "Outros";
+        if (typeId === "unknown") return $t("settings.assets.groups.others");
         const type = settingsStore.assetTypes.find((t) => t.id === typeId);
-        return type ? `${type.code} - ${type.name}` : "Desconhecido";
+        return type
+            ? `${type.code} - ${type.name}`
+            : $t("settings.assets.labels.unknown");
     }
 
     function openNew() {
@@ -402,7 +404,9 @@
                 </div>
             </div>
             <div class="grid grid-cols-4 items-center gap-4">
-                <Label class="text-right">Perfil de Corretagem</Label>
+                <Label class="text-right"
+                    >{$t("settings.assets.form.brokerageProfile")}</Label
+                >
                 <div class="col-span-3">
                     <Select.Root
                         type="single"
@@ -431,7 +435,9 @@
             </div>
 
             <div class="grid grid-cols-4 items-center gap-4">
-                <Label class="text-right">Perfil Fiscal</Label>
+                <Label class="text-right"
+                    >{$t("settings.assets.form.fiscalProfile")}</Label
+                >
                 <div class="col-span-3">
                     <Select.Root
                         type="single"
@@ -440,11 +446,14 @@
                         <Select.Trigger>
                             {settingsStore.taxProfiles.find(
                                 (p) => p.id === formData.tax_profile_id,
-                            )?.name || "Usar padrão do Tipo"}
+                            )?.name ||
+                                $t("settings.assets.form.useTypeDefault")}
                         </Select.Trigger>
                         <Select.Content>
                             <Select.Item value=""
-                                >Usar padrão do Tipo</Select.Item
+                                >{$t(
+                                    "settings.assets.form.useTypeDefault",
+                                )}</Select.Item
                             >
                             {#each settingsStore.taxProfiles as p}
                                 <Select.Item value={p.id}>{p.name}</Select.Item>

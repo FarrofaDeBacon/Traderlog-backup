@@ -22,7 +22,7 @@
         ChevronUp,
     } from "lucide-svelte";
     import { toast } from "svelte-sonner";
-    import { fade, fly, slide } from "svelte/transition";
+    import { fade, fly, slide, scale } from "svelte/transition";
     import { t, locale } from "svelte-i18n";
 
     let { onComplete } = $props();
@@ -33,9 +33,10 @@
     let progress = $state(0);
     let onboardingMeta = $state<any[]>([]);
     let expandedModules = $state<Record<string, boolean>>({});
+    let showDetailedAccounts = $state(false);
 
     let formData = $state({
-        name: "",
+        name: settingsStore.userProfile.name || "",
         main_currency: "BRL",
         language: "pt-BR",
         theme: "dark",
@@ -43,23 +44,19 @@
         selectedItems: [] as string[], // IDs selecionados (ex: "markets:m1")
         selectedAccounts: [] as string[], // Contas selecionadas (ex: "account:simulador")
         generateDemo: true,
+        expressMode: true, // New: only Real/Simulator and skip custom steps
     });
 
     const coreAccounts = [
         {
             id: "account:real",
             label: "Conta Real",
-            description: "Para suas operações reais",
+            description: "Para suas operações reais no dia a dia",
         },
         {
             id: "account:simulador",
             label: "Conta Simulador",
             description: "Para treino e backtesting (Saldo: 100k)",
-        },
-        {
-            id: "account:teste",
-            label: "Conta Teste",
-            description: "Sandbox para validação (Saldo: 100k)",
         },
     ];
 
@@ -345,11 +342,10 @@
                             />
                         </div>
                         <h1 class="text-4xl font-black tracking-tighter">
-                            Seja bem-vindo ao seu novo Hub de Performance.
+                            {$t("setup.wizard.welcome.title")}
                         </h1>
                         <p class="text-muted-foreground text-lg max-w-md">
-                            Vamos configurar seu ambiente de trading em poucos
-                            minutos. Você está pronto para subir de nível?
+                            {$t("setup.wizard.welcome.description")}
                         </p>
                     </div>
                 </div>
@@ -364,22 +360,24 @@
                             class="text-2xl font-black tracking-tight flex items-center gap-2"
                         >
                             <User class="w-6 h-6 text-primary" />
-                            Quem é você?
+                            {$t("setup.wizard.profile.title")}
                         </h2>
                         <p class="text-muted-foreground">
-                            Como gostaria de ser chamado no app?
+                            {$t("setup.wizard.profile.description")}
                         </p>
                     </div>
 
                     <div class="space-y-4 pt-4">
                         <div class="space-y-2">
                             <Label for="name" class="font-bold"
-                                >Seu Nome ou Nickname</Label
+                                >{$t("setup.wizard.profile.nameLabel")}</Label
                             >
                             <Input
                                 id="name"
                                 bind:value={formData.name}
-                                placeholder="Ex: Trader Elite"
+                                placeholder={$t(
+                                    "setup.wizard.profile.placeholder",
+                                )}
                                 class="h-12 text-lg focus-visible:ring-primary"
                             />
                         </div>
@@ -396,16 +394,18 @@
                             class="text-2xl font-black tracking-tight flex items-center gap-2"
                         >
                             <Globe class="w-6 h-6 text-primary" />
-                            Localização & Estilo
+                            {$t("setup.wizard.style.title")}
                         </h2>
                         <p class="text-muted-foreground">
-                            Defina suas preferências visuais e regionais.
+                            {$t("setup.wizard.style.description")}
                         </p>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4 pt-4">
                         <div class="space-y-2">
-                            <Label class="font-bold">Moeda Principal</Label>
+                            <Label class="font-bold"
+                                >{$t("setup.wizard.style.currency")}</Label
+                            >
                             <select
                                 bind:value={formData.main_currency}
                                 class="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -418,7 +418,9 @@
                             </select>
                         </div>
                         <div class="space-y-2">
-                            <Label class="font-bold">Idioma</Label>
+                            <Label class="font-bold"
+                                >{$t("setup.wizard.style.language")}</Label
+                            >
                             <select
                                 bind:value={formData.language}
                                 class="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -433,7 +435,9 @@
                     </div>
 
                     <div class="space-y-2 pt-4">
-                        <Label class="font-bold">Tema Visual</Label>
+                        <Label class="font-bold"
+                            >{$t("setup.wizard.style.theme")}</Label
+                        >
                         <div class="grid grid-cols-2 gap-4">
                             <button
                                 class="p-4 border-2 rounded-xl transition-all flex flex-col items-center gap-2 {formData.theme ===
@@ -479,10 +483,10 @@
                             class="text-2xl font-black tracking-tight flex items-center gap-2"
                         >
                             <Database class="w-6 h-6 text-primary" />
-                            Instalação de Dados
+                            {$t("setup.wizard.data.title")}
                         </h2>
                         <p class="text-muted-foreground">
-                            Como você deseja iniciar seu banco de dados?
+                            {$t("setup.wizard.data.description")}
                         </p>
                     </div>
 
@@ -499,12 +503,10 @@
                             </div>
                             <div class="flex-1">
                                 <h3 class="font-black text-lg">
-                                    Instalação Padrão (Recomendado)
+                                    {$t("setup.wizard.data.standard.title")}
                                 </h3>
                                 <p class="text-sm text-muted-foreground">
-                                    Instala todos os mercados (B3, Forex,
-                                    Crypto), estratégias e indicadores
-                                    pré-configurados.
+                                    {$t("setup.wizard.data.standard.desc")}
                                 </p>
                             </div>
                             {#if formData.setupMode === "standard"}
@@ -524,11 +526,10 @@
                             </div>
                             <div class="flex-1">
                                 <h3 class="font-black text-lg">
-                                    Instalação Personalizada
+                                    {$t("setup.wizard.data.custom.title")}
                                 </h3>
                                 <p class="text-sm text-muted-foreground">
-                                    Escolha exatamente quais módulos e ativos
-                                    você deseja importar agora.
+                                    {$t("setup.wizard.data.custom.desc")}
                                 </p>
                             </div>
                             {#if formData.setupMode === "custom"}
@@ -637,100 +638,206 @@
                             class="text-2xl font-black tracking-tight flex items-center gap-2"
                         >
                             <User class="w-6 h-6 text-primary" />
-                            Contas & Carteiras
+                            {$t("setup.wizard.accounts.title")}
                         </h2>
                         <p class="text-muted-foreground">
-                            Selecione quais contas você deseja criar
-                            inicialmente.
+                            {showDetailedAccounts
+                                ? $t(
+                                      "setup.wizard.accounts.description_detailed",
+                                  )
+                                : $t("setup.wizard.accounts.description_intro")}
                         </p>
                     </div>
 
-                    <div
-                        class="space-y-4 pt-2 max-h-[350px] overflow-y-auto custom-scrollbar pr-2"
-                    >
-                        <!-- Core Accounts -->
-                        <div>
-                            <h3
-                                class="text-sm font-bold uppercase text-muted-foreground mb-2"
-                            >
-                                Contas Padrão
-                            </h3>
-                            <div class="grid gap-2">
-                                {#each coreAccounts as account}
-                                    <label
-                                        class="flex items-start gap-3 p-3 border rounded-xl hover:bg-muted/50 cursor-pointer transition-all {formData.selectedAccounts.includes(
-                                            account.id,
-                                        )
-                                            ? 'border-primary bg-primary/5'
-                                            : ''}"
+                    {#if !showDetailedAccounts}
+                        <p class="text-muted-foreground">
+                            {$t("setup.wizard.accounts.description_intro")}
+                        </p>
+                        <div class="grid grid-cols-2 gap-4 pt-4">
+                            {#each coreAccounts as account}
+                                <button
+                                    class="p-6 border-2 rounded-2xl transition-all text-left flex flex-col gap-4 group {formData.selectedAccounts.includes(
+                                        account.id,
+                                    )
+                                        ? 'border-primary bg-primary/5'
+                                        : 'border-muted hover:border-primary/20'}"
+                                    onclick={() =>
+                                        toggleAccountSelection(account.id)}
+                                >
+                                    <div
+                                        class="flex justify-between items-start w-full"
                                     >
-                                        <Checkbox
-                                            checked={formData.selectedAccounts.includes(
-                                                account.id,
-                                            )}
-                                            onCheckedChange={() =>
-                                                toggleAccountSelection(
-                                                    account.id,
-                                                )}
-                                        />
-                                        <div>
-                                            <div class="font-bold text-sm">
-                                                {account.label}
-                                            </div>
-                                            <div
-                                                class="text-xs text-muted-foreground"
-                                            >
-                                                {account.description}
-                                            </div>
+                                        <div
+                                            class="bg-primary/10 p-3 rounded-xl group-hover:scale-110 transition-transform"
+                                        >
+                                            {#if account.id === "account:real"}
+                                                <Coins
+                                                    class="w-6 h-6 text-primary"
+                                                />
+                                            {:else}
+                                                <Rocket
+                                                    class="w-6 h-6 text-primary"
+                                                />
+                                            {/if}
                                         </div>
-                                    </label>
-                                {/each}
-                            </div>
+                                        {#if formData.selectedAccounts.includes(account.id)}
+                                            <div in:scale>
+                                                <CheckCircle2
+                                                    class="w-6 h-6 text-primary"
+                                                />
+                                            </div>
+                                        {/if}
+                                    </div>
+                                    <div>
+                                        <h3 class="font-black text-lg">
+                                            {account.label}
+                                        </h3>
+                                        <p
+                                            class="text-xs text-muted-foreground line-clamp-2"
+                                        >
+                                            {account.description}
+                                        </p>
+                                    </div>
+                                </button>
+                            {/each}
                         </div>
 
-                        <!-- Context Accounts -->
-                        <div>
-                            <h3
-                                class="text-sm font-bold uppercase text-muted-foreground mb-2 mt-4"
+                        <div
+                            class="flex flex-col items-center pt-8 border-t border-zinc-900 mt-4"
+                        >
+                            <p
+                                class="text-xs font-bold text-zinc-400 mb-4 text-center max-w-sm"
                             >
-                                Contas de Mercado (Sugeridas)
-                            </h3>
-                            <div class="grid gap-2">
-                                {#each Object.entries(marketAccountsMap) as [marketId, acc]}
-                                    {#if formData.selectedItems.includes(marketId)}
+                                {$t("setup.wizard.accounts.add_more_prompt")}
+                            </p>
+                            <div class="flex gap-4">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    class="rounded-full px-6 border-zinc-800 hover:bg-zinc-900"
+                                    onclick={() =>
+                                        (showDetailedAccounts = true)}
+                                >
+                                    {$t("setup.wizard.accounts.personalize")}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    class="text-zinc-500 hover:text-white"
+                                    onclick={nextStep}
+                                >
+                                    {$t("setup.wizard.accounts.skip")}
+                                </Button>
+                            </div>
+                        </div>
+                    {:else}
+                        <div
+                            class="space-y-4 pt-2 max-h-[350px] overflow-y-auto custom-scrollbar pr-2"
+                        >
+                            <!-- Core Accounts -->
+                            <div>
+                                <h3
+                                    class="text-sm font-bold uppercase text-muted-foreground mb-2"
+                                >
+                                    {$t("setup.wizard.accounts.standard_title")}
+                                </h3>
+                                <div class="grid gap-2">
+                                    {#each coreAccounts as account}
                                         <label
                                             class="flex items-start gap-3 p-3 border rounded-xl hover:bg-muted/50 cursor-pointer transition-all {formData.selectedAccounts.includes(
-                                                acc.id,
+                                                account.id,
                                             )
                                                 ? 'border-primary bg-primary/5'
                                                 : ''}"
                                         >
                                             <Checkbox
                                                 checked={formData.selectedAccounts.includes(
-                                                    acc.id,
+                                                    account.id,
                                                 )}
                                                 onCheckedChange={() =>
                                                     toggleAccountSelection(
-                                                        acc.id,
+                                                        account.id,
                                                     )}
                                             />
                                             <div>
                                                 <div class="font-bold text-sm">
-                                                    {acc.label}
+                                                    {account.label}
                                                 </div>
                                                 <div
                                                     class="text-xs text-muted-foreground"
                                                 >
-                                                    Recomendado para o módulo
-                                                    selecionado.
+                                                    {account.description}
                                                 </div>
                                             </div>
                                         </label>
-                                    {/if}
-                                {/each}
+                                    {/each}
+                                </div>
+                            </div>
+
+                            <!-- Context Accounts -->
+                            <div>
+                                <h3
+                                    class="text-sm font-bold uppercase text-muted-foreground mb-2 mt-4"
+                                >
+                                    {$t("setup.wizard.accounts.market_title")}
+                                </h3>
+                                <div class="grid gap-2">
+                                    {#each Object.entries(marketAccountsMap) as [marketId, acc]}
+                                        {#if formData.selectedItems.includes(marketId)}
+                                            <label
+                                                class="flex items-start gap-3 p-3 border rounded-xl hover:bg-muted/50 cursor-pointer transition-all {formData.selectedAccounts.includes(
+                                                    acc.id,
+                                                )
+                                                    ? 'border-primary bg-primary/5'
+                                                    : ''}"
+                                            >
+                                                <Checkbox
+                                                    checked={formData.selectedAccounts.includes(
+                                                        acc.id,
+                                                    )}
+                                                    onCheckedChange={() =>
+                                                        toggleAccountSelection(
+                                                            acc.id,
+                                                        )}
+                                                />
+                                                <div>
+                                                    <div
+                                                        class="font-bold text-sm"
+                                                    >
+                                                        {acc.label}
+                                                    </div>
+                                                    <div
+                                                        class="text-xs text-muted-foreground"
+                                                    >
+                                                        Recomendado para o
+                                                        módulo selecionado.
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        {/if}
+                                    {/each}
+                                </div>
                             </div>
                         </div>
-                    </div>
+                        <div class="pt-4 text-center">
+                            <Button
+                                variant="link"
+                                size="sm"
+                                class="text-xs text-primary font-bold"
+                                onclick={() => (showDetailedAccounts = false)}
+                            >
+                                <ChevronLeft class="w-3 h-3 mr-1" />
+                                Voltar para seleção essencial
+                            </Button>
+                        </div>
+                    {/if}
+
+                    <p
+                        class="text-[10px] text-center text-zinc-600 uppercase tracking-widest pt-2"
+                    >
+                        Lembre-se: você pode adicionar ou remover qualquer conta
+                        depois em Configurações.
+                    </p>
                 </div>
             {:else if step === 6}
                 <div

@@ -46,7 +46,7 @@
 <div
     class="grid min-h-screen w-full transition-all duration-300 bg-muted/40 md:grid-cols-[var(--sidebar-width)_1fr] {dataLoaded &&
     !settingsStore.userProfile.onboarding_completed
-        ? 'blur-sm pointer-events-none'
+        ? ''
         : ''}"
     style="--sidebar-width: {sidebarState.isCollapsed ? '70px' : '280px'};"
 >

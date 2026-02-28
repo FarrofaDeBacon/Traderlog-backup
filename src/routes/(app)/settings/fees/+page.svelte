@@ -55,7 +55,7 @@
     let groupedFees = $derived.by(() => {
         const groups: Record<string, FeeProfile[]> = {};
         for (const fee of settingsStore.fees) {
-            const broker = fee.broker || "Geral";
+            const broker = fee.broker || $t("general.all");
             if (!groups[broker]) {
                 groups[broker] = [];
             }
@@ -315,7 +315,7 @@
                     <Label>{$t("settings.fees.form.broker")}</Label>
                     <Select.Root type="single" bind:value={formData.broker}>
                         <Select.Trigger>
-                            {formData.broker || "Selecione"}
+                            {formData.broker || $t("settings.fees.form.select")}
                         </Select.Trigger>
                         <Select.Content>
                             {#each uniqueBrokers as broker}
@@ -441,7 +441,7 @@
                                     <div class="col-span-6 space-y-1">
                                         <Label
                                             class="text-[10px] uppercase text-muted-foreground"
-                                            >Nome</Label
+                                            >{$t("general.name")}</Label
                                         >
                                         <Input
                                             class="h-8 text-sm"
@@ -454,7 +454,7 @@
                                     <div class="col-span-3 space-y-1">
                                         <Label
                                             class="text-[10px] uppercase text-muted-foreground"
-                                            >Tipo</Label
+                                            >{$t("general.type")}</Label
                                         >
                                         <Select.Root
                                             type="single"
@@ -482,7 +482,7 @@
                                     <div class="col-span-3 space-y-1">
                                         <Label
                                             class="text-[10px] uppercase text-muted-foreground"
-                                            >Valor</Label
+                                            >{$t("general.value")}</Label
                                         >
                                         <Input
                                             type="number"

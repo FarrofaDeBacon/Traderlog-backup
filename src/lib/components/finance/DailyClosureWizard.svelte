@@ -134,7 +134,7 @@
                         date: formatLocalISO(selectedDate),
                         amount: data.result,
                         type: data.result >= 0 ? "Deposit" : "Withdraw",
-                        description: `${$t("finance.dailyClosure")} (${data.trades_count} trades)`,
+                        description: `${$t("finance.dailyClosure")} (${data.trades_count} ${$t("sidebar.trades").toLowerCase()})`,
                         account_id: data.account_id,
                         trade_ids: linkedTrades,
                         category: "Trading",
@@ -180,12 +180,12 @@
                 }
             }
 
-            toast.success($t("finance.closure.wizard.success"));
+            toast.success($t("finance.closureWizard.success"));
             step = 4;
         } catch (e: any) {
             console.error("[DailyClosureWizard] Closure Error:", e);
             toast.error(
-                `${$t("finance.closure.wizard.error")}: ${e.message || e}`,
+                `${$t("finance.closureWizard.error")}: ${e.message || e}`,
             );
         } finally {
             processing = false;
@@ -242,8 +242,7 @@
                             >
                                 {$t(
                                     "finance.closureWizard.step1.noTradesWarning",
-                                ) ||
-                                    "Nenhum trade encontrado para esta data. Deseja prosseguir apenas para o Diário?"}
+                                )}
                             </div>
                         {/if}
                     {/if}
@@ -305,7 +304,7 @@
                                             >{item.trades_count}</Table.Cell
                                         >
                                         <Table.Cell
-                                            class="text-right font-mono {item.result >=
+                                            class="text-right font-mono font-bold {item.result >=
                                             0
                                                 ? 'text-green-500'
                                                 : 'text-red-500'}"
@@ -345,8 +344,9 @@
                             )}</Label
                         >
                         <p class="text-sm text-muted-foreground mb-4">
-                            Registre como você estava se sentindo durante as
-                            operações.
+                            {$t(
+                                "finance.closureWizard.stepEmotion.description",
+                            )}
                         </p>
                     </div>
 
@@ -395,8 +395,16 @@
                             <div
                                 class="flex justify-between text-xs text-muted-foreground"
                             >
-                                <span>Leve</span>
-                                <span>Intenso</span>
+                                <span
+                                    >{$t(
+                                        "finance.closureWizard.stepEmotion.intensityLight",
+                                    )}</span
+                                >
+                                <span
+                                    >{$t(
+                                        "finance.closureWizard.stepEmotion.intensityIntense",
+                                    )}</span
+                                >
                             </div>
                         </div>
 
@@ -455,7 +463,7 @@
                     >{$t("general.back")}</Button
                 >
                 <Button onclick={nextStep}>
-                    {$t("general.next") || "Próximo"}
+                    {$t("general.next")}
                     <ArrowRight class="w-4 h-4 ml-2" />
                 </Button>
             {:else if step === 3}

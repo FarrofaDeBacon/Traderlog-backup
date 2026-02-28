@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from "svelte-i18n";
     import * as Card from "$lib/components/ui/card";
     import { Button } from "$lib/components/ui/button";
     import { Separator } from "$lib/components/ui/separator";
@@ -111,11 +112,10 @@
         <div>
             <h3 class="text-lg font-medium text-white flex items-center gap-2">
                 <Crown class="w-5 h-5 text-yellow-500" />
-                Gerenciamento de Licença
+                {$t("settings.license.management")}
             </h3>
             <p class="text-sm text-muted-foreground">
-                Siga os passos abaixo para ativar sua licença vitalícia ou
-                renovar sua assinatura.
+                {$t("settings.license.subtitle")}
             </p>
         </div>
         <div class="flex items-center gap-3">
@@ -131,7 +131,8 @@
                     variant="outline"
                     class="bg-blue-500/10 text-blue-500 border-blue-500/20 px-3 py-1 text-xs uppercase tracking-widest font-bold"
                 >
-                    Versão Trial ({settingsStore.trialDaysLeft} dias)
+                    {$t("settings.license.trialBadge")} ({settingsStore.trialDaysLeft}
+                    dias)
                 </Badge>
             {:else}
                 <Badge
@@ -255,10 +256,10 @@
                         class="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs"
                         >1</span
                     >
-                    Gerar PIN de Solicitação
+                    {$t("settings.license.step1")}
                 </Card.Title>
                 <Card.Description>
-                    Certifique-se de que seus dados no Perfil estão corretos.
+                    {$t("settings.license.step1Desc")}
                 </Card.Description>
             </Card.Header>
             <Card.Content class="space-y-4">
@@ -268,13 +269,14 @@
                     <div class="space-y-1">
                         <span
                             class="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter"
-                            >Seu PIN Único (Vinculado a esta máquina)</span
+                            >{$t("settings.license.pinLabel")}</span
                         >
                         <div class="flex items-center justify-between gap-2">
                             <code
                                 class="text-xl font-mono text-primary font-bold tracking-widest bg-primary/5 px-2 rounded"
                             >
-                                {customerPin || "DADOS INCOMPLETOS"}
+                                {customerPin ||
+                                    $t("settings.license.incompleteData")}
                             </code>
                             <Button
                                 variant="outline"
@@ -287,19 +289,17 @@
                                 }}
                             >
                                 <Download class="w-4 h-4 mr-2" />
-                                Copiar
+                                {$t("settings.license.copy")}
                             </Button>
                         </div>
                     </div>
                     <p class="text-xs text-zinc-400 leading-relaxed">
-                        Envie este PIN para o suporte para receber seu arquivo
-                        de licença <code>.lic</code>.
+                        {$t("settings.license.sendPinInfo")}
                     </p>
                 </div>
 
                 <div class="pt-2 text-xs text-zinc-500 italic">
-                    * O PIN é gerado a partir do seu CPF e da identificação de
-                    hardware (BIOS).
+                    {$t("settings.license.pinDisclaimer")}
                 </div>
             </Card.Content>
         </Card.Root>
@@ -312,10 +312,10 @@
                         class="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs"
                         >2</span
                     >
-                    Ativar por Arquivo
+                    {$t("settings.license.step2")}
                 </Card.Title>
                 <Card.Description>
-                    Carregue o arquivo recebido para desbloquear o sistema.
+                    {$t("settings.license.step2Desc")}
                 </Card.Description>
             </Card.Header>
             <Card.Content
@@ -328,9 +328,11 @@
                 </div>
                 <div class="text-center">
                     <p class="text-sm font-medium text-zinc-300">
-                        Nenhum arquivo selecionado
+                        {$t("settings.license.noFile")}
                     </p>
-                    <p class="text-xs text-zinc-500">Formato aceito: .lic</p>
+                    <p class="text-xs text-zinc-500">
+                        {$t("settings.license.formatAccepted")}
+                    </p>
                 </div>
                 <Button
                     class="font-bold px-8"
@@ -341,7 +343,7 @@
                         Ativando...
                     {:else}
                         <Upload class="w-4 h-4 mr-2" />
-                        Carregar Arquivo .lic
+                        {$t("settings.license.loadFile")}
                     {/if}
                 </Button>
             </Card.Content>
@@ -351,26 +353,25 @@
     <div class="bg-primary/5 rounded-lg p-6 border border-primary/20 space-y-4">
         <h4 class="font-bold text-white flex items-center gap-2">
             <ShieldCheck class="w-5 h-5 text-primary" />
-            Vantagens da Licença Vitalícia
+            {$t("settings.license.perksTitle")}
         </h4>
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div class="flex gap-3">
                 <CheckCircle2 class="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
                 <span class="text-sm text-zinc-300"
-                    >Acesso ilimitado a todas as ferramentas de diário e
-                    backtest.</span
+                    >{$t("settings.license.perk1")}</span
                 >
             </div>
             <div class="flex gap-3">
                 <CheckCircle2 class="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
                 <span class="text-sm text-zinc-300"
-                    >Sincronização automática de cotações e ativos.</span
+                    >{$t("settings.license.perk2")}</span
                 >
             </div>
             <div class="flex gap-3">
                 <CheckCircle2 class="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
                 <span class="text-sm text-zinc-300"
-                    >Relatórios psicológicos e estatísticos detalhados.</span
+                    >{$t("settings.license.perk3")}</span
                 >
             </div>
         </div>

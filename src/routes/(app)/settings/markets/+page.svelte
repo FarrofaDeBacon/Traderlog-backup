@@ -143,9 +143,9 @@
         isDeleteOpen = true;
     }
 
-    function confirmDelete() {
+    async function confirmDelete() {
         if (deleteId) {
-            settingsStore.removeMarket(deleteId);
+            await settingsStore.deleteMarket(deleteId);
             toast.success($t("general.deleteSuccess"));
             deleteId = null;
         }
@@ -265,7 +265,9 @@
                                                     )
                                                     .join(", ")}
                                             {:else}
-                                                Não configurado
+                                                {$t(
+                                                    "settings.markets.labels.notConfigured",
+                                                )}
                                             {/if}
                                         </div>
                                         <div class="flex gap-1 mt-0.5">
@@ -348,7 +350,7 @@
                 <Input
                     bind:value={formMarket.code}
                     class="col-span-3 uppercase"
-                    placeholder="Ex: B3, NYSE"
+                    placeholder={$t("settings.markets.form.codePlaceholder")}
                 />
             </div>
             <div class="grid grid-cols-4 items-center gap-4">
@@ -358,11 +360,13 @@
                 <Input
                     bind:value={formMarket.name}
                     class="col-span-3"
-                    placeholder="Ex: Bolsa de Valores do Brasil"
+                    placeholder={$t("settings.markets.form.namePlaceholder")}
                 />
             </div>
             <div class="grid grid-cols-4 items-center gap-4">
-                <Label class="text-right">Fuso Horário</Label>
+                <Label class="text-right"
+                    >{$t("settings.markets.form.timezone")}</Label
+                >
                 <div class="col-span-3">
                     <Select.Root type="single" bind:value={formMarket.timezone}>
                         <Select.Trigger>
@@ -384,7 +388,7 @@
             <Separator />
 
             <div class="space-y-4">
-                <Label>Dias de Negociação</Label>
+                <Label>{$t("settings.markets.form.tradingDays")}</Label>
                 <div class="flex gap-2">
                     {#each weekdays as day}
                         <Button
@@ -404,14 +408,15 @@
 
             <div class="space-y-4">
                 <div class="flex items-center justify-between">
-                    <Label>Sessões de Trading</Label>
+                    <Label>{$t("settings.markets.form.tradingSessions")}</Label>
                     <Button
                         variant="ghost"
                         size="sm"
                         class="h-8 px-2"
                         onclick={addSession}
                     >
-                        <Plus class="w-4 h-4 mr-1" /> Add Sessão
+                        <Plus class="w-4 h-4 mr-1" />
+                        {$t("settings.markets.form.addSession")}
                     </Button>
                 </div>
 
@@ -423,7 +428,7 @@
                             class="col-span-3"
                         />
                         <span class="text-center text-muted-foreground"
-                            >até</span
+                            >{$t("settings.markets.form.until")}</span
                         >
                         <Input
                             type="time"

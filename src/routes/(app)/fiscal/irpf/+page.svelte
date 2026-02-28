@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { toast } from "svelte-sonner";
-    import { _ } from "svelte-i18n";
+    import { _ as t } from "svelte-i18n";
     import * as Card from "$lib/components/ui/card";
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
@@ -80,7 +80,9 @@
             }, 0);
 
             result.push({
-                month: months.find((m) => m.val === i)?.label || String(i),
+                month: $t(
+                    months.find((m) => m.val === i)?.key || "general.error",
+                ),
                 taxDue: taxDueValue,
                 taxPaid: taxPaidValue,
             });
@@ -89,18 +91,18 @@
     });
 
     const months = [
-        { val: 1, label: "Janeiro" },
-        { val: 2, label: "Fevereiro" },
-        { val: 3, label: "Março" },
-        { val: 4, label: "Abril" },
-        { val: 5, label: "Maio" },
-        { val: 6, label: "Junho" },
-        { val: 7, label: "Julho" },
-        { val: 8, label: "Agosto" },
-        { val: 9, label: "Setembro" },
-        { val: 10, label: "Outubro" },
-        { val: 11, label: "Novembro" },
-        { val: 12, label: "Dezembro" },
+        { val: 1, key: "months.january" },
+        { val: 2, key: "months.february" },
+        { val: 3, key: "months.march" },
+        { val: 4, key: "months.april" },
+        { val: 5, key: "months.may" },
+        { val: 6, key: "months.june" },
+        { val: 7, key: "months.july" },
+        { val: 8, key: "months.august" },
+        { val: 9, key: "months.september" },
+        { val: 10, key: "months.october" },
+        { val: 11, key: "months.november" },
+        { val: 12, key: "months.december" },
     ];
 
     // Filter appraisals by selected month and hide paid ones
@@ -136,7 +138,7 @@
 
         // Block if not saved
         if (!idStr) {
-            toast.error("Salve a apuração antes de gerar a DARF.");
+            toast.error($t("fiscal.irpf.saveBeforeDarf"));
             return;
         }
 
@@ -208,10 +210,10 @@
                 class="text-3xl font-bold text-white tracking-tight flex items-center gap-3"
             >
                 <FileText class="w-8 h-8 text-primary" />
-                Apuração Mensal
+                {$t("fiscal.irpf.title")}
             </h2>
             <p class="text-muted-foreground mt-1">
-                Gerencie suas apurações de IRPF e emita DARFs (Regras B3).
+                {$t("fiscal.irpf.description")}
             </p>
         </div>
         <div class="flex gap-2">
@@ -221,7 +223,7 @@
                 class="border-white/10"
             >
                 <FileText class="w-4 h-4 mr-2" />
-                Gerenciar DARFs
+                {$t("fiscal.irpf.manageDarfs")}
             </Button>
 
             <Button
@@ -229,105 +231,133 @@
                 class="neon-glow bg-primary text-black font-bold"
             >
                 <Calendar class="w-4 h-4 mr-2" />
-                Nova Apuração
+                {$t("fiscal.irpf.newAppraisal")}
             </Button>
         </div>
     </div>
 
-    <!-- KPI Cards (Standardized) -->
+    <!-- KPI Cards (Standardized - Single Container for Perfect Height) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card.Root class="border-l-4 border-l-rose-500 shadow-sm bg-card">
-            <Card.Header
-                class="flex flex-row items-center justify-between space-y-0 pb-2"
-            >
-                <Card.Title class="text-sm font-medium"
-                    >Total Devido ({irpfStore.selectedYear})</Card.Title
+        <!-- Total Devido -->
+        <div
+            class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 transition-all hover:border-rose-500/30 border-l-4 border-l-rose-500"
+        >
+            <div class="flex items-start justify-between py-2 px-4">
+                <span
+                    class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
                 >
-                <DollarSign class="w-4 h-4 text-rose-500" />
-            </Card.Header>
-            <Card.Content>
-                <div class="text-2xl font-bold font-mono">
+                    {$t("fiscal.irpf.kpis.totalDue")} ({irpfStore.selectedYear})
+                </span>
+                <DollarSign class="h-3.5 w-3.5 text-rose-500" />
+            </div>
+            <div class="py-2 px-4">
+                <div
+                    class="text-base font-mono font-bold text-white uppercase tracking-tighter"
+                >
                     {formatCurrency(irpfStore.totalDue)}
                 </div>
-                <p class="text-xs text-muted-foreground mt-1">
-                    Imposto calculado no ano
+                <p class="text-[10px] text-muted-foreground mt-0.5">
+                    {$t("fiscal.irpf.kpis.dueYearHint")}
                 </p>
-            </Card.Content>
-        </Card.Root>
+            </div>
+        </div>
 
-        <Card.Root class="border-l-4 border-l-emerald-500 shadow-sm bg-card">
-            <Card.Header
-                class="flex flex-row items-center justify-between space-y-0 pb-2"
-            >
-                <Card.Title class="text-sm font-medium"
-                    >Total Pago ({irpfStore.selectedYear})</Card.Title
+        <!-- Total Pago -->
+        <div
+            class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 transition-all hover:border-emerald-500/30 border-l-4 border-l-emerald-500"
+        >
+            <div class="flex items-start justify-between py-2 px-4">
+                <span
+                    class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
                 >
-                <CheckCircle2 class="w-4 h-4 text-emerald-500" />
-            </Card.Header>
-            <Card.Content>
-                <div class="text-2xl font-bold font-mono text-emerald-500">
+                    {$t("fiscal.irpf.kpis.totalPaid")} ({irpfStore.selectedYear})
+                </span>
+                <CheckCircle2 class="h-3.5 w-3.5 text-emerald-500" />
+            </div>
+            <div class="py-2 px-4">
+                <div
+                    class="text-base font-mono font-bold text-emerald-500 uppercase tracking-tighter"
+                >
                     {formatCurrency(irpfStore.totalPaid)}
                 </div>
-                <p class="text-xs text-muted-foreground mt-1">DARFs quitadas</p>
-            </Card.Content>
-        </Card.Root>
+                <p class="text-[10px] text-muted-foreground mt-0.5">
+                    {$t("fiscal.irpf.kpis.paidYearHint")}
+                </p>
+            </div>
+        </div>
 
         <!-- Card 3: Pendente Atual -->
-        <Card.Root class="border-l-4 border-l-amber-500 shadow-sm bg-card">
-            <Card.Header
-                class="flex flex-row items-center justify-between space-y-0 pb-2"
-            >
-                <Card.Title class="text-sm font-medium"
-                    >Pendente Atual</Card.Title
+        <div
+            class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 transition-all hover:border-amber-500/30 border-l-4 border-l-amber-500"
+        >
+            <div class="flex items-start justify-between py-2 px-4">
+                <span
+                    class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
                 >
-                <AlertTriangle class="w-4 h-4 text-amber-500" />
-            </Card.Header>
-            <Card.Content>
-                <div class="text-2xl font-bold font-mono text-amber-500">
+                    {$t("fiscal.irpf.kpis.pending")}
+                </span>
+                <AlertTriangle class="h-3.5 w-3.5 text-amber-500" />
+            </div>
+            <div class="py-2 px-4">
+                <div
+                    class="text-base font-mono font-bold text-amber-500 uppercase tracking-tighter"
+                >
                     {formatCurrency(irpfStore.pendingAmount)}
                 </div>
-                <div class="flex justify-between items-center mt-1">
-                    <p class="text-xs text-muted-foreground">
-                        {irpfStore.pendingGuiasCount} guias em aberto
+                <div class="flex justify-between items-center mt-0.5">
+                    <p class="text-[10px] text-muted-foreground">
+                        {$t("fiscal.irpf.kpis.pendingHint", {
+                            values: { count: irpfStore.pendingGuiasCount },
+                        })}
                     </p>
                     <Button
                         variant="link"
                         href="/fiscal/irpf/darf"
-                        class="h-auto p-0 text-[10px] text-amber-400"
+                        class="h-auto p-0 text-[10px] text-amber-500/80 hover:text-amber-500 hover:no-underline font-bold uppercase"
                     >
                         Verificar &rarr;
                     </Button>
                 </div>
-            </Card.Content>
-        </Card.Root>
+            </div>
+        </div>
 
         <!-- Card 4: Prejuízos Acumulados -->
-        <Card.Root class="border-l-4 border-l-blue-500 shadow-sm bg-card">
-            <Card.Header
-                class="flex flex-row items-center justify-between space-y-0 pb-2"
-            >
-                <Card.Title class="text-sm font-medium"
-                    >Prejuízos Acum.</Card.Title
+        <div
+            class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 transition-all hover:border-blue-500/30 border-l-4 border-l-blue-500"
+        >
+            <div class="flex items-start justify-between py-2 px-4">
+                <span
+                    class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
                 >
-                <TrendingDown class="w-4 h-4 text-blue-500" />
-            </Card.Header>
-            <Card.Content>
-                <div class="space-y-1">
-                    <div class="flex justify-between text-xs">
-                        <span class="text-muted-foreground">Day Trade:</span>
-                        <span class="text-red-400 font-mono"
-                            >{formatCurrency(getTotalLoss("DayTrade"))}</span
-                        >
-                    </div>
-                    <div class="flex justify-between text-xs">
-                        <span class="text-muted-foreground">Swing Trade:</span>
-                        <span class="text-red-400 font-mono"
-                            >{formatCurrency(getTotalLoss("SwingTrade"))}</span
-                        >
-                    </div>
+                    {$t("fiscal.irpf.kpis.losses")}
+                </span>
+                <TrendingDown class="h-3.5 w-3.5 text-blue-500" />
+            </div>
+            <div class="py-2 px-4 space-y-1">
+                <div class="flex justify-between items-center">
+                    <span
+                        class="text-[10px] font-bold text-muted-foreground uppercase opacity-60"
+                        >Day Trade</span
+                    >
+                    <span
+                        class="text-sm font-mono font-bold text-rose-500 tabular-nums"
+                    >
+                        {formatCurrency(getTotalLoss("DayTrade"))}
+                    </span>
                 </div>
-            </Card.Content>
-        </Card.Root>
+                <div class="flex justify-between items-center">
+                    <span
+                        class="text-[10px] font-bold text-muted-foreground uppercase opacity-60"
+                        >Swing Trade</span
+                    >
+                    <span
+                        class="text-sm font-mono font-bold text-rose-500 tabular-nums"
+                    >
+                        {formatCurrency(getTotalLoss("SwingTrade"))}
+                    </span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Charts Section -->
@@ -335,7 +365,7 @@
         <Card.Root class="lg:col-span-2 bg-black/40 border-white/10 glass">
             <Card.Header>
                 <Card.Title class="text-lg font-medium"
-                    >Evolução Fiscal ({irpfStore.selectedYear})</Card.Title
+                    >{$t("fiscal.irpf.evolution")} ({irpfStore.selectedYear})</Card.Title
                 >
             </Card.Header>
             <Card.Content class="h-[300px]">
@@ -346,23 +376,24 @@
                     class="mt-2 text-[10px] text-muted-foreground flex justify-between px-2 italic"
                 >
                     <span>
-                        Diagnostic: {irpfStore.appraisals.filter(
+                        {$t("fiscal.irpf.history")}: {irpfStore.appraisals.filter(
                             (a) =>
                                 Number(a.period_year) == irpfStore.selectedYear,
-                        ).length} apurações /
-                        {irpfStore.darfs.filter((d) =>
+                        ).length} / {irpfStore.darfs.filter((d) =>
                             d.period.includes(
                                 irpfStore.selectedYear.toString(),
                             ),
-                        ).length} DARFs encontradas
+                        ).length} DARFs
                     </span>
                     <span
-                        >Mod: {Number(
-                            taxEvolutionData.reduce(
-                                (acc, curr) => acc + curr.taxDue,
-                                0,
+                        >{formatCurrency(
+                            Number(
+                                taxEvolutionData.reduce(
+                                    (acc, curr) => acc + curr.taxDue,
+                                    0,
+                                ),
                             ),
-                        ).toFixed(2)} total due chart</span
+                        )}</span
                     >
                 </div>
             </Card.Content>
@@ -373,7 +404,7 @@
             <Card.Root class="bg-black/40 border-white/10 glass">
                 <Card.Header>
                     <Card.Title class="text-sm font-medium"
-                        >Filtro de Período</Card.Title
+                        >{$t("fiscal.irpf.periodFilter")}</Card.Title
                     >
                 </Card.Header>
                 <Card.Content>
@@ -420,10 +451,10 @@
                         </div>
                         <div>
                             <h4 class="font-bold text-amber-500">
-                                Central de DARFs
+                                {$t("fiscal.darf.title")}
                             </h4>
                             <p class="text-xs text-amber-200/70 mt-1">
-                                Gerencie pagamentos, multas e impressões.
+                                {$t("fiscal.darf.description")}
                             </p>
                         </div>
                     </div>
@@ -432,7 +463,7 @@
                         class="w-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 border-amber-500/20"
                         href="/fiscal/irpf/darf"
                     >
-                        Acessar Gestão de DARFs
+                        {$t("fiscal.irpf.manageDarfs")}
                     </Button>
                 </Card.Content>
             </Card.Root>
@@ -442,7 +473,7 @@
     <!-- Appraisals List -->
     <Card.Root class="bg-black/40 border-white/10 glass">
         <Card.Header>
-            <Card.Title>Apurações Realizadas</Card.Title>
+            <Card.Title>{$t("fiscal.irpf.history")}</Card.Title>
         </Card.Header>
         <Card.Content>
             <!-- Month Filter Tabs -->
@@ -459,18 +490,18 @@
                     class="grid grid-cols-7 lg:grid-cols-13 gap-1 bg-black/20 p-1"
                 >
                     <Tabs.Trigger value="all" class="text-xs"
-                        >Todos</Tabs.Trigger
+                        >{$t("general.all")}</Tabs.Trigger
                     >
                     {#each months as m}
                         <Tabs.Trigger value={m.val.toString()} class="text-xs">
-                            {m.label.substring(0, 3)}
+                            {$t(m.key).substring(0, 3)}
                         </Tabs.Trigger>
                     {/each}
                 </Tabs.List>
             </Tabs.Root>
             {#if irpfStore.loading}
                 <div class="p-8 text-center text-muted-foreground">
-                    Carregando...
+                    {$t("general.loading")}
                 </div>
             {:else if filteredAppraisals.length === 0}
                 <div class="p-12 text-center flex flex-col items-center gap-3">
@@ -481,15 +512,17 @@
                     </div>
                     <p class="text-muted-foreground">
                         {selectedMonth === null
-                            ? `Nenhuma apuração encontrada em ${irpfStore.selectedYear}.`
-                            : `Nenhuma apuração em ${months.find((m) => m.val === selectedMonth)?.label}/${irpfStore.selectedYear}.`}
+                            ? $t("fiscal.darf.messages.emptyHistory", {
+                                  values: { year: irpfStore.selectedYear },
+                              }).replace("DARF", "")
+                            : `${$t("general.empty")} ${$t(months.find((m) => m.val === selectedMonth)?.key || "")}/${irpfStore.selectedYear}.`}
                     </p>
                     <Button
                         variant="outline"
                         onclick={() => (isAppraisalModalOpen = true)}
                         class="mt-2"
                     >
-                        Realizar Apuração Mensal
+                        {$t("fiscal.irpf.newAppraisal")}
                     </Button>
                 </div>
             {:else}
@@ -499,13 +532,27 @@
                             class="text-xs text-muted-foreground uppercase bg-black/20 border-b border-white/5"
                         >
                             <tr>
-                                <th class="px-6 py-3">Mês/Ano</th>
-                                <th class="px-6 py-3">Tipo</th>
-                                <th class="px-6 py-3 text-right">Lucro Líq.</th>
-                                <th class="px-6 py-3 text-right">A Pagar</th>
-                                <th class="px-6 py-3 text-right">Compensado</th>
-                                <th class="px-6 py-3 text-center">Status</th>
-                                <th class="px-6 py-3 text-right">Ações</th>
+                                <th class="px-6 py-3"
+                                    >{$t("fiscal.irpf.table.period")}</th
+                                >
+                                <th class="px-6 py-3"
+                                    >{$t("fiscal.irpf.table.type")}</th
+                                >
+                                <th class="px-6 py-3 text-right"
+                                    >{$t("fiscal.irpf.table.netProfit")}</th
+                                >
+                                <th class="px-6 py-3 text-right"
+                                    >{$t("fiscal.irpf.table.toPay")}</th
+                                >
+                                <th class="px-6 py-3 text-right"
+                                    >{$t("fiscal.irpf.table.compensated")}</th
+                                >
+                                <th class="px-6 py-3 text-center"
+                                    >{$t("fiscal.irpf.table.status")}</th
+                                >
+                                <th class="px-6 py-3 text-right"
+                                    >{$t("fiscal.irpf.table.actions")}</th
+                                >
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-white/5">
@@ -539,7 +586,7 @@
                                         </span>
                                     </td>
                                     <td
-                                        class="px-6 py-4 text-right font-mono {item.net_profit >=
+                                        class="px-6 py-4 text-right font-mono font-bold tabular-nums leading-none {item.net_profit >=
                                         0
                                             ? 'text-green-400'
                                             : 'text-red-400'}"
@@ -547,15 +594,15 @@
                                         {formatCurrency(item.net_profit)}
                                     </td>
                                     <td
-                                        class="px-6 py-4 text-right font-mono text-white"
+                                        class="px-6 py-4 text-right font-mono font-bold tabular-nums leading-none text-white"
                                         title={item.tax_accumulated > 0
-                                            ? `Mês: ${formatCurrency(item.tax_payable)} + Acumulado: ${formatCurrency(item.tax_accumulated)}`
+                                            ? `${$t("fiscal.irpf.modal.month")}: ${formatCurrency(item.tax_payable)} | Acum.: ${formatCurrency(item.tax_accumulated)}`
                                             : ""}
                                     >
                                         {formatCurrency(item.total_payable)}
                                     </td>
                                     <td
-                                        class="px-6 py-4 text-right font-mono text-yellow-400"
+                                        class="px-6 py-4 text-right font-mono font-bold tabular-nums leading-none text-yellow-400"
                                     >
                                         {item.compensated_loss > 0
                                             ? `-${formatCurrency(item.compensated_loss)}`
@@ -565,17 +612,23 @@
                                         {#if item.status === "Paid"}
                                             <span
                                                 class="px-2 py-1 rounded text-xs bg-green-500/10 text-green-500 border border-green-500/20"
-                                                >Pago</span
+                                                >{$t(
+                                                    "fiscal.irpf.table.paid",
+                                                )}</span
                                             >
                                         {:else if item.status === "Pending"}
                                             <span
                                                 class="px-2 py-1 rounded text-xs bg-yellow-500/10 text-yellow-500 border border-yellow-500/20"
-                                                >Pendente</span
+                                                >{$t(
+                                                    "fiscal.irpf.table.pending",
+                                                )}</span
                                             >
                                         {:else}
                                             <span
                                                 class="px-2 py-1 rounded text-xs bg-green-500/10 text-green-500 border border-green-500/20"
-                                                >OK</span
+                                                >{$t(
+                                                    "fiscal.irpf.table.ok",
+                                                )}</span
                                             >
                                         {/if}
                                     </td>
@@ -602,7 +655,9 @@
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    title="Ver DARF (Já gerada)"
+                                                    title={$t(
+                                                        "fiscal.irpf.table.alreadyGenerated",
+                                                    )}
                                                     href="/fiscal/irpf/darf"
                                                 >
                                                     <FileText
@@ -613,7 +668,9 @@
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    title="Gerar DARF"
+                                                    title={$t(
+                                                        "fiscal.irpf.table.generateDarf",
+                                                    )}
                                                     onclick={() =>
                                                         generateDarf(item)}
                                                 >
@@ -624,14 +681,18 @@
                                             {:else}
                                                 <div
                                                     class="flex items-center"
-                                                    title="Valor inferior a R$ 10,00 (Transportado)"
+                                                    title={$t(
+                                                        "fiscal.irpf.table.minTaxHint",
+                                                    )}
                                                 >
                                                     <AlertCircle
                                                         class="w-4 h-4 text-muted-foreground mr-1"
                                                     />
                                                     <span
                                                         class="text-[10px] text-muted-foreground"
-                                                        >Min R$ 10</span
+                                                        >{$t(
+                                                            "fiscal.irpf.table.minTaxAlert",
+                                                        )}</span
                                                     >
                                                 </div>
                                             {/if}
@@ -662,9 +723,9 @@
                                                 <Tooltip.Content
                                                     class="bg-zinc-950 text-white border-zinc-800 text-xs"
                                                 >
-                                                    Apurações pagas ou
-                                                    concluídas não podem ser
-                                                    excluídas.
+                                                    {$t(
+                                                        "fiscal.irpf.table.cannotDelete",
+                                                    )}
                                                 </Tooltip.Content>
                                             </Tooltip.Root>
                                         {:else}
@@ -693,9 +754,9 @@
     <Dialog.Root bind:open={isAppraisalModalOpen}>
         <Dialog.Content class="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
             <Dialog.Header>
-                <Dialog.Title>Calcular Imposto Mensal</Dialog.Title>
+                <Dialog.Title>{$t("fiscal.irpf.modal.title")}</Dialog.Title>
                 <Dialog.Description
-                    >Selecione o mês para apurar o imposto devido.</Dialog.Description
+                    >{$t("fiscal.irpf.modal.description")}</Dialog.Description
                 >
             </Dialog.Header>
 
@@ -704,7 +765,7 @@
                     class="flex flex-col md:flex-row gap-4 items-end bg-black/20 p-4 rounded-lg border border-white/5"
                 >
                     <div class="space-y-2 w-full md:w-32">
-                        <Label>Mês</Label>
+                        <Label>{$t("fiscal.irpf.modal.month")}</Label>
                         <Select.Root type="single" bind:value={appraisalMonth}>
                             <Select.Trigger
                                 class="h-10 w-full bg-black/20 border-white/10 text-white"
@@ -724,7 +785,7 @@
                         </Select.Root>
                     </div>
                     <div class="space-y-2 w-full md:w-32">
-                        <Label>Ano</Label>
+                        <Label>{$t("fiscal.irpf.modal.year")}</Label>
                         <div class="relative w-full">
                             <Input
                                 type="number"
@@ -762,9 +823,10 @@
                         disabled={irpfStore.loading}
                     >
                         {#if irpfStore.loading}
-                            Calculando...
+                            {$t("fiscal.irpf.calculating")}
                         {:else}
-                            <FileText class="w-4 h-4 mr-2" /> Calcular
+                            <FileText class="w-4 h-4 mr-2" />
+                            {$t("fiscal.irpf.calculate")}
                         {/if}
                     </Button>
                 </div>
@@ -810,7 +872,7 @@
                                                 >Lucro Bruto</span
                                             >
                                             <div
-                                                class="text-green-400 font-mono"
+                                                class="text-green-400 font-mono font-bold tabular-nums leading-none"
                                             >
                                                 {formatCurrency(
                                                     item.gross_profit,
@@ -821,7 +883,9 @@
                                             <span class="text-muted-foreground"
                                                 >Prejuízo</span
                                             >
-                                            <div class="text-red-400 font-mono">
+                                            <div
+                                                class="text-red-400 font-mono font-bold tabular-nums leading-none"
+                                            >
                                                 {formatCurrency(item.loss)}
                                             </div>
                                         </div>
@@ -833,7 +897,7 @@
                                                 >Lucro Líquido</span
                                             >
                                             <div
-                                                class="text-xl font-bold font-mono {item.net_profit >=
+                                                class="text-xl font-mono font-bold tabular-nums {item.net_profit >=
                                                 0
                                                     ? 'text-white'
                                                     : 'text-red-400'}"
@@ -855,7 +919,8 @@
                                                         class="text-muted-foreground"
                                                         >Base de Cálculo:</span
                                                     >
-                                                    <span class="font-mono"
+                                                    <span
+                                                        class="font-mono font-bold tabular-nums leading-none"
                                                         >{formatCurrency(
                                                             item.calculation_basis,
                                                         )}</span
@@ -868,7 +933,8 @@
                                                         class="text-muted-foreground"
                                                         >Alíquota:</span
                                                     >
-                                                    <span class="font-mono"
+                                                    <span
+                                                        class="font-mono font-bold tabular-nums leading-none"
                                                         >{item.tax_rate}%</span
                                                     >
                                                 </div>
@@ -879,7 +945,8 @@
                                                         class="text-muted-foreground"
                                                         >Imposto Devido:</span
                                                     >
-                                                    <span class="font-mono"
+                                                    <span
+                                                        class="font-mono font-bold tabular-nums leading-none"
                                                         >{formatCurrency(
                                                             item.tax_due,
                                                         )}</span
@@ -893,7 +960,8 @@
                                                             class="text-muted-foreground"
                                                             >IRRF (Dedo-Duro):</span
                                                         >
-                                                        <span class="font-mono"
+                                                        <span
+                                                            class="font-mono font-bold tabular-nums leading-none"
                                                             >-{formatCurrency(
                                                                 item.withheld_tax,
                                                             )}</span
@@ -909,7 +977,8 @@
                                                             >Crédito IRRF
                                                             Aplicado:</span
                                                         >
-                                                        <span class="font-mono"
+                                                        <span
+                                                            class="font-mono font-bold tabular-nums leading-none"
                                                             >-{formatCurrency(
                                                                 item.withholding_credit_used,
                                                             )}</span
@@ -924,7 +993,7 @@
                                                         >Imposto do Mês:</span
                                                     >
                                                     <span
-                                                        class="font-mono text-white"
+                                                        class="font-mono font-bold tabular-nums leading-none text-white"
                                                         >{formatCurrency(
                                                             item.tax_payable,
                                                         )}</span
@@ -939,7 +1008,8 @@
                                                             >Saldo IRRF p/
                                                             Futuro:</span
                                                         >
-                                                        <span class="font-mono"
+                                                        <span
+                                                            class="font-mono font-bold tabular-nums leading-none"
                                                             >{formatCurrency(
                                                                 item.withholding_credit_remaining,
                                                             )}</span
@@ -955,7 +1025,7 @@
                                                             >Acumulado Anterior:</span
                                                         >
                                                         <span
-                                                            class="font-mono text-yellow-400"
+                                                            class="font-black tabular-nums leading-none text-yellow-400"
                                                             >+{formatCurrency(
                                                                 item.tax_accumulated,
                                                             )}</span

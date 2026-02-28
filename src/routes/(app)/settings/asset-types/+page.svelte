@@ -80,7 +80,8 @@
         const groups: Record<string, AssetType[]> = {};
         for (const type of settingsStore.assetTypes) {
             const marketCode =
-                settingsStore.getMarketCode(type.market_id) || "Outros";
+                settingsStore.getMarketCode(type.market_id) ||
+                $t("settings.assets.groups.others");
             if (!groups[marketCode]) {
                 groups[marketCode] = [];
             }
@@ -165,7 +166,9 @@
                                 <div class="flex items-center gap-2">
                                     <span
                                         class="text-[10px] text-muted-foreground font-medium uppercase min-w-[80px]"
-                                        >Perfil Fiscal:</span
+                                        >{$t(
+                                            "settings.assetTypes.labels.fiscalProfile",
+                                        )}:</span
                                     >
                                     <Badge
                                         variant="outline"
@@ -173,13 +176,18 @@
                                     >
                                         {settingsStore.taxProfiles.find(
                                             (p) => p.id === type.tax_profile_id,
-                                        )?.name || "Padrão"}
+                                        )?.name ||
+                                            $t(
+                                                "settings.assetTypes.labels.default",
+                                            )}
                                     </Badge>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <span
                                         class="text-[10px] text-muted-foreground font-medium uppercase min-w-[80px]"
-                                        >Corretagem:</span
+                                        >{$t(
+                                            "settings.assetTypes.labels.brokerageProfile",
+                                        )}:</span
                                     >
                                     <Badge
                                         variant="outline"
@@ -187,7 +195,10 @@
                                     >
                                         {settingsStore.fees.find(
                                             (f) => f.id === type.default_fee_id,
-                                        )?.name || "Nenhuma"}
+                                        )?.name ||
+                                            $t(
+                                                "settings.assetTypes.labels.none",
+                                            )}
                                     </Badge>
                                 </div>
                             </div>
@@ -286,7 +297,9 @@
                 <Input
                     bind:value={formData.unit_label}
                     class="col-span-3"
-                    placeholder="Pts, Contratos, Ações..."
+                    placeholder={$t(
+                        "settings.assetTypes.form.unitLabelPlaceholder",
+                    )}
                 />
             </div>
             <div class="grid grid-cols-4 items-center gap-4">
@@ -300,13 +313,23 @@
                     >
                         <Select.Trigger>
                             {formData.result_type === "points"
-                                ? "Pontos"
-                                : "Moeda (Financeiro)"}
+                                ? $t(
+                                      "settings.assetTypes.form.resultTypeOptions.points",
+                                  )
+                                : $t(
+                                      "settings.assetTypes.form.resultTypeOptions.currency",
+                                  )}
                         </Select.Trigger>
                         <Select.Content>
-                            <Select.Item value="points">Pontos</Select.Item>
+                            <Select.Item value="points"
+                                >{$t(
+                                    "settings.assetTypes.form.resultTypeOptions.points",
+                                )}</Select.Item
+                            >
                             <Select.Item value="currency"
-                                >Moeda (Financeiro)</Select.Item
+                                >{$t(
+                                    "settings.assetTypes.form.resultTypeOptions.currency",
+                                )}</Select.Item
                             >
                         </Select.Content>
                     </Select.Root>
@@ -316,7 +339,9 @@
             <Separator class="my-2" />
 
             <div class="grid grid-cols-4 items-center gap-4">
-                <Label class="text-right">Perfil Fiscal</Label>
+                <Label class="text-right"
+                    >{$t("settings.assetTypes.labels.fiscalProfile")}</Label
+                >
                 <div class="col-span-3">
                     <Select.Root
                         type="single"
@@ -325,10 +350,15 @@
                         <Select.Trigger>
                             {settingsStore.taxProfiles.find(
                                 (p) => p.id === formData.tax_profile_id,
-                            )?.name || "Nenhum (Isento)"}
+                            )?.name ||
+                                $t("settings.assetTypes.labels.noneExempt")}
                         </Select.Trigger>
                         <Select.Content>
-                            <Select.Item value="">Nenhum (Isento)</Select.Item>
+                            <Select.Item value=""
+                                >{$t(
+                                    "settings.assetTypes.labels.noneExempt",
+                                )}</Select.Item
+                            >
                             {#each settingsStore.taxProfiles as p}
                                 <Select.Item value={p.id}>{p.name}</Select.Item>
                             {/each}
@@ -338,7 +368,9 @@
             </div>
 
             <div class="grid grid-cols-4 items-center gap-4">
-                <Label class="text-right">Perfil de Corretagem</Label>
+                <Label class="text-right"
+                    >{$t("settings.assetTypes.labels.brokerageProfile")}</Label
+                >
                 <div class="col-span-3">
                     <Select.Root
                         type="single"
@@ -347,10 +379,15 @@
                         <Select.Trigger>
                             {settingsStore.fees.find(
                                 (f) => f.id === formData.default_fee_id,
-                            )?.name || "Nenhum (Padrão)"}
+                            )?.name ||
+                                $t("settings.assetTypes.labels.noneDefault")}
                         </Select.Trigger>
                         <Select.Content>
-                            <Select.Item value="">Nenhum (Padrão)</Select.Item>
+                            <Select.Item value=""
+                                >{$t(
+                                    "settings.assetTypes.labels.noneDefault",
+                                )}</Select.Item
+                            >
                             {#each settingsStore.fees as f}
                                 <Select.Item value={f.id}>{f.name}</Select.Item>
                             {/each}

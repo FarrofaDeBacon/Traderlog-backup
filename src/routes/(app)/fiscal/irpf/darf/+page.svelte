@@ -16,6 +16,7 @@
         AlertTriangle,
         Undo2,
     } from "lucide-svelte";
+    import { _ as t } from "svelte-i18n";
     import { irpfStore } from "$lib/stores/irpfStore.svelte";
     import { settingsStore } from "$lib/stores/settings.svelte"; // Import settingsStore
     import * as Select from "$lib/components/ui/select";
@@ -78,7 +79,7 @@
 
     async function confirmPayment() {
         if (!paymentData.accountId) {
-            toast.error("Selecione uma conta de origem.");
+            toast.error($t("fiscal.darf.accountError"));
             return;
         }
         try {
@@ -223,14 +224,14 @@
             </Button>
             <div>
                 <h2 class="text-2xl font-bold text-white tracking-tight">
-                    Gerenciamento de DARFs
+                    {$t("fiscal.darf.title")}
                 </h2>
                 <p class="text-muted-foreground">
-                    Central de pagamentos e histórico fiscal.
+                    {$t("fiscal.darf.description")}
                 </p>
             </div>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5">
             <Select.Root
                 type="single"
                 value={selectedYear.toString()}
@@ -255,7 +256,8 @@
                 </Select.Content>
             </Select.Root>
             <Button variant="outline" onclick={loadData}>
-                <Undo2 class="w-4 h-4 mr-2" /> Atualizar
+                <Undo2 class="w-4 h-4 mr-2" />
+                {$t("general.reload")}
             </Button>
         </div>
     </div>
@@ -264,71 +266,83 @@
     {#if pendingDarfs.length > 0}
         <div>
             <h3
-                class="text-lg font-semibold text-white mb-4 flex items-center gap-2"
+                class="text-lg font-semibold text-white mb-4 flex items-center gap-1.5"
             >
                 <AlertTriangle class="w-5 h-5 text-amber-500" />
-                Guias em Aberto
+                {$t("fiscal.darf.active")}
             </h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
                 {#each pendingDarfs as item}
                     <Card.Root
-                        class="bg-black/40 border-l-4 border-l-amber-500 border-y border-r border-white/10 glass relative overflow-hidden group hover:border-r-amber-500/30 transition-all"
+                        class="bg-black/40 border-l-4 border-l-amber-500 border-y border-r border-white/10 glass relative overflow-hidden group hover:border-r-amber-500/30 transition-all hover:shadow-md"
                     >
-                        <div class="absolute top-0 right-0 p-4 flex gap-2">
+                        <div
+                            class="absolute top-0 right-0 p-1.5 flex gap-1 z-10"
+                        >
                             {#if item.due_date < new Date()
                                     .toISOString()
                                     .split("T")[0]}
                                 <span
-                                    class="px-2 py-1 rounded text-xs font-bold text-red-500 bg-red-500/10 border border-red-500/20"
+                                    class="px-1.5 py-0.5 rounded-[4px] text-[8px] font-black uppercase tracking-tighter text-red-500 bg-red-500/10 border border-red-500/20"
                                 >
-                                    Atrasado
+                                    {$t("fiscal.darf.status.late")}
                                 </span>
                             {:else}
                                 <span
-                                    class="px-2 py-1 rounded text-xs font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20"
+                                    class="px-1.5 py-0.5 rounded-[4px] text-[8px] font-black uppercase tracking-tighter text-amber-500 bg-amber-500/10 border border-amber-500/20"
                                 >
-                                    Pendente
+                                    {$t("fiscal.darf.status.pending")}
                                 </span>
                             {/if}
                         </div>
 
-                        <Card.Header>
-                            <Card.Title class="flex items-center gap-2">
-                                <FileText class="w-5 h-5 text-primary" />
-                                DARF {item.period}
-                            </Card.Title>
-                            <Card.Description
-                                >Cód: {item.revenue_code}</Card.Description
-                            >
-                        </Card.Header>
-
-                        <Card.Content class="space-y-4">
-                            <div class="space-y-1">
+                        <Card.Content class="py-0.5 px-2 space-y-1">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-1.5">
+                                    <FileText class="w-3 h-3 text-primary" />
+                                    <span
+                                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
+                                        >DARF {item.period}</span
+                                    >
+                                </div>
                                 <span
-                                    class="text-xs text-muted-foreground uppercase"
-                                    >Valor a Pagar</span
+                                    class="text-[8px] font-bold opacity-70 leading-none"
+                                    >Cód: {item.revenue_code}</span
+                                >
+                            </div>
+
+                            <div class="mt-0">
+                                <span
+                                    class="text-[9px] text-muted-foreground uppercase leading-none block"
+                                    >{$t("fiscal.darf.labels.valueToPay")}</span
                                 >
                                 <div
-                                    class="text-2xl font-bold font-mono text-white"
+                                    class="text-base font-black text-white tabular-nums tracking-tight leading-none mt-0.5"
                                 >
                                     {formatCurrency(item.total_value)}
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div class="grid grid-cols-2 gap-1.5 text-[10px]">
                                 <div>
-                                    <span class="text-muted-foreground block"
-                                        >Vencimento</span
+                                    <span
+                                        class="text-muted-foreground block uppercase font-medium"
+                                        >{$t(
+                                            "fiscal.darf.labels.dueDate",
+                                        )}</span
                                     >
-                                    <span class="text-white"
+                                    <span class="text-white font-medium"
                                         >{formatDate(item.due_date)}</span
                                     >
                                 </div>
                                 <div>
-                                    <span class="text-muted-foreground block"
-                                        >Principal</span
+                                    <span
+                                        class="text-muted-foreground block uppercase font-medium"
+                                        >{$t(
+                                            "fiscal.darf.labels.principal",
+                                        )}</span
                                     >
-                                    <span class="text-white"
+                                    <span class="text-white font-medium"
                                         >{formatCurrency(
                                             item.principal_value,
                                         )}</span
@@ -338,29 +352,34 @@
                         </Card.Content>
 
                         <Card.Footer
-                            class="bg-black/20 border-t border-white/5 p-4 flex justify-end gap-2"
+                            class="bg-black/20 border-t border-white/5 p-1.5 flex justify-end gap-1.5"
                         >
                             <Button
                                 variant="outline"
                                 size="sm"
+                                class="h-7 w-7 p-0"
                                 onclick={() => openViewModal(item)}
                             >
-                                <Eye class="w-4 h-4 mr-2" />
+                                <Eye class="w-3 h-3" />
                             </Button>
                             <Button
                                 variant="default"
                                 size="sm"
-                                class="bg-green-600 hover:bg-green-700 text-white flex-1"
+                                class="bg-green-600 hover:bg-green-700 text-white h-7 text-[10px] font-bold uppercase tracking-wide flex-1"
                                 onclick={() => openPayModal(item)}
                             >
-                                <DollarSign class="w-4 h-4 mr-2" /> Pagar
+                                <DollarSign class="w-3 h-3 mr-1" />
+                                {$t("fiscal.darf.buttons.pay")}
                             </Button>
                             <Button
                                 variant="ghost"
                                 size="icon"
+                                class="h-7 w-7 p-0 hover:bg-red-500/10"
                                 onclick={() => deleteDarf(item)}
                             >
-                                <Trash2 class="w-4 h-4 text-red-400" />
+                                <Trash2
+                                    class="w-3 h-3 text-red-400 group-hover:text-red-500"
+                                />
                             </Button>
                         </Card.Footer>
                     </Card.Root>
@@ -372,21 +391,23 @@
     <!-- History/Paid DARFs (List) -->
     <div class="mt-8">
         <h3
-            class="text-lg font-semibold text-white mb-4 flex items-center gap-2"
+            class="text-lg font-semibold text-white mb-4 flex items-center gap-1.5"
         >
             <CheckCircle class="w-5 h-5 text-green-500" />
-            Histórico de Pagamentos ({selectedYear})
+            {$t("fiscal.darf.history", { values: { year: selectedYear } })}
         </h3>
 
         {#if irpfStore.loading}
             <div class="p-8 text-center text-muted-foreground">
-                Carregando...
+                {$t("fiscal.darf.messages.loading")}
             </div>
         {:else if historyDarfs.length === 0}
             <div
                 class="p-8 text-center border border-dashed border-white/10 rounded-lg text-muted-foreground"
             >
-                Nenhum histórico encontrado para {selectedYear}.
+                {$t("fiscal.darf.emptyHistory", {
+                    values: { year: selectedYear },
+                })}
             </div>
         {:else}
             <div
@@ -397,14 +418,27 @@
                         class="bg-black/20 text-xs uppercase text-muted-foreground border-b border-white/5"
                     >
                         <tr>
-                            <th class="px-6 py-3">Período</th>
-                            <th class="px-6 py-3">Cód. Receita</th>
-                            <th class="px-6 py-3 text-right">Valor Principal</th
+                            <th class="px-6 py-3"
+                                >{$t("fiscal.irpf.table.period")}</th
                             >
-                            <th class="px-6 py-3 text-right">Multa/Juros</th>
-                            <th class="px-6 py-3 text-right">Total Pago</th>
-                            <th class="px-6 py-3">Status</th>
-                            <th class="px-6 py-3 text-right">Ações</th>
+                            <th class="px-6 py-3"
+                                >{$t("fiscal.darf.revenueCode")}</th
+                            >
+                            <th class="px-6 py-3 text-right"
+                                >{$t("fiscal.darf.principalValue")}</th
+                            >
+                            <th class="px-6 py-3 text-right"
+                                >{$t("fiscal.darf.fineInterest")}</th
+                            >
+                            <th class="px-6 py-3 text-right"
+                                >{$t("fiscal.darf.totalPaid")}</th
+                            >
+                            <th class="px-6 py-3"
+                                >{$t("fiscal.irpf.table.status")}</th
+                            >
+                            <th class="px-6 py-3 text-right"
+                                >{$t("fiscal.irpf.table.actions")}</th
+                            >
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/5">
@@ -439,7 +473,8 @@
                                     <span
                                         class="px-2 py-1 rounded-full text-xs font-bold bg-green-500/10 text-green-500 border border-green-500/20 flex w-fit items-center gap-1"
                                     >
-                                        <CheckCircle class="w-3 h-3" /> Pago
+                                        <CheckCircle class="w-3 h-3" />
+                                        {$t("fiscal.irpf.table.paid")}
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-right">
@@ -475,22 +510,26 @@
         <Dialog.Root bind:open={isPayModalOpen}>
             <Dialog.Content class="sm:max-w-[425px]">
                 <Dialog.Header>
-                    <Dialog.Title>Registrar Pagamento</Dialog.Title>
+                    <Dialog.Title
+                        >{$t("fiscal.darf.registerPayment")}</Dialog.Title
+                    >
                     <Dialog.Description
-                        >Informe os dados do pagamento e a conta de origem.</Dialog.Description
+                        >{$t(
+                            "fiscal.darf.paymentDescription",
+                        )}</Dialog.Description
                     >
                 </Dialog.Header>
                 <div class="grid gap-4 py-4">
                     <div class="space-y-1">
-                        <Label>Valor Principal</Label>
-                        <div class="font-mono text-xl text-white">
+                        <Label>{$t("fiscal.darf.labels.principal")}</Label>
+                        <div class="font-mono font-bold tabular-nums">
                             {formatCurrency(paymentData.principal)}
                         </div>
                     </div>
 
                     <div class="space-y-2">
-                        <Label>Conta de Origem</Label>
-                        <div class="flex flex-col gap-2">
+                        <Label>{$t("fiscal.darf.sourceAccount")}</Label>
+                        <div class="flex flex-col gap-1.5">
                             <Select.Root
                                 type="single"
                                 bind:value={paymentData.accountId}
@@ -500,7 +539,8 @@
                                 >
                                     {settingsStore.accounts.find(
                                         (a) => a.id === paymentData.accountId,
-                                    )?.nickname || "Selecione uma conta..."}
+                                    )?.nickname ||
+                                        $t("fiscal.darf.selectAccount")}
                                 </Select.Trigger>
                                 <Select.Content
                                     class="bg-zinc-950 border-zinc-800"
@@ -521,7 +561,9 @@
 
                             {#if !paymentData.accountId}
                                 <span class="text-xs text-red-400"
-                                    >Selecione uma conta para debitar.</span
+                                    >{$t(
+                                        "fiscal.darf.modal.pay.noAccount",
+                                    )}</span
                                 >
                             {/if}
                         </div>
@@ -529,7 +571,7 @@
 
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-2">
-                            <Label>Multa (R$)</Label>
+                            <Label>{$t("fiscal.darf.labels.fine")}</Label>
                             <Input
                                 type="number"
                                 step="0.01"
@@ -539,7 +581,7 @@
                             />
                         </div>
                         <div class="space-y-2">
-                            <Label>Juros (R$)</Label>
+                            <Label>{$t("fiscal.darf.labels.interest")}</Label>
                             <Input
                                 type="number"
                                 step="0.01"
@@ -550,7 +592,7 @@
                         </div>
                     </div>
                     <div class="space-y-2">
-                        <Label>Data do Pagamento</Label>
+                        <Label>{$t("fiscal.darf.labels.paymentDate")}</Label>
                         <Input
                             type="date"
                             bind:value={paymentData.date}
@@ -560,8 +602,10 @@
                     <div
                         class="space-y-1 pt-4 border-t border-white/10 flex justify-between items-end"
                     >
-                        <Label class="text-base">Valor Total Pago</Label>
-                        <div class="font-mono text-2xl font-bold text-primary">
+                        <Label class="text-base"
+                            >{$t("fiscal.darf.labels.totalPaid")}</Label
+                        >
+                        <div class="font-mono font-bold tabular-nums">
                             {formatCurrency(paymentData.total)}
                         </div>
                     </div>
@@ -570,14 +614,15 @@
                     <Button
                         variant="outline"
                         onclick={() => (isPayModalOpen = false)}
-                        >Cancelar</Button
+                        >{$t("fiscal.darf.buttons.cancel")}</Button
                     >
                     <Button
                         class="neon-glow bg-primary text-black font-bold"
                         disabled={!paymentData.accountId}
                         onclick={confirmPayment}
                     >
-                        <CheckCircle class="w-4 h-4 mr-2" /> Confirmar Pagamento
+                        <CheckCircle class="w-4 h-4 mr-2" />
+                        {$t("fiscal.darf.buttons.confirmPay")}
                     </Button>
                 </Dialog.Footer>
             </Dialog.Content>
@@ -593,19 +638,23 @@
         <Dialog.Root bind:open={isDeleteModalOpen}>
             <Dialog.Content class="sm:max-w-[400px]">
                 <Dialog.Header>
-                    <Dialog.Title>Confirmar Exclusão</Dialog.Title>
+                    <Dialog.Title
+                        >{$t("fiscal.darf.modal.delete.title")}</Dialog.Title
+                    >
                     <Dialog.Description
-                        >Tem certeza que deseja excluir esta DARF?</Dialog.Description
+                        >{$t(
+                            "fiscal.darf.modal.delete.prompt",
+                        )}</Dialog.Description
                     >
                 </Dialog.Header>
                 <Dialog.Footer>
                     <Button
                         variant="outline"
                         onclick={() => (isDeleteModalOpen = false)}
-                        >Cancelar</Button
+                        >{$t("fiscal.darf.buttons.cancel")}</Button
                     >
                     <Button variant="destructive" onclick={confirmDelete}
-                        >Excluir</Button
+                        >{$t("fiscal.darf.buttons.delete")}</Button
                     >
                 </Dialog.Footer>
             </Dialog.Content>
@@ -615,28 +664,29 @@
         <Dialog.Root bind:open={isUnpayModalOpen}>
             <Dialog.Content class="sm:max-w-[400px]">
                 <Dialog.Header>
-                    <Dialog.Title>Desfazer Pagamento</Dialog.Title>
+                    <Dialog.Title
+                        >{$t("fiscal.darf.modal.unpay.title")}</Dialog.Title
+                    >
                     <Dialog.Description>
-                        Isso irá reverter o status da DARF para <b>Pendente</b>
-                        e estornar o valor de
+                        {$t("fiscal.darf.modal.unpay.descriptionLine1")}
                         <b
                             >{darfToUnpay
                                 ? formatCurrency(darfToUnpay.total_value)
                                 : ""}</b
                         >
-                        para a conta de origem.
+                        {$t("fiscal.darf.modal.unpay.descriptionLine2")}
                         <br /><br />
-                        A transação de saída será removida do Hub Financeiro.
+                        {$t("fiscal.darf.modal.unpay.descriptionLine3")}
                     </Dialog.Description>
                 </Dialog.Header>
                 <Dialog.Footer>
                     <Button
                         variant="outline"
                         onclick={() => (isUnpayModalOpen = false)}
-                        >Cancelar</Button
+                        >{$t("fiscal.darf.buttons.cancel")}</Button
                     >
                     <Button variant="default" onclick={confirmUnpay}
-                        >Confirmar Estorno</Button
+                        >{$t("fiscal.darf.buttons.confirmUnpay")}</Button
                     >
                 </Dialog.Footer>
             </Dialog.Content>

@@ -8,7 +8,7 @@
     import { settingsStore } from "$lib/stores/settings.svelte";
     import { toast } from "svelte-sonner";
     import { t } from "svelte-i18n";
-    import { formatLocalISO } from "$lib/utils";
+    import { formatLocalISO, cn } from "$lib/utils";
     import {
         ArrowRight,
         ArrowRightLeft,
@@ -138,7 +138,7 @@
                     description ||
                     (sameCurrency
                         ? $t("finance.transactionDialog.defaults.transfer")
-                        : `FX Rate: ${exchangeRate}`),
+                        : `${$t("finance.transactionDialog.fxRate")}: ${exchangeRate}`),
             });
 
             if (result.success) {
@@ -283,7 +283,7 @@
                                 type="number"
                                 step="0.01"
                                 bind:value={amount}
-                                class="pl-8"
+                                class="pl-8 font-mono font-bold"
                                 placeholder="0.00"
                             />
                             <div
@@ -390,6 +390,7 @@
                             bind:value={transferAmount}
                             oninput={handleTransferSourceChange}
                             placeholder="0.00"
+                            class="font-mono font-bold"
                         />
                     </div>
 
@@ -406,7 +407,7 @@
                                 bind:value={feePercent}
                                 oninput={handleTransferSourceChange}
                                 placeholder="0"
-                                class="text-red-500 pr-0 text-center"
+                                class="text-red-500 pr-0 text-center font-mono font-bold"
                             />
                         </div>
                     </div>
@@ -429,9 +430,10 @@
                             readonly={sameCurrency}
                             oninput={handleTransferDestChange}
                             placeholder="0.00"
-                            class={sameCurrency
-                                ? "bg-muted"
-                                : "font-bold text-green-600"}
+                            class={cn(
+                                "font-mono font-bold",
+                                sameCurrency ? "bg-muted" : "text-green-600",
+                            )}
                         />
                     </div>
 
@@ -448,7 +450,7 @@
                         <ArrowRightLeft class="w-3 h-3" />
                         <span>1 {fromAccount?.currency} = </span>
                         <Input
-                            class="w-20 h-6 text-xs bg-transparent border-yellow-500/30 p-1"
+                            class="w-20 h-6 text-xs bg-transparent border-yellow-500/30 p-1 font-mono font-bold"
                             type="number"
                             step="0.0001"
                             bind:value={exchangeRate}
@@ -473,7 +475,9 @@
             <Button variant="outline" onclick={() => (open = false)}
                 >{$t("general.cancel")}</Button
             >
-            <Button onclick={save}>{$t("general.confirm")}</Button>
+            <Button onclick={save}
+                >{$t("finance.transactionDialog.newOperation")}</Button
+            >
         </Dialog.Footer>
     </Dialog.Content>
 </Dialog.Root>

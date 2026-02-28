@@ -48,15 +48,16 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div class="space-y-0.5">
-            <h3 class="text-lg font-medium">Perfis Fiscais</h3>
+            <h3 class="text-lg font-medium">
+                {$t("settings.fiscal.profiles.title")}
+            </h3>
             <p class="text-sm text-muted-foreground">
-                Agrupe regras fiscais por modalidade (ex: Perfil "Ações Brasil"
-                contém regra de Day Trade e Swing Trade).
+                {$t("settings.fiscal.profiles.description")}
             </p>
         </div>
         <Button onclick={openNewProfile}>
             <Plus class="w-4 h-4 mr-2" />
-            Novo Perfil
+            {$t("settings.fiscal.profiles.new")}
         </Button>
     </div>
 
@@ -101,7 +102,7 @@
                     <h5
                         class="text-xs font-semibold uppercase text-muted-foreground mb-2"
                     >
-                        Regras Vinculadas
+                        {$t("settings.fiscal.profiles.linkedRules")}
                     </h5>
                     {#each settingsStore.getEntriesForProfile(profile.id) as entry}
                         {#if settingsStore.taxRules.find((r) => r.id === entry.tax_rule_id)}
@@ -127,7 +128,7 @@
                         {/if}
                     {:else}
                         <div class="text-xs text-muted-foreground italic p-2">
-                            Sem regras vinculadas.
+                            {$t("settings.fiscal.profiles.noLinkedRules")}
                         </div>
                     {/each}
                 </div>
@@ -137,9 +138,9 @@
                 class="col-span-full flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg text-muted-foreground h-[200px]"
             >
                 <ArrowRightLeft class="w-8 h-8 mb-2 opacity-20" />
-                <span>Nenhum Perfil de Imposto criado</span>
+                <span>{$t("settings.fiscal.profiles.empty")}</span>
                 <Button variant="link" onclick={openNewProfile}
-                    >Criar perfil</Button
+                    >{$t("settings.fiscal.profiles.create")}</Button
                 >
             </div>
         {/each}
