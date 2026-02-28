@@ -44,8 +44,6 @@
         "show": "Show",
         "optional": "Optional",
         "close": "Close",
-        "yes": "Yes",
-        "no": "No",
         "time": {
             "month": "month",
             "months": "months",
@@ -493,14 +491,6 @@
                 "s": "Y",
                 "n": "N"
             },
-            "risk": {
-                "alerts_title": "Risk Alerts",
-                "emotional_warning": "Recent emotional state ({weight}) below threshold ({threshold}). Suggestion: reduce lot by {percent}%.",
-                "outlier_warning": "Outlier loss detected in analysis window. Recommended to pause and review strategy.",
-                "sniper_warning": "Selectivity limit reached ({current}/{limit} trades).",
-                "reduce_lot_button": "Reduce Lot by {percent}% Now",
-                "toast_lot_adjusted": "Lot adjusted preventively according to Risk Engine suggestion."
-            },
             "partials": {
                 "executed_volume": "Executed Volume",
                 "remaining": "Remaining",
@@ -572,29 +562,6 @@
         "description": "Centralized cash management, statements and closures.",
         "dailyClosure": "Daily Closure",
         "newTransaction": "New Deposit/Withdrawal",
-        "darfDetails": {
-            "title": "DARF Payment Details",
-            "description": "Detailed information about the tax collected.",
-            "loading": "Fetching DARF data...",
-            "period": "Accrual Period",
-            "statusPaid": "Paid",
-            "statusPending": "Pending",
-            "complementaryBadge": "Complementary DARF",
-            "revenueCode": "Revenue Code",
-            "dueDate": "Due Date",
-            "calculationInfo": "Calculation Basis Breakdown",
-            "grossResult": "Gross Result",
-            "compensatedLosses": "Compensated Losses",
-            "calculationBasis": "Calculation Basis",
-            "taxRate": "Applied Tax Rate",
-            "principalValue": "Principal Value",
-            "fine": "Fine",
-            "interest": "Interest",
-            "totalPaid": "Total Paid",
-            "paidAt": "Paid on",
-            "dateNotAvailable": "Date not available",
-            "errorMessage": "Could not load the details for this DARF."
-        },
         "quickStats": {
             "totalBalance": "Total Balance (Est.)",
             "activeAccounts": "Active Accounts",
@@ -1196,30 +1163,6 @@
                 "Prop": "Prop Firm",
                 "Real": "Real Account",
                 "Demo": "Demo Account"
-            },
-            "engine": {
-                "title": "Risk Engine",
-                "psychological": {
-                    "title": "Psychological Coupling",
-                    "description": "Adjusts risk based on mindset ({count} trades lookback).",
-                    "strategy": "Search Strategy",
-                    "strategyStrict": "Data-only",
-                    "strategySequence": "Latest trades",
-                    "lookback": "Sample Count",
-                    "threshold": "Trigger (Weight)",
-                    "multiplier": "Lot Reduction (X)"
-                },
-                "outlier": {
-                    "title": "Outlier Regression",
-                    "description": "Blocks trades if disproportionate loss detected.",
-                    "lookback": "Window Samples"
-                },
-                "sniper": {
-                    "title": "Sniper Mode",
-                    "description": "Focus on extreme selectivity.",
-                    "selectivity": "Max Trades/Day",
-                    "selectivityTip": "Suggested: 2 to 3 trades for high performance."
-                }
             }
         },
         "modalities": {

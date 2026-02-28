@@ -44,8 +44,6 @@
         "show": "Afficher",
         "optional": "Optionnel",
         "close": "Fermer",
-        "yes": "Oui",
-        "no": "Non",
         "time": {
             "month": "mois",
             "months": "mois",
@@ -493,14 +491,6 @@
                 "s": "O",
                 "n": "N"
             },
-            "risk": {
-                "alerts_title": "Alertes de Risque",
-                "emotional_warning": "État émotionnel récent ({weight}) en dessous du seuil ({threshold}). Suggestion : réduire le lot de {percent}%.",
-                "outlier_warning": "Perte 'outlier' détectée dans la fenêtre d'analyse. Recommandé de faire une pause et de revoir la stratégie.",
-                "sniper_warning": "Limite de sélectivité atteinte ({current}/{limit} trades).",
-                "reduce_lot_button": "Réduire le Lot de {percent}% Maintenant",
-                "toast_lot_adjusted": "Lot ajusté préventivement selon la suggestion du Moteur de Risque."
-            },
             "partials": {
                 "executed_volume": "Volume Exécuté",
                 "remaining": "Restants",
@@ -570,31 +560,8 @@
     "finance": {
         "title": "Pôle Financier",
         "description": "Gestion centralisée de la trésorerie, relevés et clôtures.",
-        "dailyClosure": "Clôture Quotidienne",
+        "dailyClosure": "Fechamento Diário",
         "newTransaction": "Nouveau Dépôt/Retrait",
-        "darfDetails": {
-            "title": "Détails du Paiement DARF",
-            "description": "Informations détaillées sur l'impôt collecté.",
-            "loading": "Recherche des données DARF...",
-            "period": "Période d'Imposition",
-            "statusPaid": "Payé",
-            "statusPending": "En attente",
-            "complementaryBadge": "DARF Complémentaire",
-            "revenueCode": "Code Recette",
-            "dueDate": "Échéance",
-            "calculationInfo": "Détail de la Base de Calcul",
-            "grossResult": "Résultat Brut",
-            "compensatedLosses": "Pertes Compensées",
-            "calculationBasis": "Base de Calcul",
-            "taxRate": "Taux d'Imposition Appliqué",
-            "principalValue": "Valeur Principale",
-            "fine": "Amende",
-            "interest": "Intérêts",
-            "totalPaid": "Total Payé",
-            "paidAt": "Payé le",
-            "dateNotAvailable": "Date non disponible",
-            "errorMessage": "Impossible de charger les détails de cette DARF."
-        },
         "quickStats": {
             "totalBalance": "Solde Total (Est.)",
             "activeAccounts": "Comptes Actifs",
@@ -1196,30 +1163,6 @@
                 "Prop": "Prop Firm",
                 "Real": "Compte Réel",
                 "Demo": "Compte Démo"
-            },
-            "engine": {
-                "title": "Moteur de Risque",
-                "psychological": {
-                    "title": "Couplage Psychologique",
-                    "description": "Ajuste le risque en fonction de l'état d'esprit (lookback de {count} trades).",
-                    "strategy": "Stratégie de Recherche",
-                    "strategyStrict": "Données uniquement",
-                    "strategySequence": "Derniers trades",
-                    "lookback": "Nombre d'échantillons",
-                    "threshold": "Déclencheur (Poids)",
-                    "multiplier": "Réduction de Lot (X)"
-                },
-                "outlier": {
-                    "title": "Régression des Outliers",
-                    "description": "Bloque les trades si une perte disproportionnée est détectée.",
-                    "lookback": "Échantillons de Fenêtre"
-                },
-                "sniper": {
-                    "title": "Mode Sniper",
-                    "description": "Focus sur la sélectivité extrême.",
-                    "selectivity": "Maximum de Trades/Jour",
-                    "selectivityTip": "Suggéré : 2 à 3 trades pour une haute performance."
-                }
             }
         },
         "modalities": {
