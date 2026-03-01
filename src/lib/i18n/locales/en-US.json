@@ -385,7 +385,8 @@
     },
     "delete": {
       "title": "Delete Trade",
-      "confirmation": "Are you sure you want to delete this trade? This action cannot be undone."
+      "confirmation": "Are you sure you want to delete this trade? This action cannot be undone.",
+      "confirmation_with_closure": "This trade is part of a Daily Closure. The statement will be recalculated automatically after deletion. Are you sure you want to delete?"
     },
     "details": {
       "title": "Trade Details",
@@ -507,7 +508,9 @@
         "no_status": "No state",
         "required_fields": "Please fill in all required fields.",
         "valid_asset_type": "Please select a valid Asset Type.",
-        "asset_type_required": "Asset Type is required. Please select one."
+        "asset_type_required": "Asset Type is required. Please select one.",
+        "closure_exists_warning": "A daily closure already exists for this day. The trade will be added and the closure will be auto-updated if possible.",
+        "save_success_with_sync": "Trade saved and daily closure updated!"
       },
       "tooltips": {
         "risk": "Risk",

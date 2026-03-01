@@ -1,16 +1,37 @@
 // src-tauri/src/seed/demo_accounts_seed.rs
-use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
 use crate::models::{Account, CashTransaction};
 use chrono::{Duration, Utc};
+use surrealdb::engine::local::Db;
+use surrealdb::Surreal;
 
 pub async fn seed_accounts(db: &Surreal<Db>, filter: Option<Vec<String>>) -> Result<(), String> {
     println!("[SEED] Criando Contas de Demonstração (B3 Only)...");
 
     let accounts = vec![
-        ("demo_b3_acoes", "Conta B3 - Ações", "BRL", "Demo", 50000.0, vec!["markets:m1"]),
-        ("demo_b3_futuros", "Conta B3 - Futuros", "BRL", "Demo", 25000.0, vec!["markets:m1"]),
-        ("simulador", "Conta Simulador", "BRL", "Demo", 100000.0, vec![]),
+        (
+            "demo_b3_acoes",
+            "Conta B3 - Ações",
+            "BRL",
+            "Demo",
+            50000.0,
+            vec!["markets:m1"],
+        ),
+        (
+            "demo_b3_futuros",
+            "Conta B3 - Futuros",
+            "BRL",
+            "Demo",
+            25000.0,
+            vec!["markets:m1"],
+        ),
+        (
+            "simulador",
+            "Conta Simulador",
+            "BRL",
+            "Demo",
+            100000.0,
+            vec![],
+        ),
         ("real", "Conta Real", "BRL", "Real", 0.0, vec![]),
         ("teste", "Conta Teste", "BRL", "Demo", 100000.0, vec![]),
     ];
@@ -20,10 +41,14 @@ pub async fn seed_accounts(db: &Surreal<Db>, filter: Option<Vec<String>>) -> Res
             let full_id = format!("account:{}", id_suffix);
             let explicitly_requested = f.contains(&full_id) || f.contains(&id_suffix.to_string());
             if !explicitly_requested {
-                 if !required_modules.is_empty() {
+                if !required_modules.is_empty() {
                     let has_required = required_modules.iter().any(|m| f.contains(&m.to_string()));
-                    if !has_required { continue; }
-                 } else { continue; }
+                    if !has_required {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
             }
         }
         let id_part = format!("account:{}", id_suffix);
@@ -39,7 +64,9 @@ pub async fn seed_accounts(db: &Surreal<Db>, filter: Option<Vec<String>>) -> Res
         };
 
         let mut account_json = serde_json::to_value(&account).unwrap();
-        if let Some(obj) = account_json.as_object_mut() { obj.remove("id"); }
+        if let Some(obj) = account_json.as_object_mut() {
+            obj.remove("id");
+        }
         let clean_id = id_suffix;
 
         // Use raw query for robust serialization
@@ -50,9 +77,9 @@ pub async fn seed_accounts(db: &Surreal<Db>, filter: Option<Vec<String>>) -> Res
             .map_err(|e| e.to_string())?;
 
         if balance > 0.0 {
-             let tx_id = format!("cash_transaction:initial_{}", id_suffix);
-             let tx_date = (Utc::now() - Duration::days(95)).to_rfc3339();
-             let cash_tx = CashTransaction {
+            let tx_id = format!("cash_transaction:initial_{}", id_suffix);
+            let tx_date = (Utc::now() - Duration::days(95)).to_rfc3339();
+            let cash_tx = CashTransaction {
                 id: tx_id.clone(),
                 date: tx_date,
                 amount: balance,
@@ -64,10 +91,17 @@ pub async fn seed_accounts(db: &Surreal<Db>, filter: Option<Vec<String>>) -> Res
                 system_linked: None,
             };
             let mut tx_json = serde_json::to_value(&cash_tx).unwrap();
-            if let Some(obj) = tx_json.as_object_mut() { obj.remove("id"); }
-            
+            if let Some(obj) = tx_json.as_object_mut() {
+                obj.remove("id");
+            }
+
             let tx_parts: Vec<&str> = tx_id.split(':').collect();
-            let tx_clean_id = (if tx_parts.len() > 1 { tx_parts[1] } else { &tx_id }).to_string();
+            let tx_clean_id = (if tx_parts.len() > 1 {
+                tx_parts[1]
+            } else {
+                &tx_id
+            })
+            .to_string();
 
             db.query("UPSERT type::thing('cash_transaction', $id) CONTENT $data")
                 .bind(("id", tx_clean_id))
@@ -80,8 +114,16 @@ pub async fn seed_accounts(db: &Surreal<Db>, filter: Option<Vec<String>>) -> Res
 }
 
 pub async fn delete_demo_account_data(db: &Surreal<Db>, account_id: &str) -> Result<(), String> {
-    let _ = db.query("DELETE trade WHERE account_id = type::thing('account', $id)")
-        .bind(("id", account_id.split(':').last().unwrap_or(account_id).to_string()))
+    let _ = db
+        .query("DELETE trade WHERE account_id = type::thing('account', $id)")
+        .bind((
+            "id",
+            account_id
+                .split(':')
+                .last()
+                .unwrap_or(account_id)
+                .to_string(),
+        ))
         .await;
     Ok(())
 }

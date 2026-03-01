@@ -116,21 +116,29 @@
             for (const data of accountsToProcess) {
                 if (data.result !== 0) {
                     // Find trades for this account and date to link them
-                    // Using normalized date comparison for robustness
+                    // Important: use same logic as TradesStore (exit_date || date)
                     const linkedTrades = tradesStore.trades
-                        .filter(
-                            (t) =>
-                                t.account_id === data.account_id &&
-                                getLocalDatePart(t.date) === selectedDate,
-                        )
+                        .filter((t) => {
+                            const tAccId =
+                                t.account_id.split(":").pop() || t.account_id;
+                            const dAccId =
+                                data.account_id.split(":").pop() ||
+                                data.account_id;
+                            const tDate = getLocalDatePart(
+                                t.exit_date || t.date,
+                            );
+                            return tAccId === dAccId && tDate === selectedDate;
+                        })
                         .map((t) => t.id);
 
                     console.log(
                         `[DailyClosureWizard] Saving transaction for ${data.account_name}: ${data.result}. Linked trades: ${linkedTrades.length}`,
                     );
 
+                    const accUuid =
+                        data.account_id.split(":").pop() || data.account_id;
                     const txResult = await settingsStore.addCashTransaction({
-                        id: `daily_closure_${data.account_id.replace(/:/g, "_")}_${selectedDate.replace(/-/g, "_")}`,
+                        id: `daily_closure_${accUuid}_${selectedDate.replace(/-/g, "_")}`,
                         date: formatLocalISO(selectedDate),
                         amount: data.result,
                         type: data.result >= 0 ? "Deposit" : "Withdraw",

@@ -1,7 +1,7 @@
 // src-tauri/src/seed/currencies_seed.rs
-use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
 use crate::models::Currency;
+use surrealdb::engine::local::Db;
+use surrealdb::Surreal;
 
 pub async fn seed_currencies(db: &Surreal<Db>) -> Result<(), String> {
     println!("[SEED] Verificando Moedas...");
@@ -19,11 +19,16 @@ pub async fn seed_currencies(db: &Surreal<Db>) -> Result<(), String> {
 
     for (id, code, symbol, name, rate) in currencies {
         let currency_data = Currency {
-            id: id.into(), code: code.into(), symbol: symbol.into(),
-            name: name.into(), exchange_rate: rate
+            id: id.into(),
+            code: code.into(),
+            symbol: symbol.into(),
+            name: name.into(),
+            exchange_rate: rate,
         };
         let mut json_data = serde_json::to_value(&currency_data).unwrap();
-        if let Some(obj) = json_data.as_object_mut() { obj.remove("id"); }
+        if let Some(obj) = json_data.as_object_mut() {
+            obj.remove("id");
+        }
 
         // Use raw query for robust serialization
         db.query("UPSERT type::thing('currency', $id) CONTENT $data")

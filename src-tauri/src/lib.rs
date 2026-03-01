@@ -1,17 +1,17 @@
-mod db;
-mod models;
 mod commands;
-mod seed;
+mod db;
 mod hardware;
+mod models;
+mod seed;
 
-use std::process::Command;
-use std::path::PathBuf;
-use tauri::{AppHandle, Emitter, Manager};
+use crate::db::DbState;
 use std::fs;
-use std::time::Duration;
+use std::path::PathBuf;
+use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
-use crate::db::DbState;
+use std::time::Duration;
+use tauri::{AppHandle, Emitter, Manager};
 
 static RTD_MONITOR_RUNNING: AtomicBool = AtomicBool::new(false);
 static RTD_CHILD_PROCESS: Mutex<Option<std::process::Child>> = Mutex::new(None);
@@ -24,7 +24,10 @@ fn start_rtd_monitor_cmd(app_handle: AppHandle, excel_path: Option<String>) {
 fn start_rtd_monitor(app_handle: AppHandle, excel_path: Option<String>) {
     #[cfg(target_os = "windows")]
     {
-        println!("[RTD] Initializing monitor request. Excel path: {:?}", excel_path);
+        println!(
+            "[RTD] Initializing monitor request. Excel path: {:?}",
+            excel_path
+        );
 
         // 1. Start CSV Monitor Thread (ONLY ONCE across app lifecycle)
         if !RTD_MONITOR_RUNNING.load(Ordering::SeqCst) {
@@ -32,10 +35,14 @@ fn start_rtd_monitor(app_handle: AppHandle, excel_path: Option<String>) {
             let spawn_result = std::thread::Builder::new()
                 .name("rtd-csv-monitor".into())
                 .spawn(move || {
-                    let temp_path = std::env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".to_string());
+                    let temp_path =
+                        std::env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".to_string());
                     let csv_path = PathBuf::from(temp_path).join("traderlog_rtd_data.csv");
 
-                    println!("[RTD] CSV Monitor thread started successfully at {:?}", csv_path);
+                    println!(
+                        "[RTD] CSV Monitor thread started successfully at {:?}",
+                        csv_path
+                    );
                     loop {
                         if csv_path.exists() {
                             if let Ok(content) = fs::read_to_string(&csv_path) {
@@ -52,9 +59,12 @@ fn start_rtd_monitor(app_handle: AppHandle, excel_path: Option<String>) {
                 Ok(_) => {
                     RTD_MONITOR_RUNNING.store(true, Ordering::SeqCst);
                     println!("[RTD] Monitor flag set to true.");
-                },
+                }
                 Err(e) => {
-                    println!("[RTD] CRITICAL ERROR: Could not spawn CSV monitor thread: {}", e);
+                    println!(
+                        "[RTD] CRITICAL ERROR: Could not spawn CSV monitor thread: {}",
+                        e
+                    );
                 }
             }
         }
@@ -67,7 +77,7 @@ fn start_rtd_monitor(app_handle: AppHandle, excel_path: Option<String>) {
                 // Removed wait() to prevent hanging the setup sequence
             }
         }
-        
+
         // Auto-open Excel file if path is provided
         if let Some(ref path) = excel_path {
             if !path.trim().is_empty() {
@@ -81,12 +91,20 @@ fn start_rtd_monitor(app_handle: AppHandle, excel_path: Option<String>) {
 
         let resource_dir = app_handle.path().resource_dir().unwrap_or_default();
         let script_path = resource_dir.join("scripts").join("rtd_bridge.ps1");
-        
+
         // Find script path (dev vs prod)
-        let script_final = if script_path.exists() { script_path } else {
+        let script_final = if script_path.exists() {
+            script_path
+        } else {
             let p1 = PathBuf::from("src-tauri/scripts/rtd_bridge.ps1");
             let p2 = PathBuf::from("scripts/rtd_bridge.ps1");
-            if p1.exists() { p1 } else if p2.exists() { p2 } else { script_path }
+            if p1.exists() {
+                p1
+            } else if p2.exists() {
+                p2
+            } else {
+                script_path
+            }
         };
 
         if script_final.exists() {
@@ -114,7 +132,7 @@ fn start_rtd_monitor(app_handle: AppHandle, excel_path: Option<String>) {
                     if let Ok(mut lock) = RTD_CHILD_PROCESS.lock() {
                         *lock = Some(child);
                     }
-                },
+                }
                 Err(e) => {
                     println!("[RTD] FAILED to spawn bridge process: {}", e);
                 }
@@ -134,31 +152,33 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             println!("[SETUP] Starting app setup...");
-            
+
             let handle = app.handle().clone();
             // start_rtd_monitor(handle.clone(), None); // Keep RTD disabled for now
-            
+
             // Initialize Database
             let db_handle = handle.clone();
             tauri::async_runtime::block_on(async move {
                 println!("[STARTUP] Initializing Database...");
                 match db::init_db(&db_handle).await {
                     Ok(db) => {
-                        println!("[STARTUP] Database initialized. Running Base Seeds (UPSERT mode)...");
+                        println!(
+                            "[STARTUP] Database initialized. Running Base Seeds (UPSERT mode)..."
+                        );
                         if let Err(e) = seed::run_base_seeds(&db).await {
-                             println!("[STARTUP] SEED ERROR: {}", e);
+                            println!("[STARTUP] SEED ERROR: {}", e);
                         }
-                        
+
                         println!("[STARTUP] Registering Database state.");
                         db_handle.manage(DbState(db));
-                    },
+                    }
                     Err(e) => {
                         println!("[STARTUP] FATAL DATABASE ERROR: {}", e);
                         // Do not panic, just log. App might show blank but won't crash process.
                     }
                 }
             });
-            
+
             println!("[SETUP] Initial setup flow completed.");
             Ok(())
         })

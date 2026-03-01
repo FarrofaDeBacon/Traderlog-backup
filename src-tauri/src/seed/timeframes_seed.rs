@@ -1,7 +1,7 @@
 // src-tauri/src/seed/timeframes_seed.rs
-use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
 use crate::models::Timeframe;
+use surrealdb::engine::local::Db;
+use surrealdb::Surreal;
 
 pub async fn seed_timeframes(db: &Surreal<Db>, filter: Option<Vec<String>>) -> Result<(), String> {
     println!("[SEED] Verificando Timeframes...");
@@ -22,12 +22,16 @@ pub async fn seed_timeframes(db: &Surreal<Db>, filter: Option<Vec<String>>) -> R
 
     for (id, name, value) in timeframes {
         if let Some(ref f) = filter {
-            if !f.contains(&id.to_string()) { continue; }
+            if !f.contains(&id.to_string()) {
+                continue;
+            }
         }
         let create_sql = format!("CREATE timeframe:{} CONTENT $data", id);
         let tf_data = Timeframe {
-                id: id.into(), name: name.into(), value: value.into()
-            };
+            id: id.into(),
+            name: name.into(),
+            value: value.into(),
+        };
 
         let mut tf_json = serde_json::to_value(&tf_data).unwrap();
         if let Some(obj) = tf_json.as_object_mut() {
@@ -43,7 +47,7 @@ pub async fn seed_timeframes(db: &Surreal<Db>, filter: Option<Vec<String>>) -> R
                 println!("[SEED_ERROR] Failed to seed timeframe {}: {}", name, e);
                 e.to_string()
             })?;
-        
+
         println!("  ✓ {}", name);
     }
 

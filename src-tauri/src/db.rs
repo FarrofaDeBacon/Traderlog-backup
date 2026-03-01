@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use surrealdb::engine::local::{SurrealKv, Db};
+use surrealdb::engine::local::{Db, SurrealKv};
 use surrealdb::Surreal;
 use tauri::AppHandle;
 use tauri::Manager;
@@ -11,7 +11,7 @@ pub async fn init_db(app_handle: &AppHandle) -> Result<Surreal<Db>, surrealdb::E
         .path()
         .app_data_dir()
         .expect("Failed to get app data directory");
-    
+
     // Create directory if not exists
     if !app_dir.exists() {
         std::fs::create_dir_all(&app_dir).expect("Failed to create app data directory");
@@ -19,7 +19,7 @@ pub async fn init_db(app_handle: &AppHandle) -> Result<Surreal<Db>, surrealdb::E
 
     let db_path = app_dir.join("traderlog.db");
     println!("[DB] Attempting to open database at: {:?}", db_path);
-    
+
     let db = Surreal::new::<SurrealKv>(db_path.to_str().unwrap()).await?;
     println!("[DB] SurrealDB instance created successfully.");
 

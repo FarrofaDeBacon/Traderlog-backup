@@ -636,22 +636,7 @@
                                         class="px-6 py-4 text-right flex justify-end gap-2"
                                     >
                                         {#if item.status !== "Paid" && item.total_payable > 0}
-                                            {@const revenueCode_cat =
-                                                item.trade_type === "DayTrade"
-                                                    ? "6015"
-                                                    : "3317"}
-                                            {@const period_cat = `${String(item.period_month).padStart(2, "0")}/${item.period_year}`}
-                                            {@const existingDarf_row =
-                                                irpfStore.darfs.find(
-                                                    (d) =>
-                                                        irpfStore.getId(
-                                                            d.appraisal_id,
-                                                        ) ===
-                                                        irpfStore.getId(
-                                                            item.id,
-                                                        ),
-                                                )}
-                                            {#if existingDarf_row}
+                                            {#if existingDarf}
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
@@ -770,15 +755,18 @@
                             <Select.Trigger
                                 class="h-10 w-full bg-black/20 border-white/10 text-white"
                             >
-                                {months.find(
-                                    (m) => String(m.val) === appraisalMonth,
-                                )?.label || "Mês"}
+                                {$t(
+                                    months.find(
+                                        (m) => String(m.val) === appraisalMonth,
+                                    )?.key || "fiscal.irpf.modal.month",
+                                )}
                             </Select.Trigger>
                             <Select.Content>
                                 {#each months as m}
                                     <Select.Item
                                         value={String(m.val)}
-                                        label={m.label}>{m.label}</Select.Item
+                                        label={$t(m.key)}
+                                        >{$t(m.key)}</Select.Item
                                     >
                                 {/each}
                             </Select.Content>

@@ -187,6 +187,7 @@ class IrpfStore {
             this.appraisals = this.appraisals.filter(a => this.getId(a.id) !== id);
             toast.success("Apuração excluída com sucesso!");
             this.loadAccumulatedLosses();
+            this.loadDarfs(this.selectedYear); // Cascade delete might have removed DARFs
         } catch (error) {
             console.error("Failed to delete appraisal:", error);
             toast.error("Erro ao excluir: " + String(error));
@@ -311,11 +312,20 @@ class IrpfStore {
 
     async deleteDarf(id: string) {
         try {
+            const darf = this.darfs.find(d => this.getId(d.id) === id);
             await invoke("delete_darf", { id });
             this.darfs = this.darfs.filter(d => this.getId(d.id) !== id);
             toast.success("DARF excluída!");
-            // Refresh appraisals to update status (might revert to pending? backend doesn't seem to revert status automatically in delete_darf, but we can re-fetch)
-            // Ideally backend should revert appraisal status.
+
+            // Refresh appraisals to update status (Pending -> Ok)
+            if (darf) {
+                const year = parseInt(darf.period.split('/')[1]);
+                if (!isNaN(year)) {
+                    this.loadAppraisals(year);
+                }
+            } else {
+                this.loadAppraisals(this.selectedYear);
+            }
         } catch (error) {
             console.error("Failed to delete DARF:", error);
             toast.error("Erro ao excluir DARF: " + String(error));

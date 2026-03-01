@@ -259,7 +259,7 @@
                                     >{$t("finance.darfDetails.taxRate")}</span
                                 >
                                 <p class="text-sm font-semibold text-zinc-200">
-                                    {appraisal.tax_rate * 100}%
+                                    {appraisal.tax_rate}%
                                 </p>
                             </div>
                         </div>

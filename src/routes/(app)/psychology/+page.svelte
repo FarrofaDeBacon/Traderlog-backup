@@ -25,9 +25,11 @@
     import DateFilter from "$lib/components/filters/DateFilter.svelte";
     import { toast } from "svelte-sonner";
     import * as Dialog from "$lib/components/ui/dialog";
+    import DeleteConfirmationModal from "$lib/components/settings/DeleteConfirmationModal.svelte";
     import { invoke } from "@tauri-apps/api/core";
     import { untrack } from "svelte";
     import Skeleton from "$lib/components/ui/skeleton.svelte";
+    import { getLocalDatePart } from "$lib/utils";
 
     let showCheckinDialog = $state(false);
     let showDeleteConfirm = $state(false);
@@ -47,6 +49,83 @@
         selectedDayData = day;
         selectedCurrency = currency;
         showDayModal = true;
+    }
+
+    let isDeleteWithClosureOpen = $state(false);
+    let associatedClosureIds: string[] = [];
+
+    function requestDeleteJournal(id: string) {
+        entryToDelete = id;
+        const entry = settingsStore.journalEntries.find((j) => j.id === id);
+        if (entry) {
+            // Check if there are daily closures associated with this date
+            const dateStr = entry.date.split("T")[0];
+            const closures = settingsStore.cashTransactions.filter(
+                (t) =>
+                    t.id.includes("daily_closure_") &&
+                    getLocalDatePart(t.date) === dateStr,
+            );
+
+            if (closures.length > 0) {
+                associatedClosureIds = closures.map((c) => c.id);
+                isDeleteWithClosureOpen = true;
+                return;
+            }
+        }
+        showDeleteConfirm = true;
+    }
+
+    async function confirmDeleteJournalWithClosure(deleteClosures: boolean) {
+        if (entryToDelete) {
+            const result =
+                await settingsStore.removeJournalEntry(entryToDelete);
+            if (result && result.success === false) {
+                toast.error("Erro ao excluir o registro: " + result.error);
+            } else {
+                if (deleteClosures && associatedClosureIds.length > 0) {
+                    let hasError = false;
+                    for (const cid of associatedClosureIds) {
+                        const cres =
+                            await settingsStore.removeCashTransaction(cid);
+                        if (!cres.success) hasError = true;
+                    }
+                    if (hasError) {
+                        toast.error(
+                            "Registro psicológico removido, mas houve erro ao remover o(s) fechamento(s) financeiro(s).",
+                        );
+                    } else {
+                        toast.success(
+                            $t("general.deleteSuccess") ||
+                                "Removido com sucesso",
+                        );
+                    }
+                } else {
+                    toast.success(
+                        $t("general.deleteSuccess") ||
+                            "Registro removido com sucesso",
+                    );
+                }
+            }
+            entryToDelete = null;
+            associatedClosureIds = [];
+            isDeleteWithClosureOpen = false;
+        }
+    }
+
+    async function confirmDeleteJournal() {
+        if (entryToDelete) {
+            const result =
+                await settingsStore.removeJournalEntry(entryToDelete);
+            if (result && result.success === false) {
+                toast.error("Erro ao excluir: " + result.error);
+            } else {
+                toast.success(
+                    $t("general.deleteSuccess") ||
+                        "Registro removido com sucesso",
+                );
+            }
+            entryToDelete = null;
+        }
     }
 
     function openInsight(data: any) {
@@ -474,27 +553,36 @@
             xAxis: {
                 type: "category",
                 data: data.map((d) => d.date),
-                axisLabel: { 
-                    color: "#888", 
+                axisLabel: {
+                    color: "#888",
                     fontSize: 10,
                     formatter: function (value: string) {
                         try {
                             const date = new Date(value + "T12:00:00");
-                            return date.toLocaleDateString($locale || "pt-BR", {
-                                day: "2-digit",
-                                month: "short"
-                            }).replace(".", "");
-                        } catch(e) {
+                            return date
+                                .toLocaleDateString($locale || "pt-BR", {
+                                    day: "2-digit",
+                                    month: "short",
+                                })
+                                .replace(".", "");
+                        } catch (e) {
                             return value;
                         }
-                    }
+                    },
                 },
             },
             yAxis: [
-                { type: "value", name: $t("general.result"), axisLabel: { color: "#888" } },
                 {
                     type: "value",
-                    name: $t("general.intensityLabel") || $t("general.intensity_short") || "Intensidade",
+                    name: $t("general.result"),
+                    axisLabel: { color: "#888" },
+                },
+                {
+                    type: "value",
+                    name:
+                        $t("general.intensityLabel") ||
+                        $t("general.intensity_short") ||
+                        "Intensidade",
                     min: 0,
                     max: 10,
                     axisLabel: { color: "#888" },
@@ -511,7 +599,10 @@
                     },
                 },
                 {
-                    name: $t("general.intensityLabel") || $t("general.intensity_short") || "Intensidade",
+                    name:
+                        $t("general.intensityLabel") ||
+                        $t("general.intensity_short") ||
+                        "Intensidade",
                     type: "line",
                     yAxisIndex: 1,
                     data: data.map((d) => d.intensity),
@@ -708,6 +799,50 @@
         tradesStore.isLoading || settingsStore.isLoadingData,
     );
 </script>
+
+<DailyCheckinDialog bind:open={showCheckinDialog} />
+
+<DeleteConfirmationModal
+    bind:open={showDeleteConfirm}
+    onConfirm={confirmDeleteJournal}
+    title={$t("general.confirmDelete") || "Confirmar Exclusão"}
+    description="Você tem certeza que deseja excluir este registro diário psicológico? Esta ação não pode ser desfeita."
+/>
+
+<Dialog.Root bind:open={isDeleteWithClosureOpen}>
+    <Dialog.Content class="max-w-[425px] w-full bg-zinc-950 border-zinc-800">
+        <Dialog.Header>
+            <Dialog.Title class="text-white">
+                {$t("general.confirmDelete") || "Excluir Registro Psicológico"}
+            </Dialog.Title>
+            <Dialog.Description class="text-zinc-400">
+                Este registro psicológico possui um <strong
+                    >Fechamento Diário Financeiro</strong
+                > associado. Você deseja excluir apenas o registro psicológico ou
+                ambos?
+            </Dialog.Description>
+        </Dialog.Header>
+        <Dialog.Footer class="flex flex-col sm:flex-row gap-2 mt-4">
+            <Button
+                variant="outline"
+                onclick={() => (isDeleteWithClosureOpen = false)}
+                >{$t("general.cancel")}</Button
+            >
+            <Button
+                variant="secondary"
+                onclick={() => confirmDeleteJournalWithClosure(false)}
+            >
+                Só Psicológico
+            </Button>
+            <Button
+                variant="destructive"
+                onclick={() => confirmDeleteJournalWithClosure(true)}
+            >
+                Excluir Ambos
+            </Button>
+        </Dialog.Footer>
+    </Dialog.Content>
+</Dialog.Root>
 
 <div class="space-y-6 animate-in fade-in duration-500">
     <!-- Header -->
@@ -1618,7 +1753,7 @@
                                             size="icon"
                                             class="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
                                             onclick={() =>
-                                                deleteJournalEntry(entry.id)}
+                                                requestDeleteJournal(entry.id)}
                                         >
                                             <Trash2
                                                 class="w-3 h-3 text-red-400"

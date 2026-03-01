@@ -278,6 +278,17 @@
         showDayDetailsDialog = true;
     }
 
+    function openDetails(tx: any) {
+        console.log(
+            "[StatementTable] opening details for tx:",
+            tx.id,
+            "trades:",
+            tx.trade_ids,
+        );
+        selectedTransaction = tx;
+        showDetailsDialog = true;
+    }
+
     let dayDetailsStats = $derived.by(() => {
         if (!selectedDay) return null;
 
@@ -324,15 +335,57 @@
     // Delete State
     let isDeleteOpen = $state(false);
     let deleteId = $state<string | null>(null);
-
-    function openDetails(tx: any) {
-        selectedTransaction = tx;
-        showDetailsDialog = true;
-    }
+    let isDeleteWithJournalOpen = $state(false);
+    let deleteJournalId = $state<string | null>(null);
 
     function requestDelete(id: string) {
+        const tx = settingsStore.cashTransactions.find((t) => t.id === id);
+        if (tx && tx.id.includes("daily_closure_")) {
+            const txDate = getLocalDatePart(tx.date);
+            const hasJournal = settingsStore.getJournalEntryByDate(txDate);
+            if (hasJournal) {
+                deleteId = id;
+                deleteJournalId = hasJournal.id;
+                isDeleteWithJournalOpen = true;
+                return;
+            }
+        }
         deleteId = id;
         isDeleteOpen = true;
+    }
+
+    async function confirmDeleteWithJournal(deleteJournal: boolean) {
+        if (deleteId) {
+            const result = await settingsStore.removeCashTransaction(deleteId);
+            if (result.success) {
+                if (deleteJournal && deleteJournalId) {
+                    const jRes =
+                        await settingsStore.removeJournalEntry(deleteJournalId);
+                    if (jRes.success === false) {
+                        toast.error(
+                            "Financeiro removido, mas falhou ao remover psicológico.",
+                        );
+                    } else {
+                        toast.success(
+                            $t("general.deleteSuccess") ||
+                                "Removido com sucesso",
+                        );
+                    }
+                } else {
+                    toast.success(
+                        $t("general.deleteSuccess") || "Removido com sucesso",
+                    );
+                }
+            } else {
+                toast.error(
+                    result.error ||
+                        $t("finance.statement.messages.deleteError"),
+                );
+            }
+            deleteId = null;
+            deleteJournalId = null;
+            isDeleteWithJournalOpen = false;
+        }
     }
 
     async function confirmDelete() {
@@ -350,8 +403,25 @@
         }
     }
 
+    import { onMount } from "svelte";
+
+    onMount(() => {
+        if (tradesStore.trades.length === 0) {
+            tradesStore.loadTrades();
+        }
+    });
+
     function getAccount(id: string) {
         return settingsStore.accounts.find((a) => String(a.id) === String(id));
+    }
+
+    function findTradeById(id: string) {
+        if (!id) return null;
+        const normalizedId = id.split(":").pop() || id;
+        return tradesStore.trades.find((t) => {
+            const tid = t.id.split(":").pop() || t.id;
+            return tid === normalizedId;
+        });
     }
 </script>
 
@@ -853,6 +923,42 @@
 
 <DeleteConfirmationModal bind:open={isDeleteOpen} onConfirm={confirmDelete} />
 
+<Dialog.Root bind:open={isDeleteWithJournalOpen}>
+    <Dialog.Content class="max-w-[425px] w-full bg-zinc-950 border-zinc-800">
+        <Dialog.Header>
+            <Dialog.Title class="text-white"
+                >{$t("general.confirmDelete") ||
+                    "Excluir Fechamento Diário"}</Dialog.Title
+            >
+            <Dialog.Description class="text-zinc-400">
+                Este fechamento possui um <strong
+                    >Registro Diário Psicológico</strong
+                > associado. Você deseja excluir apenas o registro financeiro ou
+                ambos?
+            </Dialog.Description>
+        </Dialog.Header>
+        <Dialog.Footer class="flex flex-col sm:flex-row gap-2 mt-4">
+            <Button
+                variant="outline"
+                onclick={() => (isDeleteWithJournalOpen = false)}
+                >{$t("general.cancel")}</Button
+            >
+            <Button
+                variant="secondary"
+                onclick={() => confirmDeleteWithJournal(false)}
+            >
+                Só Financeiro
+            </Button>
+            <Button
+                variant="destructive"
+                onclick={() => confirmDeleteWithJournal(true)}
+            >
+                Excluir Ambos
+            </Button>
+        </Dialog.Footer>
+    </Dialog.Content>
+</Dialog.Root>
+
 <Dialog.Root bind:open={showDayDetailsDialog}>
     <Dialog.Content class="sm:max-w-[500px] bg-zinc-900 border-zinc-800">
         <Dialog.Header>
@@ -1065,9 +1171,7 @@
                         <Table.Body>
                             {#if selectedTransaction.trade_ids}
                                 {#each selectedTransaction.trade_ids as tradeId}
-                                    {@const trade = tradesStore.trades.find(
-                                        (t: any) => t.id === tradeId,
-                                    )}
+                                    {@const trade = findTradeById(tradeId)}
                                     {#if trade}
                                         <Table.Row
                                             class="border-zinc-800/50 hover:bg-zinc-800/20"

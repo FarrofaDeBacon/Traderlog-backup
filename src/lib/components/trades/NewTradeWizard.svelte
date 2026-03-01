@@ -40,10 +40,12 @@
 
     let {
         trade = null,
+        editTradeId = undefined,
         close = () => {},
         onsave = () => {},
     } = $props<{
         trade?: any;
+        editTradeId?: string;
         close: () => void;
         onsave?: () => void;
     }>();
@@ -147,6 +149,20 @@
 
     let lastSyncedTradeId = $state<string | undefined>(undefined);
     let lastSyncedDraftKey = $state<string | undefined>(undefined);
+    let closureAlreadyExists = $state(false);
+
+    // Check if a daily closure already exists for data/account to warn the user
+    $effect(() => {
+        const dateStr = formData.entry_date;
+        const accId = formData.account_id;
+        if (dateStr && accId) {
+            settingsStore
+                .hasClosureForDate(dateStr, accId)
+                .then((exists) => (closureAlreadyExists = exists));
+        } else {
+            closureAlreadyExists = false;
+        }
+    });
 
     // Reactive synchronization when trade prop changes (CRITICAL for Edit flow)
     $effect(() => {
@@ -199,6 +215,11 @@
                         ? parseFloat(currentTrade.intensity as any)
                         : 10,
                 fees: parseFloat(currentTrade.fee_total as any) || 0,
+                status:
+                    currentTrade.exit_price !== null &&
+                    currentTrade.exit_price !== undefined
+                        ? "closed"
+                        : "open",
 
                 images: currentTrade.images || [],
                 partial_exits: (currentTrade.partial_exits || []).map(
@@ -657,15 +678,17 @@
     }
 
     async function handleSubmit() {
-        // CRITICAL: Use lastSyncedTradeId (stable local state) instead of trade?.id (reactive prop).
-        // trade?.id can become null during Svelte reactivity cycles (e.g., store reload after loadTrades()),
-        // which would cause a duplicate trade creation instead of an update.
-        const submissionId = lastSyncedTradeId;
+        // CRITICAL: Use editTradeId PROP (passed from parent at mount time via {#key}) as the
+        // submission mode indicator. This is immune to Svelte $effect re-evaluation during async saves.
+        // lastSyncedTradeId can be reset mid-save if the trade prop changes reactively.
+        const submissionId = editTradeId;
         console.log(
             "[NewTradeWizard] Submitting form. Mode:",
             submissionId ? "Edit" : "New",
-            "Target ID (lastSyncedTradeId):",
+            "Target ID (editTradeId prop):",
             submissionId,
+            "lastSyncedTradeId at submit time:",
+            lastSyncedTradeId,
             "trade?.id at submit time:",
             trade?.id,
         );
@@ -786,7 +809,15 @@
                 console.log("[NewTradeWizard] Calling addTrade");
                 const result = await tradesStore.addTrade(tradeData);
                 if (result.success) {
-                    toast.success($t("trades.wizard.messages.save_success"));
+                    if (closureAlreadyExists && !submissionId) {
+                        toast.success(
+                            $t("trades.wizard.messages.save_success_with_sync"),
+                        );
+                    } else {
+                        toast.success(
+                            $t("trades.wizard.messages.save_success"),
+                        );
+                    }
                     onsave();
                     close();
                 } else {
@@ -868,6 +899,29 @@
                     class="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300"
                 >
                     <section class="space-y-4">
+                        {#if closureAlreadyExists && !trade?.id}
+                            <div
+                                class="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg space-y-2 mb-4 animate-in fade-in zoom-in duration-300"
+                            >
+                                <div
+                                    class="flex items-center gap-2 text-blue-400"
+                                >
+                                    <ShieldCheck class="w-4 h-4" />
+                                    <span
+                                        class="text-xs font-bold uppercase tracking-wider"
+                                        >Aviso de Sincronização</span
+                                    >
+                                </div>
+                                <p
+                                    class="text-[10px] text-blue-200/80 leading-tight"
+                                >
+                                    {$t(
+                                        "trades.wizard.messages.closure_exists_warning",
+                                    )}
+                                </p>
+                            </div>
+                        {/if}
+
                         {#if riskWarnings.length > 0}
                             <div
                                 class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg space-y-2 animate-in fade-in zoom-in duration-300"
@@ -1528,134 +1582,185 @@
                     </section>
 
                     <section class="space-y-4 pt-4 border-t border-muted/30">
-                        <Label
-                            class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight flex items-center gap-1"
-                        >
-                            <Lock class="w-3 h-3" />
-                            {$t("trades.wizard.sections.closing_data")}
-                        </Label>
-                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                            <div class="space-y-1.5">
-                                <Label
-                                    class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight"
-                                    >{$t(
-                                        "trades.wizard.fields.exit_price",
-                                    )}</Label
+                        <div class="flex items-center justify-between">
+                            <Label
+                                class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight flex items-center gap-1"
+                            >
+                                <Lock class="w-3 h-3" />
+                                {$t("trades.wizard.sections.closing_data")}
+                            </Label>
+                            <div class="flex items-center gap-2">
+                                <span
+                                    class="text-[10px] font-bold uppercase tracking-tighter {formData.status ===
+                                    'open'
+                                        ? 'text-primary'
+                                        : 'text-muted-foreground'}">Aberto</span
                                 >
-                                <Input
-                                    type="number"
-                                    step="any"
-                                    bind:value={formData.exit_price}
-                                    class="bg-muted/30 border-0 h-8 text-xs font-mono font-bold"
-                                />
-                            </div>
-                            <div class="space-y-1.5">
-                                <Label
-                                    class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight"
-                                    >{$t(
-                                        "trades.wizard.fields.exit_date",
-                                    )}</Label
+                                <button
+                                    class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 transition-colors bg-zinc-800"
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={formData.status === "closed"}
+                                    onclick={(e) => {
+                                        e.preventDefault();
+                                        formData.status =
+                                            formData.status === "open"
+                                                ? "closed"
+                                                : "open";
+                                        if (formData.status === "open") {
+                                            formData.exit_price = null;
+                                            formData.exit_date = null;
+                                            formData.exit_reason = "";
+                                            formData.exit_emotional_state_id =
+                                                "";
+                                        }
+                                    }}
                                 >
-                                <div class="relative">
-                                    <Input
-                                        type="datetime-local"
-                                        bind:value={formData.exit_date}
-                                        class="bg-muted/30 border-0 pr-8 h-10 text-xs w-full"
-                                    />
-                                    <Calendar
-                                        class="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                                    />
-                                </div>
-                            </div>
-                            <div class="space-y-1.5">
-                                <Label
-                                    class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight"
-                                    >{$t(
-                                        "trades.wizard.fields.exit_reason",
-                                    )}</Label
+                                    <span
+                                        class="pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0 {formData.status ===
+                                        'closed'
+                                            ? 'translate-x-4 bg-emerald-500'
+                                            : 'translate-x-0'}"
+                                    ></span>
+                                </button>
+                                <span
+                                    class="text-[10px] font-bold uppercase tracking-tighter {formData.status ===
+                                    'closed'
+                                        ? 'text-emerald-500'
+                                        : 'text-muted-foreground'}"
+                                    >Fechado</span
                                 >
-                                <Select.Root
-                                    type="single"
-                                    bind:value={formData.exit_reason}
-                                >
-                                    <Select.Trigger
-                                        class="h-8 bg-muted/30 border-0 focus:ring-1 focus:ring-primary/40 text-xs text-left"
-                                    >
-                                        {formData.exit_reason ||
-                                            $t(
-                                                "trades.wizard.placeholders.select",
-                                            )}
-                                    </Select.Trigger>
-                                    <Select.Content>
-                                        <Select.Item value="Take Profit"
-                                            >{$t(
-                                                "trades.wizard.exit_reasons.take_profit",
-                                            )}</Select.Item
-                                        >
-                                        <Select.Item value="Stop Loss"
-                                            >{$t(
-                                                "trades.wizard.exit_reasons.stop_loss",
-                                            )}</Select.Item
-                                        >
-                                        <Select.Item value="Manual"
-                                            >{$t(
-                                                "trades.wizard.exit_reasons.manual",
-                                            )}</Select.Item
-                                        >
-                                        <Select.Item value="Time"
-                                            >{$t(
-                                                "trades.wizard.exit_reasons.time",
-                                            )}</Select.Item
-                                        >
-                                        <Select.Item value="Strategy"
-                                            >{$t(
-                                                "trades.wizard.exit_reasons.strategy",
-                                            )}</Select.Item
-                                        >
-                                    </Select.Content>
-                                </Select.Root>
-                            </div>
-                            <div class="space-y-1.5">
-                                <Label
-                                    class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight flex items-center gap-1"
-                                >
-                                    <Brain class="w-3 h-3 text-pink-400" />
-                                    {$t("trades.wizard.fields.emotional_state")}
-                                </Label>
-                                <Select.Root
-                                    type="single"
-                                    bind:value={
-                                        formData.exit_emotional_state_id
-                                    }
-                                >
-                                    <Select.Trigger
-                                        class="h-8 bg-muted/30 border-0 focus:ring-1 focus:ring-primary/40 text-xs"
-                                    >
-                                        {settingsStore.emotionalStates.find(
-                                            (e) =>
-                                                e.id ===
-                                                formData.exit_emotional_state_id,
-                                        )?.name ||
-                                            $t(
-                                                "trades.wizard.placeholders.select",
-                                            )}
-                                    </Select.Trigger>
-                                    <Select.Content>
-                                        {#each settingsStore.emotionalStates as state}
-                                            <Select.Item value={state.id}
-                                                >{state.name}</Select.Item
-                                            >
-                                        {:else}
-                                            <Select.Item value="" disabled
-                                                >{$t(
-                                                    "trades.wizard.placeholders.no_states",
-                                                )}</Select.Item
-                                            >
-                                        {/each}
-                                    </Select.Content>
-                                </Select.Root>
                             </div>
                         </div>
+
+                        {#if formData.status === "closed"}
+                            <div
+                                class="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-top-2 duration-200"
+                            >
+                                <div class="space-y-1.5">
+                                    <Label
+                                        class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight"
+                                        >{$t(
+                                            "trades.wizard.fields.exit_price",
+                                        )}</Label
+                                    >
+                                    <Input
+                                        type="number"
+                                        step="any"
+                                        bind:value={formData.exit_price}
+                                        class="bg-muted/30 border-0 h-8 text-xs font-mono font-bold"
+                                    />
+                                </div>
+                                <div class="space-y-1.5">
+                                    <Label
+                                        class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight"
+                                        >{$t(
+                                            "trades.wizard.fields.exit_date",
+                                        )}</Label
+                                    >
+                                    <div class="relative">
+                                        <Input
+                                            type="datetime-local"
+                                            bind:value={formData.exit_date}
+                                            class="bg-muted/30 border-0 pr-8 h-10 text-xs w-full"
+                                        />
+                                        <Calendar
+                                            class="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                                        />
+                                    </div>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <Label
+                                        class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight"
+                                        >{$t(
+                                            "trades.wizard.fields.exit_reason",
+                                        )}</Label
+                                    >
+                                    <Select.Root
+                                        type="single"
+                                        bind:value={formData.exit_reason}
+                                    >
+                                        <Select.Trigger
+                                            class="h-8 bg-muted/30 border-0 focus:ring-1 focus:ring-primary/40 text-xs text-left"
+                                        >
+                                            {formData.exit_reason ||
+                                                $t(
+                                                    "trades.wizard.placeholders.select",
+                                                )}
+                                        </Select.Trigger>
+                                        <Select.Content>
+                                            <Select.Item value="Take Profit"
+                                                >{$t(
+                                                    "trades.wizard.exit_reasons.take_profit",
+                                                )}</Select.Item
+                                            >
+                                            <Select.Item value="Stop Loss"
+                                                >{$t(
+                                                    "trades.wizard.exit_reasons.stop_loss",
+                                                )}</Select.Item
+                                            >
+                                            <Select.Item value="Manual"
+                                                >{$t(
+                                                    "trades.wizard.exit_reasons.manual",
+                                                )}</Select.Item
+                                            >
+                                            <Select.Item value="Time"
+                                                >{$t(
+                                                    "trades.wizard.exit_reasons.time",
+                                                )}</Select.Item
+                                            >
+                                            <Select.Item value="Strategy"
+                                                >{$t(
+                                                    "trades.wizard.exit_reasons.strategy",
+                                                )}</Select.Item
+                                            >
+                                        </Select.Content>
+                                    </Select.Root>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <Label
+                                        class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight flex items-center gap-1"
+                                    >
+                                        <Brain class="w-3 h-3 text-pink-400" />
+                                        {$t(
+                                            "trades.wizard.fields.emotional_state",
+                                        )}
+                                    </Label>
+                                    <Select.Root
+                                        type="single"
+                                        bind:value={
+                                            formData.exit_emotional_state_id
+                                        }
+                                    >
+                                        <Select.Trigger
+                                            class="h-8 bg-muted/30 border-0 focus:ring-1 focus:ring-primary/40 text-xs"
+                                        >
+                                            {settingsStore.emotionalStates.find(
+                                                (e) =>
+                                                    e.id ===
+                                                    formData.exit_emotional_state_id,
+                                            )?.name ||
+                                                $t(
+                                                    "trades.wizard.placeholders.select",
+                                                )}
+                                        </Select.Trigger>
+                                        <Select.Content>
+                                            {#each settingsStore.emotionalStates as state}
+                                                <Select.Item value={state.id}
+                                                    >{state.name}</Select.Item
+                                                >
+                                            {:else}
+                                                <Select.Item value="" disabled
+                                                    >{$t(
+                                                        "trades.wizard.placeholders.no_states",
+                                                    )}</Select.Item
+                                                >
+                                            {/each}
+                                        </Select.Content>
+                                    </Select.Root>
+                                </div>
+                            </div>
+                        {/if}
                     </section>
 
                     <!-- Financial Summary Display -->

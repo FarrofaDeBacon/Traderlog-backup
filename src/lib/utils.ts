@@ -86,7 +86,8 @@ export const getCurrentLocalTimePart = (): string => {
 };
 
 /**
- * Combina uma data YYYY-MM-DD com o horário local atual
+ * Combina uma data YYYY-MM-DD com o horário local atual, adicionando o fuso horário (offset)
+ * para evitar bugs de deslocamento temporal quando o backend (SurrealDB) faz o parse da data.
  */
 export const formatLocalISO = (dateStr: string): string => {
 	if (!dateStr) return "";
@@ -94,5 +95,14 @@ export const formatLocalISO = (dateStr: string): string => {
 	if (dateStr.includes("T")) return dateStr;
 
 	const timePart = getCurrentLocalTimePart();
-	return `${dateStr}T${timePart}`;
+
+	// Adiciona o timezone offset local
+	const now = new Date();
+	const offset = -now.getTimezoneOffset(); // em minutos
+	const sign = offset >= 0 ? '+' : '-';
+	const absOffset = Math.abs(offset);
+	const hours = String(Math.floor(absOffset / 60)).padStart(2, "0");
+	const minutes = String(absOffset % 60).padStart(2, "0");
+
+	return `${dateStr}T${timePart}${sign}${hours}:${minutes}`;
 };

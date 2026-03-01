@@ -586,8 +586,34 @@
         isViewOpen = true;
     }
 
-    function requestDelete(id: string) {
-        tradeToDelete = id;
+    let deleteModalDescription = $state("");
+
+    function requestDelete(trade: (typeof tradesStore.trades)[0]) {
+        tradeToDelete = trade.id;
+
+        // Check if this trade is part of any system-linked cash transaction (daily closure)
+        const normalizedId =
+            trade.id.split(":").pop()?.replace(/[⟨⟩`]/g, "") || trade.id;
+        const linkedClosure = settingsStore.cashTransactions.find(
+            (ct) =>
+                ct.system_linked &&
+                ct.trade_ids?.some(
+                    (tid) =>
+                        (tid.split(":").pop()?.replace(/[⟨⟩`]/g, "") || tid) ===
+                        normalizedId,
+                ),
+        );
+
+        if (linkedClosure) {
+            deleteModalDescription =
+                $t("trades.delete.confirmation_with_closure") ||
+                "Esta operação faz parte de um Fechamento Diário. O extrato será recalculado automaticamente pós-exclusão. Tem certeza?";
+        } else {
+            deleteModalDescription =
+                $t("trades.delete.confirmation") ||
+                "Tem certeza que deseja excluir esta operação? Esta ação não pode ser desfeita.";
+        }
+
         isDeleteOpen = true;
     }
 
@@ -599,12 +625,18 @@
                     $t("trades.messages.delete_success") ||
                         "Operação excluída com sucesso.",
                 );
+
+                // Also trigger settings reload to ensure summary is perfectly synced
+                settingsStore.loadSettings();
             } else {
-                toast.error(result.error || "Erro ao excluir operação.");
+                toast.error(
+                    $t("trades.messages.delete_error") ||
+                        "Erro ao excluir. Tente novamente.",
+                );
             }
-            tradeToDelete = null;
         }
         isDeleteOpen = false;
+        tradeToDelete = null;
     }
 
     function clearFilters() {
@@ -1503,19 +1535,25 @@
                                                                                                     class="h-3 w-3"
                                                                                                 />
                                                                                             </Button>
-                                                                                            <Button
-                                                                                                variant="ghost"
-                                                                                                size="icon"
-                                                                                                class="h-6 w-6 text-rose-500"
-                                                                                                onclick={() =>
+                                                                                            <button
+                                                                                                class="p-1 px-2 rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+                                                                                                title={$t(
+                                                                                                    "trades.table.actions_delete",
+                                                                                                ) ||
+                                                                                                    "Excluir"}
+                                                                                                onclick={(
+                                                                                                    e,
+                                                                                                ) => {
+                                                                                                    e.stopPropagation();
                                                                                                     requestDelete(
-                                                                                                        trade.id,
-                                                                                                    )}
+                                                                                                        trade,
+                                                                                                    );
+                                                                                                }}
                                                                                             >
                                                                                                 <Trash2
                                                                                                     class="h-3 w-3"
                                                                                                 />
-                                                                                            </Button>
+                                                                                            </button>
                                                                                         </div>
                                                                                     </Table.Cell>
                                                                                 </Table.Row>
@@ -1775,7 +1813,7 @@
     onConfirm={confirmDelete}
     onCancel={() => (isDeleteOpen = false)}
     title={$t("trades.delete.title")}
-    description={$t("trades.delete.confirmation")}
+    description={deleteModalDescription}
 />
 
 <!-- View Modal -->
@@ -1802,14 +1840,18 @@
         {#key selectedTrade?.id}
             <NewTradeWizard
                 trade={selectedTrade}
+                editTradeId={selectedTrade?.id}
                 close={() => (isEditOpen = false)}
                 onsave={() => {
                     isEditOpen = false;
-                    toast.success(
-                        selectedTrade
-                            ? $t("trades.messages.trade_updated")
-                            : $t("trades.messages.trade_created"),
-                    );
+                    // Sync DB state AFTER the dialog is closed (100ms after) to avoid triggering
+                    // $effect in NewTradeWizard while it is still mounted
+                    setTimeout(() => {
+                        selectedTrade = null;
+                        tradesStore.loadTrades();
+                        // Also reload cash transactions so the statement updates after trade edit
+                        settingsStore.loadCashTransactions();
+                    }, 100);
                 }}
             />
         {/key}

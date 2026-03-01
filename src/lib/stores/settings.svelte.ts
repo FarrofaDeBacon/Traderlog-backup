@@ -128,6 +128,19 @@ class SettingsStore {
         }
     }
 
+    async loadCashTransactions() {
+        try {
+            const result = await invoke("get_cash_transactions") as CashTransaction[];
+            if (result) {
+                this.cashTransactions = result;
+            }
+            return { success: true };
+        } catch (e) {
+            console.error("[SettingsStore] Error reloading cash transactions:", e);
+            return { success: false, error: String(e) };
+        }
+    }
+
     async refreshLicenseStatus() {
         if (!this.userProfile.license_key) {
             console.log("[SettingsStore] No license key found, skipping refresh.");
@@ -529,7 +542,17 @@ class SettingsStore {
     // --- Public Logic Methods ---
 
     getJournalEntryByDate(date: string) {
-        return this.journalEntries.find(e => e.date === date);
+        console.log("[SettingsStore] getJournalEntryByDate checking:", date);
+        const searchDate = getLocalDatePart(date);
+
+        const match = this.journalEntries.find(e => {
+            if (!e.date) return false;
+            return getLocalDatePart(e.date) === searchDate;
+        });
+
+        if (match) console.log("  found match!", match.id);
+        else console.log("  no match found.");
+        return match;
     }
 
     // Markets
@@ -936,21 +959,43 @@ class SettingsStore {
         try {
             const id = item.id || crypto.randomUUID();
             const transaction = { ...item, id } as CashTransaction;
-            await invoke("save_cash_transaction", { transaction: $state.snapshot(transaction) });
-
             const cleanInputId = id.split(':').pop() || id;
+            const isDailyClosure = cleanInputId.startsWith('daily_closure_');
+            const searchDate = isDailyClosure ? getLocalDatePart(item.date) : null;
+
             const existingIndex = this.cashTransactions.findIndex(t => {
                 const cleanTId = t.id.split(':').pop() || t.id;
-                return cleanTId === cleanInputId;
+                // Match by ID if it's the same
+                if (cleanTId === cleanInputId) return true;
+
+                // If it's a daily closure, also match by account and date to prevent duplicates
+                if (isDailyClosure && t.system_linked && t.id.startsWith('daily_closure_')) {
+                    const tDate = getLocalDatePart(t.date);
+                    return tDate === searchDate && t.account_id === item.account_id;
+                }
+
+                return false;
             });
             let amountDiff = transaction.amount;
 
             if (existingIndex >= 0) {
-                amountDiff = transaction.amount - this.cashTransactions[existingIndex].amount;
+                const existing = this.cashTransactions[existingIndex];
+                amountDiff = transaction.amount - existing.amount;
+
+                // CRITICAL: If we found a match by account/date but the IDs differ, 
+                // we MUST use the existing ID to prevent the backend from creating a duplicate record.
+                if (existing.id !== transaction.id) {
+                    console.log(`[SettingsStore] Deduplication: Using existing ID ${existing.id} instead of ${transaction.id}`);
+                    transaction.id = existing.id;
+                }
+
                 this.cashTransactions[existingIndex] = transaction;
             } else {
                 this.cashTransactions.push(transaction);
             }
+
+            // Save after potential ID adjustment
+            await invoke("save_cash_transaction", { transaction: $state.snapshot(transaction) });
 
             const account = this.accounts.find(a => a.id === item.account_id);
             if (account && amountDiff !== 0) {
@@ -964,7 +1009,7 @@ class SettingsStore {
         }
     }
 
-    async removeCashTransaction(id: string) {
+    async removeCashTransaction(id: string): Promise<{ success: boolean; error?: string }> {
         try {
             const tx = this.cashTransactions.find(t => t.id === id);
             if (tx) {
@@ -1146,7 +1191,14 @@ class SettingsStore {
 
     // Journaling
     async addJournalEntry(item: Omit<JournalEntry, "id">) {
-        const id = crypto.randomUUID();
+        const searchDate = getLocalDatePart(item.date);
+        const existingIndex = this.journalEntries.findIndex(e => e.date && getLocalDatePart(e.date) === searchDate);
+
+        let id = crypto.randomUUID() as any;
+        if (existingIndex >= 0) {
+            id = this.journalEntries[existingIndex].id;
+        }
+
         const entry = {
             id,
             date: item.date,
@@ -1159,23 +1211,32 @@ class SettingsStore {
             daily_score: item.daily_score ?? 5
         };
 
-        this.journalEntries.push(entry);
+        if (existingIndex >= 0) {
+            this.journalEntries[existingIndex] = entry;
+        } else {
+            this.journalEntries.push(entry);
+        }
+
         try {
             await invoke("save_journal_entry", { entry: $state.snapshot(entry) });
         } catch (e) {
             console.error("[SettingsStore] Error saving journal entry:", e);
-            // Rollback local change on error
-            this.journalEntries = this.journalEntries.filter(j => j.id !== id);
+            if (existingIndex < 0) {
+                // Rollback local change on error if it was a new entry
+                this.journalEntries = this.journalEntries.filter(j => j.id !== id);
+            }
             throw e;
         }
     }
 
-    async removeJournalEntry(id: string) {
+    async removeJournalEntry(id: string): Promise<{ success: boolean; error?: string }> {
         try {
             await invoke("delete_journal_entry", { id });
             this.journalEntries = this.journalEntries.filter(j => j.id !== id);
-        } catch (e) {
+            return { success: true };
+        } catch (e: any) {
             console.error("[SettingsStore] Error deleting journal entry:", e);
+            return { success: false, error: e.toString() };
         }
     }
 
@@ -1243,6 +1304,17 @@ class SettingsStore {
         localStorage.removeItem("isLoggedIn");
         console.log("[SettingsStore] User logged out");
         window.location.href = "/login";
+    }
+    async hasClosureForDate(date: string, accountId: string): Promise<boolean> {
+        const targetDate = getLocalDatePart(date);
+        const normalize = (id: string) => id.split(':').pop()?.replace(/[⟨⟩`\s]/g, '') || id;
+        const targetAcc = normalize(accountId);
+
+        return this.cashTransactions.some(ct =>
+            ct.system_linked &&
+            getLocalDatePart(ct.date) === targetDate &&
+            normalize(ct.account_id) === targetAcc
+        );
     }
 }
 

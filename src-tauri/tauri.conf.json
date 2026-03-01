@@ -5,7 +5,7 @@
   "identifier": "com.farrofa-debacon.tauri-apptraderlogpro",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "devUrl": "http://127.0.0.1:3005",
+    "devUrl": "http://localhost:3005",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../build"
   },

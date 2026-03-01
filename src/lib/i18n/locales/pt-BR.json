@@ -385,7 +385,8 @@
     },
     "delete": {
       "title": "Excluir Operação",
-      "confirmation": "Tem certeza que deseja excluir esta operação? Esta ação não pode ser desfeita."
+      "confirmation": "Tem certeza que deseja excluir esta operação? Esta ação não pode ser desfeita.",
+      "confirmation_with_closure": "Esta operação faz parte de um Fechamento Diário. O extrato será recalculado automaticamente após a exclusão. Tem certeza que deseja excluir?"
     },
     "details": {
       "title": "Detalhes da Operação",
@@ -507,7 +508,9 @@
         "no_status": "Nenhum estado",
         "required_fields": "Preencha os campos obrigatórios.",
         "valid_asset_type": "Por favor, selecione um Tipo de Ativo válido.",
-        "asset_type_required": "Tipo de Ativo é obrigatório. Por favor, selecione um."
+        "asset_type_required": "Tipo de Ativo é obrigatório. Por favor, selecione um.",
+        "closure_exists_warning": "Já existe um fechamento diário para este dia. O trade será adicionado e o fechamento será atualizado automaticamente se possível.",
+        "save_success_with_sync": "Trade salvo e fechamento diário atualizado!"
       },
       "tooltips": {
         "risk": "Risco",
@@ -656,7 +659,6 @@
     }
   },
   "finance": {
-    "title": "Hub Financeiro",
     "description": "Gestão centralizada de caixa, extratos e fechamentos.",
     "dailyClosure": "Fechamento Diário",
     "newTransaction": "Novo Aporte/Retirada",
@@ -745,9 +747,12 @@
       },
       "stepEmotion": {
         "title": "Check-in Emocional",
+        "description": "Avalie como foi seu controle psicológico hoje.",
         "stateLabel": "Como você se sentiu hoje?",
         "statePlaceholder": "Selecione uma emoção...",
         "intensityLabel": "Intensidade ({value})",
+        "intensityLight": "Leve",
+        "intensityIntense": "Extrema",
         "notesLabel": "Notas do Dia",
         "notesPlaceholder": "Descreva brevemente como foi seu dia, disciplina, foco..."
       },

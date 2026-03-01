@@ -2,6 +2,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getLocalDatePart } from "$lib/utils";
 import type { Trade, Account, Currency, UserProfile } from "$lib/types";
+import { settingsStore } from "$lib/stores/settings.svelte";
 
 class TradesStore {
     trades = $state<Trade[]>([]);
@@ -33,6 +34,7 @@ class TradesStore {
 
             // Re-fetch instead of just pushing to ensure we have the DB's true state
             await this.loadTrades();
+            await settingsStore.loadCashTransactions();
 
             return { success: true, trade: newTrade };
         } catch (e: any) {
@@ -44,21 +46,25 @@ class TradesStore {
     async updateTrade(id: string, trade: Partial<Trade>) {
         try {
             // Normalize: accept both "trade:UUID" and plain "UUID" formats
-            const existing = this.trades.find(t =>
+            const existingIdx = this.trades.findIndex(t =>
                 t.id === id ||
                 t.id === `trade:${id}` ||
                 t.id.split(':').pop() === id.split(':').pop()
             );
-            if (!existing) {
+            if (existingIdx === -1) {
                 console.error("[TradesStore] updateTrade: Trade not found for id:", id, "Store has:", this.trades.map(t => t.id));
                 throw new Error(`Trade not found: ${id}`);
             }
 
+            const existing = this.trades[existingIdx];
             const updatedTrade = { ...existing, ...trade };
             await invoke("save_trade", { trade: $state.snapshot(updatedTrade) });
 
-            // CRITICAL: Re-fetch to ensure we have the DB's true state (prevents duplication/desync)
-            await this.loadTrades();
+            this.trades = this.trades.map((t, i) => i === existingIdx ? updatedTrade : t);
+
+            // Trigger financial refresh to update the statement (extrato)
+            await settingsStore.loadCashTransactions();
+
             return { success: true };
         } catch (e: any) {
             console.error("[TradesStore] Error updating trade:", e);
@@ -69,7 +75,23 @@ class TradesStore {
     async removeTrade(id: string) {
         try {
             await invoke("delete_trade", { id });
-            this.trades = this.trades.filter(t => t.id !== id);
+
+            // Optimistic local update: remove from UI immediately
+            const normalizedId = id.split(':').pop()?.replace(/[⟨⟩`]/g, '') || id;
+            this.trades = this.trades.filter(t => {
+                const tid = t.id.split(':').pop()?.replace(/[⟨⟩`]/g, '') || t.id;
+                return tid !== normalizedId;
+            });
+
+            // Also reload from DB to guarantee sync (awaited so UI reflects final state)
+            await this.loadTrades();
+            await settingsStore.loadCashTransactions();
+
+            // Sync account balances
+            invoke("get_accounts").then(res => {
+                if (res) settingsStore.accounts = res as Account[];
+            }).catch(e => console.error("Failed to sync accounts after trade deletion", e));
+
             return { success: true };
         } catch (e: any) {
             console.error("[TradesStore] Error deleting trade:", e);
