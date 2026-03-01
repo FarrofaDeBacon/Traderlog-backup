@@ -243,6 +243,11 @@ class SettingsStore {
                 safeInvoke<TaxProfileEntry[]>("get_tax_profile_entries", "Tax Profile Entries")
             ]);
 
+            if (journalEntriesRes) {
+                this.journalEntries = journalEntriesRes;
+                await this.deduplicateJournalEntries(); // Self-heal on load
+            }
+
             // Process results
             if (profile) {
                 this.userProfile = { ...this.userProfile, ...profile };
@@ -553,6 +558,45 @@ class SettingsStore {
         if (match) console.log("  found match!", match.id);
         else console.log("  no match found.");
         return match;
+    }
+
+    /**
+     * Proactively removes duplicate journal entries for the same date.
+     * Keeps the most recent or the first one found.
+     */
+    async deduplicateJournalEntries() {
+        if (this.journalEntries.length === 0) return;
+
+        const dateMap = new Map<string, JournalEntry>();
+        const toDeleteIds: string[] = [];
+        const uniqueEntries: JournalEntry[] = [];
+
+        // Identify duplicates by date
+        for (const entry of this.journalEntries) {
+            const dateStr = getLocalDatePart(entry.date);
+            if (dateMap.has(dateStr)) {
+                // Duplicate found: Mark it for deletion
+                toDeleteIds.push(entry.id);
+                console.log(`[SettingsStore] Duplicate journal found for ${dateStr} (ID: ${entry.id}). Marking for deletion.`);
+            } else {
+                dateMap.set(dateStr, entry);
+                uniqueEntries.push(entry);
+            }
+        }
+
+        if (toDeleteIds.length > 0) {
+            this.journalEntries = uniqueEntries;
+            console.log(`[SettingsStore] Consolidated ${toDeleteIds.length} duplicate journal entries.`);
+
+            // Proactively clean the backend
+            for (const id of toDeleteIds) {
+                try {
+                    await invoke("delete_journal_entry", { id });
+                } catch (e) {
+                    console.error(`[SettingsStore] FAILED to clean duplicate ${id} from backend:`, e);
+                }
+            }
+        }
     }
 
     // Markets
@@ -971,7 +1015,9 @@ class SettingsStore {
                 // If it's a daily closure, also match by account and date to prevent duplicates
                 if (isDailyClosure && t.system_linked && t.id.startsWith('daily_closure_')) {
                     const tDate = getLocalDatePart(t.date);
-                    return tDate === searchDate && t.account_id === item.account_id;
+                    const cleanTAccId = t.account_id.split(':').pop()?.replace(/[⟨⟩`]/g, '').trim() || t.account_id;
+                    const cleanItemAccId = item.account_id.split(':').pop()?.replace(/[⟨⟩`]/g, '').trim() || item.account_id;
+                    return tDate === searchDate && cleanTAccId === cleanItemAccId;
                 }
 
                 return false;
@@ -1192,12 +1238,15 @@ class SettingsStore {
     // Journaling
     async addJournalEntry(item: Omit<JournalEntry, "id">) {
         const searchDate = getLocalDatePart(item.date);
-        const existingIndex = this.journalEntries.findIndex(e => e.date && getLocalDatePart(e.date) === searchDate);
 
-        let id = crypto.randomUUID() as any;
-        if (existingIndex >= 0) {
-            id = this.journalEntries[existingIndex].id;
-        }
+        // Find ALL entries for this date to handle potential pre-existing duplicates
+        const existingEntries = this.journalEntries.filter(e => e.date && getLocalDatePart(e.date) === searchDate);
+
+        // Primary entry to update or create
+        let id = existingEntries.length > 0 ? existingEntries[0].id : (crypto.randomUUID() as any);
+
+        // Mark others for background cleanup
+        const redundantIds = existingEntries.slice(1).map(e => e.id);
 
         const entry = {
             id,
@@ -1211,20 +1260,31 @@ class SettingsStore {
             daily_score: item.daily_score ?? 5
         };
 
+        // Update local state: swap or push
+        const existingIndex = this.journalEntries.findIndex(e => e.id === id);
         if (existingIndex >= 0) {
             this.journalEntries[existingIndex] = entry;
         } else {
             this.journalEntries.push(entry);
         }
 
+        // Proactively remove other clones from local state
+        if (redundantIds.length > 0) {
+            this.journalEntries = this.journalEntries.filter(e => !redundantIds.includes(e.id));
+        }
+
         try {
             await invoke("save_journal_entry", { entry: $state.snapshot(entry) });
+
+            // Proactively clean the backend redundant clones
+            for (const rid of redundantIds) {
+                console.log(`[SettingsStore] Cleaning redundant clone ${rid} for date ${searchDate}`);
+                await invoke("delete_journal_entry", { id: rid });
+            }
         } catch (e) {
             console.error("[SettingsStore] Error saving journal entry:", e);
-            if (existingIndex < 0) {
-                // Rollback local change on error if it was a new entry
-                this.journalEntries = this.journalEntries.filter(j => j.id !== id);
-            }
+            // We don't rollback redundant deletions as they were stale anyway,
+            // but we might want to reload if state is inconsistent.
             throw e;
         }
     }

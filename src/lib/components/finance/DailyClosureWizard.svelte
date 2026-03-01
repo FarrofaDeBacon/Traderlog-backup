@@ -135,8 +135,11 @@
                         `[DailyClosureWizard] Saving transaction for ${data.account_name}: ${data.result}. Linked trades: ${linkedTrades.length}`,
                     );
 
-                    const accUuid =
-                        data.account_id.split(":").pop() || data.account_id;
+                    const accUuid = (
+                        data.account_id.split(":").pop() || data.account_id
+                    )
+                        .replace(/[⟨⟩`]/g, "")
+                        .trim();
                     const txResult = await settingsStore.addCashTransaction({
                         id: `daily_closure_${accUuid}_${selectedDate.replace(/-/g, "_")}`,
                         date: formatLocalISO(selectedDate),

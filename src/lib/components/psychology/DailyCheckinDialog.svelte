@@ -43,11 +43,16 @@
         }
     });
 
+    let isSaving = $state(false);
+
     async function save() {
         if (!emotionalStateId && !journalNotes) {
             toast.error("Preencha pelo menos uma emoção ou nota.");
             return;
         }
+
+        if (isSaving) return;
+        isSaving = true;
 
         try {
             const existingEntry =
@@ -73,6 +78,8 @@
         } catch (e) {
             console.error("[DailyCheckinDialog] Save error:", e);
             toast.error("Erro ao salvar diário. Tente novamente.");
+        } finally {
+            isSaving = false;
         }
     }
 
@@ -211,7 +218,14 @@
             <Button variant="outline" onclick={() => (open = false)}
                 >{$t("general.cancel")}</Button
             >
-            <Button onclick={save}>{$t("psychology.checkin.save")}</Button>
+            <Button onclick={save} disabled={isSaving}>
+                {#if isSaving}
+                    <Loader2 class="w-4 h-4 mr-2 animate-spin" />
+                    Salvando...
+                {:else}
+                    {$t("psychology.checkin.save")}
+                {/if}
+            </Button>
         </Dialog.Footer>
     </Dialog.Content>
 </Dialog.Root>

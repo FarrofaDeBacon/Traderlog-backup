@@ -612,19 +612,17 @@ pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), Stri
 
     if let Ok(mut find_res) = db.0.query(&find_ct_sql).await {
         if let Ok(closures) = find_res.take::<Vec<crate::models::CashTransaction>>(0) {
-            println!("[COMMAND] save_trade auto-sync: found {} closures for date {} for matching", closures.len(), date_only);
-            let mut matched_closure = None;
-            for c in closures {
+            let matching_closures: Vec<_> = closures.into_iter().filter(|c| {
                 let c_acc_clean = c.account_id.split(':').last().unwrap_or(&c.account_id)
                     .replace("⟨", "").replace("⟩", "").replace("`", "").trim().to_string();
-                
-                if c_acc_clean == acc_clean {
-                    matched_closure = Some(c);
-                    break;
-                }
+                c_acc_clean == acc_clean
+            }).collect();
+
+            if matching_closures.is_empty() {
+                println!("[COMMAND] save_trade auto-sync: no matching closure found for date {} and account {}", date_only, acc_clean);
             }
 
-            if let Some(mut closure) = matched_closure {
+            for mut closure in matching_closures {
                 let ct_clean = closure
                     .id
                     .split(':')
@@ -637,7 +635,7 @@ pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), Stri
                 let ct_full = format!("cash_transaction:⟨{}⟩", ct_clean);
 
                 println!(
-                    "[COMMAND] save_trade auto-sync: found exact match closure {} for date {}",
+                    "[COMMAND] save_trade auto-sync: syncing closure {} for date {}",
                     ct_full, date_only
                 );
 
@@ -756,7 +754,7 @@ pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), Stri
     // 2. Find associated daily closures (cash_transactions with this trade in trade_ids)
     // Search with multiple ID formats to handle legacy data
     let sql_ct =
-        "SELECT *, type::string(id) as id FROM cash_transaction WHERE system_linked = true";
+        "SELECT *, type::string(id) as id, type::string(account_id) as account_id FROM cash_transaction WHERE system_linked = true";
     let mut cashflow_to_update: Vec<crate::models::CashTransaction> = Vec::new();
     if let Ok(mut ct_res) = db.0.query(sql_ct).await {
         if let Ok(all_cts) = ct_res.take::<Vec<crate::models::CashTransaction>>(0) {
@@ -869,7 +867,7 @@ pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), Stri
 #[tauri::command]
 pub async fn get_cash_transactions(db: State<'_, DbState>) -> Result<Vec<CashTransaction>, String> {
     // Order by date DESC (primary) and ID DESC (stable creation proxy in SurrealDB)
-    let sql = "SELECT *, type::string(id) as id FROM cash_transaction ORDER BY date DESC, id DESC";
+    let sql = "SELECT *, type::string(id) as id, type::string(account_id) as account_id FROM cash_transaction ORDER BY date DESC, id DESC";
     let mut result = db.0.query(sql).await.map_err(|e| e.to_string())?;
     let transactions: Vec<CashTransaction> = result.take(0).map_err(|e| {
         println!(
