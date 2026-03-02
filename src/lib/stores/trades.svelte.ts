@@ -36,6 +36,11 @@ class TradesStore {
             await this.loadTrades();
             await settingsStore.loadCashTransactions();
 
+            // Sync account balances because save_trade might have updated them
+            invoke("get_accounts").then(res => {
+                if (res) settingsStore.accounts = res as Account[];
+            }).catch(e => console.error("Failed to sync accounts after trade addition", e));
+
             return { success: true, trade: newTrade };
         } catch (e: any) {
             console.error("[TradesStore] Error adding trade:", e);
@@ -64,6 +69,11 @@ class TradesStore {
 
             // Trigger financial refresh to update the statement (extrato)
             await settingsStore.loadCashTransactions();
+
+            // Sync account balances because save_trade might have updated them
+            invoke("get_accounts").then(res => {
+                if (res) settingsStore.accounts = res as Account[];
+            }).catch(e => console.error("Failed to sync accounts after trade update", e));
 
             return { success: true };
         } catch (e: any) {

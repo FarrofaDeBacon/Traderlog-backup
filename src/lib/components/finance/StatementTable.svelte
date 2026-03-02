@@ -428,16 +428,16 @@
 <div class="space-y-4">
     <!-- Filters Header -->
     <div
-        class="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center bg-zinc-900/30 p-4 rounded-xl border border-zinc-800/50"
+        class="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center bg-muted/30 p-4 rounded-xl border border-border/50"
     >
         <div class="flex flex-wrap gap-3 items-center w-full lg:w-auto">
             <div class="relative w-full md:w-64">
                 <Search
-                    class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500"
+                    class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
                 />
                 <Input
                     placeholder={$t("finance.statement.searchPlaceholder")}
-                    class="pl-10 bg-zinc-950/50 border-zinc-800"
+                    class="pl-10 bg-background/50 border-border"
                     bind:value={searchTerm}
                 />
             </div>
@@ -450,10 +450,10 @@
 
             <Select.Root type="single" bind:value={accountFilter}>
                 <Select.Trigger
-                    class="w-[180px] bg-zinc-950/50 border-zinc-800"
+                    class="w-[180px] bg-background/50 border-border"
                 >
                     <div class="flex items-center gap-2">
-                        <Wallet class="w-3.5 h-3.5 text-zinc-500" />
+                        <Wallet class="w-3.5 h-3.5 text-muted-foreground" />
                         <span class="truncate">
                             {accountOptions.find(
                                 (o) => o.value === accountFilter,
@@ -470,10 +470,10 @@
 
             <Select.Root type="single" bind:value={currencyFilter}>
                 <Select.Trigger
-                    class="w-[180px] bg-zinc-950/50 border-zinc-800"
+                    class="w-[180px] bg-background/50 border-border"
                 >
                     <div class="flex items-center gap-2">
-                        <Coins class="w-3.5 h-3.5 text-zinc-500" />
+                        <Coins class="w-3.5 h-3.5 text-muted-foreground" />
                         <span class="truncate">
                             {currencyOptions.find(
                                 (o) => o.value === currencyFilter,
@@ -491,7 +491,7 @@
 
         <div class="flex items-center gap-3 w-full lg:w-auto mt-4 lg:mt-0">
             <span
-                class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest whitespace-nowrap"
+                class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap"
                 >{$t("general.show")}</span
             >
             <Select.Root
@@ -500,7 +500,7 @@
                 onValueChange={(v) => (pageSize = parseInt(v))}
             >
                 <Select.Trigger
-                    class="w-[100px] bg-zinc-950/50 border-zinc-800"
+                    class="w-[100px] bg-background/50 border-border"
                 >
                     <span class="truncate"
                         >{pageSize} {$t("general.time.months")}</span
@@ -543,7 +543,7 @@
                             <Calendar class="w-4 h-4 text-primary" />
                         </div>
                         <h4
-                            class="text-sm font-black text-white uppercase tracking-tight"
+                            class="text-sm font-black text-foreground uppercase tracking-tight"
                         >
                             {new Date(
                                 monthKey + "-02T12:00:00",
@@ -559,14 +559,14 @@
                             {#each Object.entries(monthlyPnl) as [curr, total]}
                                 <div class="flex flex-col items-end">
                                     <span
-                                        class="text-[9px] font-bold text-zinc-500 uppercase tracking-widest"
+                                        class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest"
                                         >{$t("general.balance")} {curr}</span
                                     >
                                     <span
                                         class="text-xs font-mono font-bold {total >=
                                         0
-                                            ? 'text-emerald-400'
-                                            : 'text-red-400'}"
+                                            ? 'text-emerald-500'
+                                            : 'text-rose-500'}"
                                     >
                                         {formatCurrencyValue(total, curr)}
                                     </span>
@@ -585,20 +585,20 @@
 
                 {#if isMonthExpanded}
                     <div
-                        class="pl-4 space-y-3 border-l-2 border-zinc-800/30 ml-6 animate-in slide-in-from-top-2 duration-300"
+                        class="pl-4 space-y-3 border-l-2 border-border/30 ml-6 animate-in slide-in-from-top-2 duration-300"
                     >
                         {#each days as { date, transactions, pnl }}
                             {@const isExpanded = expandedDays.has(date)}
                             <div
-                                class="rounded-xl border border-zinc-800/50 bg-zinc-900/20 overflow-hidden"
+                                class="rounded-xl border border-border/50 bg-muted/20 overflow-hidden"
                             >
                                 <button
-                                    class="w-full flex items-center justify-between p-2 hover:bg-zinc-800/40 transition-colors"
+                                    class="w-full flex items-center justify-between p-2 hover:bg-muted/40 transition-colors"
                                     onclick={() => toggleDay(date)}
                                 >
                                     <div class="flex items-center gap-4">
                                         <div
-                                            class="flex flex-col items-center justify-center bg-zinc-800/80 rounded-lg h-9 w-9 border border-zinc-700/50"
+                                            class="flex flex-col items-center justify-center bg-muted/80 rounded-lg h-9 w-9 border border-border/50"
                                         >
                                             <span
                                                 class="text-[10px] font-black leading-none"
@@ -622,13 +622,13 @@
                                             class="flex flex-col items-start px-1"
                                         >
                                             <span
-                                                class="text-xs font-bold text-zinc-100"
+                                                class="text-xs font-bold text-foreground"
                                                 >{$t(
                                                     "finance.dailyClosure",
                                                 )}</span
                                             >
                                             <span
-                                                class="text-[9px] font-medium text-zinc-500 uppercase tracking-widest"
+                                                class="text-[9px] font-medium text-muted-foreground uppercase tracking-widest"
                                                 >{transactions.length}
                                                 {$t(
                                                     "finance.statement.entries",
@@ -646,8 +646,8 @@
                                                     <span
                                                         class="text-[10px] font-mono font-bold {(total as number) >=
                                                         0
-                                                            ? 'text-emerald-400'
-                                                            : 'text-red-400'}"
+                                                            ? 'text-emerald-500'
+                                                            : 'text-rose-500'}"
                                                     >
                                                         {formatCurrencyValue(
                                                             total as number,
@@ -657,7 +657,7 @@
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        class="h-5 w-5 hover:bg-white/10"
+                                                        class="h-5 w-5 hover:bg-accent/10"
                                                         onclick={(e) => {
                                                             e.stopPropagation();
                                                             openDayDetails(
@@ -667,53 +667,51 @@
                                                         }}
                                                     >
                                                         <Eye
-                                                            class="w-2.5 h-2.5 text-zinc-500 hover:text-white"
+                                                            class="w-2.5 h-2.5 text-muted-foreground hover:text-foreground"
                                                         />
                                                     </Button>
                                                 </div>
                                             {/each}
                                         </div>
                                         <div
-                                            class="w-6 h-6 rounded-full bg-zinc-800/50 flex items-center justify-center transition-transform {isExpanded
+                                            class="w-6 h-6 rounded-full bg-muted flex items-center justify-center transition-transform {isExpanded
                                                 ? 'rotate-180'
                                                 : ''}"
                                         >
                                             <ChevronDown
-                                                class="w-3 h-3 text-zinc-500"
+                                                class="w-3 h-3 text-muted-foreground"
                                             />
                                         </div>
                                     </div>
                                 </button>
 
                                 {#if isExpanded}
-                                    <div class="border-t border-zinc-800/50">
+                                    <div class="border-t border-border/50">
                                         <Table.Root>
-                                            <Table.Header
-                                                class="bg-zinc-950/20"
-                                            >
+                                            <Table.Header class="bg-muted/20">
                                                 <Table.Row
-                                                    class="hover:bg-transparent border-zinc-800"
+                                                    class="hover:bg-transparent border-border"
                                                 >
                                                     <Table.Head
-                                                        class="w-[120px] text-[10px] font-bold uppercase tracking-widest text-zinc-500"
+                                                        class="w-[120px] text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
                                                         >{$t(
                                                             "finance.statement.columns.type",
                                                         )}</Table.Head
                                                     >
                                                     <Table.Head
-                                                        class="text-[10px] font-bold uppercase tracking-widest text-zinc-500"
+                                                        class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
                                                         >{$t(
                                                             "finance.statement.columns.description",
                                                         )}</Table.Head
                                                     >
                                                     <Table.Head
-                                                        class="text-[10px] font-bold uppercase tracking-widest text-zinc-500"
+                                                        class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
                                                         >{$t(
                                                             "finance.statement.columns.account",
                                                         )}</Table.Head
                                                     >
                                                     <Table.Head
-                                                        class="text-right text-[10px] font-bold uppercase tracking-widest text-zinc-500"
+                                                        class="text-right text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
                                                         >{$t(
                                                             "finance.statement.columns.amount",
                                                         )}</Table.Head
@@ -728,7 +726,7 @@
                                                         tx.account_id,
                                                     )}
                                                     <Table.Row
-                                                        class="border-zinc-800/50 hover:bg-zinc-800/20"
+                                                        class="border-border/50 hover:bg-muted/20"
                                                     >
                                                         <Table.Cell>
                                                             {#if tx.id && tx.id.includes("daily_closure_")}
@@ -766,7 +764,7 @@
                                                                 </div>
                                                             {:else if tx.type === "DailyResult"}
                                                                 <div
-                                                                    class="flex items-center text-zinc-400 text-[10px] font-mono font-bold uppercase tracking-tighter bg-zinc-500/10 px-2 py-0.5 rounded border border-zinc-500/20 w-fit"
+                                                                    class="flex items-center text-muted-foreground text-[10px] font-mono font-bold uppercase tracking-tighter bg-muted/30 px-2 py-0.5 rounded border border-border/50 w-fit"
                                                                 >
                                                                     <CalendarCheck
                                                                         class="w-3 h-3 mr-1"
@@ -789,7 +787,7 @@
                                                             {/if}
                                                         </Table.Cell>
                                                         <Table.Cell
-                                                            class="font-medium text-zinc-200"
+                                                            class="font-medium text-foreground"
                                                         >
                                                             {#if tx.id && tx.id.includes("daily_closure_")}
                                                                 {$t(
@@ -807,18 +805,18 @@
                                                             {/if}
                                                         </Table.Cell>
                                                         <Table.Cell
-                                                            class="text-zinc-500 text-xs"
+                                                            class="text-muted-foreground text-xs"
                                                         >
                                                             <div
                                                                 class="flex items-center gap-1.5"
                                                             >
                                                                 <span
-                                                                    class="font-bold text-zinc-400"
+                                                                    class="font-bold text-foreground/80"
                                                                     >{acc?.nickname ??
                                                                         "---"}</span
                                                                 >
                                                                 <span
-                                                                    class="text-[10px] bg-zinc-800 px-1 rounded text-zinc-500 uppercase"
+                                                                    class="text-[10px] bg-muted px-1 rounded text-muted-foreground uppercase"
                                                                     >{acc?.currency ??
                                                                         ""}</span
                                                                 >
@@ -827,8 +825,8 @@
                                                         <Table.Cell
                                                             class="text-right font-mono font-bold {tx.amount >
                                                             0
-                                                                ? 'text-emerald-400'
-                                                                : 'text-red-400'}"
+                                                                ? 'text-emerald-500'
+                                                                : 'text-rose-500'}"
                                                         >
                                                             {formatCurrencyValue(
                                                                 tx.amount,
@@ -844,7 +842,7 @@
                                                                     <Button
                                                                         variant="ghost"
                                                                         size="icon"
-                                                                        class="h-7 w-7 text-zinc-500 hover:text-white hover:bg-zinc-800"
+                                                                        class="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted"
                                                                         onclick={() =>
                                                                             openDetails(
                                                                                 tx,
@@ -864,7 +862,7 @@
                                                                             <Button
                                                                                 variant="ghost"
                                                                                 size="icon"
-                                                                                class="h-7 w-7 text-zinc-700 cursor-not-allowed opacity-50"
+                                                                                class="h-7 w-7 text-muted-foreground/30 cursor-not-allowed opacity-50"
                                                                                 disabled
                                                                             >
                                                                                 <Trash2
@@ -873,7 +871,7 @@
                                                                             </Button>
                                                                         </Tooltip.Trigger>
                                                                         <Tooltip.Content
-                                                                            class="bg-zinc-950 border-zinc-800 text-[10px] max-w-[200px]"
+                                                                            class="bg-popover border-border text-[10px] max-w-[200px]"
                                                                         >
                                                                             {$t(
                                                                                 "finance.statement.messages.systemLinked",
@@ -910,7 +908,7 @@
             </div>
         {:else}
             <div
-                class="rounded-xl border border-zinc-800/50 bg-zinc-900/20 p-12 text-center text-zinc-600 font-medium"
+                class="rounded-xl border border-border/50 bg-muted/20 p-12 text-center text-muted-foreground font-medium"
             >
                 <div class="flex flex-col items-center gap-2">
                     <Search class="w-8 h-8 opacity-20" />
@@ -924,13 +922,13 @@
 <DeleteConfirmationModal bind:open={isDeleteOpen} onConfirm={confirmDelete} />
 
 <Dialog.Root bind:open={isDeleteWithJournalOpen}>
-    <Dialog.Content class="max-w-[425px] w-full bg-zinc-950 border-zinc-800">
+    <Dialog.Content class="max-w-[425px] w-full glass border-border">
         <Dialog.Header>
-            <Dialog.Title class="text-white"
+            <Dialog.Title class="text-foreground"
                 >{$t("general.confirmDelete") ||
                     "Excluir Fechamento Diário"}</Dialog.Title
             >
-            <Dialog.Description class="text-zinc-400">
+            <Dialog.Description class="text-muted-foreground">
                 Este fechamento possui um <strong
                     >Registro Diário Psicológico</strong
                 > associado. Você deseja excluir apenas o registro financeiro ou
@@ -960,14 +958,14 @@
 </Dialog.Root>
 
 <Dialog.Root bind:open={showDayDetailsDialog}>
-    <Dialog.Content class="sm:max-w-[500px] bg-zinc-900 border-zinc-800">
+    <Dialog.Content class="sm:max-w-[500px] glass border-border">
         <Dialog.Header>
-            <Dialog.Title class="text-white flex items-center gap-2">
+            <Dialog.Title class="text-foreground flex items-center gap-2">
                 <Calendar class="w-5 h-5 text-primary" />
                 {$t("finance.statement.summary.title")}
             </Dialog.Title>
             <Dialog.Description
-                class="text-zinc-500 font-mono text-[10px] uppercase tracking-widest"
+                class="text-muted-foreground font-mono text-[10px] uppercase tracking-widest"
             >
                 {selectedDay
                     ? new Date(
@@ -985,30 +983,26 @@
 
         {#if dayDetailsStats}
             <div class="grid grid-cols-2 gap-4 py-4">
-                <div
-                    class="bg-zinc-950/50 p-4 rounded-xl border border-zinc-800/50"
-                >
+                <div class="bg-muted/50 p-4 rounded-xl border border-border/50">
                     <span
-                        class="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-1"
+                        class="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-1"
                         >{$t("finance.statement.summary.totalDeposits")}</span
                     >
-                    <span class="text-lg font-mono font-bold text-emerald-400">
+                    <span class="text-lg font-mono font-bold text-emerald-500">
                         {formatCurrencyValue(
                             dayDetailsStats.deposits,
                             dayDetailsStats.currency || "BRL",
                         )}
                     </span>
                 </div>
-                <div
-                    class="bg-zinc-950/50 p-4 rounded-xl border border-zinc-800/50"
-                >
+                <div class="bg-muted/50 p-4 rounded-xl border border-border/50">
                     <span
-                        class="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-1"
+                        class="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-1"
                         >{$t(
                             "finance.statement.summary.totalWithdrawals",
                         )}</span
                     >
-                    <span class="text-lg font-mono font-bold text-red-400">
+                    <span class="text-lg font-mono font-bold text-rose-500">
                         {formatCurrencyValue(
                             dayDetailsStats.withdrawals,
                             dayDetailsStats.currency || "BRL",
@@ -1024,7 +1018,7 @@
                             >{$t("finance.statement.summary.netResult")}</span
                         >
                         <span
-                            class="text-2xl font-mono font-bold text-white leading-none"
+                            class="text-2xl font-mono font-bold text-foreground leading-none"
                         >
                             {formatCurrencyValue(
                                 dayDetailsStats.net,
@@ -1034,10 +1028,10 @@
                     </div>
                     <div class="text-right">
                         <span
-                            class="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-1"
+                            class="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-1"
                             >{$t("finance.statement.entries")}</span
                         >
-                        <span class="text-xl font-bold text-zinc-300"
+                        <span class="text-xl font-bold text-foreground/80"
                             >{dayDetailsStats.count}</span
                         >
                     </div>
@@ -1046,28 +1040,28 @@
 
             <div class="space-y-3 mt-2">
                 <h4
-                    class="text-[10px] font-black text-zinc-500 uppercase tracking-widest"
+                    class="text-[10px] font-black text-muted-foreground uppercase tracking-widest"
                 >
                     {$t("finance.statement.summary.periodEntries")}
                 </h4>
                 <div class="max-h-[300px] overflow-y-auto space-y-2 pr-1">
                     {#each dayDetailsStats.transactions as tx}
                         <div
-                            class="flex items-center justify-between p-3 rounded-lg bg-zinc-950/30 border border-zinc-800/50"
+                            class="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50"
                         >
                             <div class="flex flex-col">
-                                <span class="text-xs font-bold text-zinc-200"
+                                <span class="text-xs font-bold text-foreground"
                                     >{tx.description}</span
                                 >
-                                <span class="text-[10px] text-zinc-500"
+                                <span class="text-[10px] text-muted-foreground"
                                     >{getAccount(tx.account_id)?.nickname}</span
                                 >
                             </div>
                             <span
                                 class="font-mono text-xs font-bold {tx.amount >
                                 0
-                                    ? 'text-emerald-400'
-                                    : 'text-red-400'}"
+                                    ? 'text-emerald-500'
+                                    : 'text-rose-500'}"
                             >
                                 {formatCurrencyValue(
                                     tx.amount,
@@ -1094,9 +1088,9 @@
 </Dialog.Root>
 
 <Dialog.Root bind:open={showDetailsDialog}>
-    <Dialog.Content class="sm:max-w-[700px] bg-zinc-900 border-zinc-800">
+    <Dialog.Content class="sm:max-w-[700px] glass border-border">
         <Dialog.Header>
-            <Dialog.Title class="text-white"
+            <Dialog.Title class="text-foreground"
                 >{$t("finance.details.title")}</Dialog.Title
             >
         </Dialog.Header>
@@ -1106,10 +1100,10 @@
                 <div class="grid grid-cols-3 gap-6 text-sm">
                     <div class="space-y-1">
                         <span
-                            class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest"
+                            class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
                             >{$t("finance.details.date")}</span
                         >
-                        <div class="text-zinc-200 font-medium font-mono">
+                        <div class="text-foreground/80 font-medium font-mono">
                             {new Date(
                                 selectedTransaction.date.includes("T")
                                     ? selectedTransaction.date
@@ -1119,19 +1113,19 @@
                     </div>
                     <div class="space-y-1">
                         <span
-                            class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest"
+                            class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
                             >{$t("finance.details.account")}</span
                         >
-                        <div class="text-zinc-200 font-medium">
+                        <div class="text-foreground/80 font-medium">
                             {acc?.nickname}
                         </div>
                     </div>
                     <div class="space-y-1">
                         <span
-                            class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest"
+                            class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
                             >{$t("finance.transactionDialog.amount")} ({acc?.currency})</span
                         >
-                        <div class="text-xl font-black text-white">
+                        <div class="text-xl font-black text-foreground">
                             {formatCurrencyValue(
                                 selectedTransaction.amount,
                                 acc?.currency || "BRL",
@@ -1141,27 +1135,27 @@
                 </div>
 
                 <div
-                    class="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-950/40"
+                    class="border border-border rounded-xl overflow-hidden bg-muted/40"
                 >
                     <Table.Root>
-                        <Table.Header class="bg-zinc-900/50">
+                        <Table.Header class="bg-muted/50">
                             <Table.Row
-                                class="hover:bg-transparent border-zinc-800"
+                                class="hover:bg-transparent border-border"
                             >
                                 <Table.Head
-                                    class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest"
+                                    class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
                                     >{$t(
                                         "finance.details.columns.asset",
                                     )}</Table.Head
                                 >
                                 <Table.Head
-                                    class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest"
+                                    class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
                                     >{$t(
                                         "finance.details.columns.side",
                                     )}</Table.Head
                                 >
                                 <Table.Head
-                                    class="text-right text-[10px] font-bold text-zinc-500 uppercase tracking-widest"
+                                    class="text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
                                     >{$t(
                                         "finance.details.columns.result",
                                     )}</Table.Head
@@ -1174,10 +1168,10 @@
                                     {@const trade = findTradeById(tradeId)}
                                     {#if trade}
                                         <Table.Row
-                                            class="border-zinc-800/50 hover:bg-zinc-800/20"
+                                            class="border-border/50 hover:bg-muted/20"
                                         >
                                             <Table.Cell
-                                                class="font-bold text-zinc-300"
+                                                class="font-bold text-foreground/80"
                                                 >{trade.asset_symbol}</Table.Cell
                                             >
                                             <Table.Cell>
@@ -1197,8 +1191,8 @@
                                             <Table.Cell
                                                 class="text-right font-mono font-bold {trade.result >=
                                                 0
-                                                    ? 'text-emerald-400'
-                                                    : 'text-red-400'}"
+                                                    ? 'text-emerald-500'
+                                                    : 'text-rose-500'}"
                                             >
                                                 {formatCurrencyValue(
                                                     trade.result,
@@ -1212,7 +1206,7 @@
                                 <Table.Row>
                                     <Table.Cell
                                         colspan={3}
-                                        class="text-center h-12 text-zinc-600"
+                                        class="text-center h-12 text-muted-foreground"
                                     >
                                         {$t("finance.details.noTrades")}
                                     </Table.Cell>

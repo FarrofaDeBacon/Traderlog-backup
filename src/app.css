@@ -5,38 +5,51 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
+  --radius: 1rem;
+  /* More rounded corners for premium feel */
+  --background: oklch(0.99 0.005 250);
+  /* Ultra-clean ghost white */
+  --foreground: oklch(0.25 0.05 260);
+  /* Deep slate for better readability */
+  --card: oklch(1 0 0 / 70%);
+  /* Semi-transparent for glass effect */
+  --card-foreground: oklch(0.25 0.05 260);
+  --popover: oklch(1 0 0 / 85%);
+  --popover-foreground: oklch(0.25 0.05 260);
+  --primary: oklch(0.6 0.18 250);
+  /* Premium Azure */
+  --primary-foreground: oklch(0.98 0.01 250);
+  --secondary: oklch(0.94 0.02 250);
+  --secondary-foreground: oklch(0.25 0.05 260);
+  --muted: oklch(0.94 0.02 250);
+  --muted-foreground: oklch(0.5 0.05 260);
+  --accent: oklch(0.94 0.02 250);
+  --accent-foreground: oklch(0.6 0.18 250);
+  --destructive: oklch(0.55 0.22 25);
+  --border: oklch(0.9 0.02 250 / 50%);
+  --input: oklch(0.9 0.02 250);
+  --ring: oklch(0.6 0.18 250 / 40%);
+
+  /* Premium Elevation & Glass */
+  --shadow-premium: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 4px 10px -5px rgba(0, 0, 0, 0.02);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-blur: blur(12px);
+
+  --chart-1: oklch(0.6 0.18 250);
+  --chart-2: oklch(0.5 0.2 150);
+  --chart-3: oklch(0.4 0.15 200);
+  --chart-4: oklch(0.8 0.15 80);
+  --chart-5: oklch(0.7 0.15 40);
+
+  --sidebar: oklch(0.98 0.01 250);
+  --sidebar-foreground: oklch(0.25 0.05 260);
+  --sidebar-primary: oklch(0.6 0.18 250);
+  --sidebar-primary-foreground: oklch(1 1 1);
+  --sidebar-accent: oklch(0.94 0.02 250);
+  --sidebar-accent-foreground: oklch(0.6 0.18 250);
+  --sidebar-border: oklch(0.9 0.02 250 / 30%);
+  --sidebar-ring: oklch(0.6 0.18 250 / 40%);
 }
 
 .dark {
@@ -110,6 +123,12 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  /* Premium Design Tokens */
+  --shadow-premium: var(--shadow-premium);
+  --glass-blur: var(--glass-blur);
+  --glass-bg: var(--glass-bg);
+  --glass-border: var(--glass-border);
+
   /* Dashboard Custom Tokens */
   --dashboard-surface: var(--card);
   --dashboard-sidebar: var(--sidebar);
@@ -121,7 +140,25 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    transition: background-color 0.5s ease, color 0.5s ease;
+  }
+
+  /* Global Glassmorphism for Cards */
+  .card-glass {
+    @apply bg-card rounded-[var(--radius)] antialiased;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .card-glass:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.5);
   }
 }

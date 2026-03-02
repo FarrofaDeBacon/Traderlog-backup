@@ -347,9 +347,7 @@
       <!-- ELITE KPI LINE: 6 Professional Horizontal Cards -->
       <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
         {#each [{ label: $t("dashboard.kpis.netResult"), val: formatCurrency(stats.net), icon: TrendingUp, color: "text-emerald-500", borderColor: "border-l-emerald-500" }, { label: $t("dashboard.kpis.winRate"), val: `${stats.winRate.toFixed(1)}%`, icon: Trophy, color: "text-blue-500", borderColor: "border-l-blue-500" }, { label: $t("dashboard.kpis.profitFactor"), val: stats.profitFactor.toFixed(2), icon: Activity, color: "text-amber-500", borderColor: "border-l-amber-500" }, { label: $t("dashboard.kpis.discipline"), val: `${stats.discipline.toFixed(0)}%`, icon: Zap, color: "text-purple-500", borderColor: "border-l-purple-500" }, { label: $t("dashboard.kpis.payoff"), val: stats.payoff.toFixed(2), icon: ArrowUpRight, color: "text-indigo-400", borderColor: "border-l-indigo-400" }, { label: $t("dashboard.kpis.maxDrawdown"), val: `${(stats.drawdown || 0).toFixed(1)}%`, icon: Activity, color: "text-rose-500", borderColor: "border-l-rose-500" }] as kpi}
-          <Card
-            class="shadow-sm bg-card border-l-2 {kpi.borderColor} hover:shadow-md transition-shadow"
-          >
+          <Card class="card-glass border-l-2 {kpi.borderColor}">
             <CardContent class="py-0.5 px-2.5">
               <div class="flex items-center justify-between space-y-0">
                 <span
@@ -479,9 +477,7 @@
 
               <div class="grid grid-cols-1 xl:grid-cols-5 gap-2.5">
                 <!-- Card 1: Growth Engine (Span 3) -->
-                <Card
-                  class="xl:col-span-4 border-border/40 shadow-sm overflow-hidden bg-card"
-                >
+                <Card class="xl:col-span-4 card-glass overflow-hidden">
                   <CardContent class="p-0">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-0">
                       <!-- SubCol 1: Current Phase -->
@@ -658,7 +654,7 @@
                 </Card>
 
                 <!-- Card 2: Risk Monitor (Survivor Focus) -->
-                <Card class="border-border/40 bg-card overflow-hidden">
+                <Card class="card-glass overflow-hidden">
                   <CardContent class="p-0 flex flex-col h-full">
                     <div
                       class="py-0.5 px-2.5 flex-1 border-b border-border/10 space-y-0.5"
@@ -727,7 +723,7 @@
 
           <!-- Equity Curve -->
 
-          <Card class="p-2 bg-card border-border/40">
+          <Card class="p-4 card-glass mb-4">
             <div class="flex justify-between items-start mb-2">
               <div class="flex items-center gap-3">
                 <div class="p-1 bg-emerald-500/10 rounded-lg">
@@ -775,7 +771,7 @@
 
         <div class="col-span-full lg:col-span-4 space-y-2">
           <!-- Compact Performance Calendar (Restored) -->
-          <Card class="overflow-hidden p-2">
+          <Card class="card-glass overflow-hidden p-2">
             <CardContent class="p-0">
               <PerformanceCalendar
                 trades={filteredTrades}
@@ -823,7 +819,7 @@
                   )}
 
                   <div class="grid grid-cols-3 gap-4">
-                    <div class="p-4 bg-muted rounded-xl border border-border">
+                    <div class="p-4 card-glass border-border/10 shadow-none">
                       <p
                         class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1"
                       >
@@ -838,7 +834,7 @@
                         {formatCurrency(dayRes)}
                       </p>
                     </div>
-                    <div class="p-4 bg-muted rounded-xl border border-border">
+                    <div class="p-4 card-glass border-border/10 shadow-none">
                       <p
                         class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1"
                       >
@@ -850,7 +846,7 @@
                         {dayTrades.length}
                       </p>
                     </div>
-                    <div class="p-4 bg-muted rounded-xl border border-border">
+                    <div class="p-4 card-glass border-border/10 shadow-none">
                       <p
                         class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1"
                       >
@@ -957,7 +953,7 @@
           </Dialog.Root>
 
           <!-- Distribution Mini (Clean) -->
-          <Card class="p-1.5">
+          <Card class="p-4 card-glass">
             <h3
               class="text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wider border-b border-border/50 pb-1"
             >

@@ -40,6 +40,8 @@ pub struct TaxAppraisal {
     pub status: String,
     #[serde(default)]
     pub trade_ids: Vec<String>,
+    #[serde(default)]
+    pub is_complementary: bool,
 }
 
 fn default_status() -> String {
@@ -84,4 +86,6 @@ pub struct TaxDarf {
     pub account_id: Option<String>,
     #[serde(default, deserialize_with = "deserialize_id_opt")]
     pub transaction_id: Option<String>,
+    #[serde(default)]
+    pub is_complementary: bool,
 }

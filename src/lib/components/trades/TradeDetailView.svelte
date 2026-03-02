@@ -49,7 +49,7 @@
 <div class="space-y-6 max-h-[80vh] overflow-y-auto pr-2 custom-scrollbar">
     <!-- Header Summary -->
     <div
-        class="flex items-center justify-between bg-white/5 p-4 rounded-lg border border-white/10"
+        class="flex items-center justify-between bg-muted/30 p-4 rounded-lg border border-border/50"
     >
         <div class="flex items-center gap-4">
             <div
@@ -62,7 +62,7 @@
                 {/if}
             </div>
             <div>
-                <h3 class="text-xl font-bold text-white">
+                <h3 class="text-xl font-bold text-foreground">
                     {trade.asset_symbol}
                 </h3>
                 <div
@@ -99,7 +99,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Execution Data -->
-        <Card.Root class="glass border-white/10">
+        <Card.Root class="glass border-border/50">
             <Card.Header class="pb-2">
                 <Card.Title
                     class="text-sm font-medium flex items-center gap-2 text-primary"
@@ -114,7 +114,8 @@
                         <span class="text-xs text-muted-foreground block"
                             >{$t("trades.details.entry_price")}</span
                         >
-                        <span class="font-mono font-bold text-white text-sm"
+                        <span
+                            class="font-mono font-bold text-foreground text-sm"
                             >{trade.entry_price?.toLocaleString(
                                 $locale || "pt-BR",
                             )}</span
@@ -124,7 +125,8 @@
                         <span class="text-xs text-muted-foreground block"
                             >{$t("trades.details.exit_price")}</span
                         >
-                        <span class="font-mono font-bold text-white text-sm"
+                        <span
+                            class="font-mono font-bold text-foreground text-sm"
                             >{trade.exit_price?.toLocaleString(
                                 $locale || "pt-BR",
                             ) || "-"}</span
@@ -134,7 +136,8 @@
                         <span class="text-xs text-muted-foreground block"
                             >{$t("trades.table.quantity")}</span
                         >
-                        <span class="text-white text-sm font-mono font-bold"
+                        <span
+                            class="text-foreground text-sm font-mono font-bold"
                             >{trade.quantity}</span
                         >
                     </div>
@@ -151,7 +154,7 @@
                         >
                     </div>
                 </div>
-                <Separator class="bg-white/5" />
+                <Separator class="bg-border/10" />
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <span class="text-xs text-muted-foreground block"
@@ -176,7 +179,7 @@
         </Card.Root>
 
         <!-- Context & Account -->
-        <Card.Root class="glass border-white/10">
+        <Card.Root class="glass border-border/50">
             <Card.Header class="pb-2">
                 <Card.Title
                     class="text-sm font-medium flex items-center gap-2 text-primary"
@@ -191,7 +194,7 @@
                         <span class="text-muted-foreground"
                             >{$t("trades.filters.account")}</span
                         >
-                        <span class="text-white font-medium"
+                        <span class="text-foreground font-medium"
                             >{account?.nickname || "-"}</span
                         >
                     </div>
@@ -199,7 +202,7 @@
                         <span class="text-muted-foreground"
                             >{$t("trades.table.asset_type")}</span
                         >
-                        <span class="text-white">
+                        <span class="text-foreground">
                             {settingsStore.assetTypes.find(
                                 (at) => at.id === trade.asset_type_id,
                             )?.name || "-"}
@@ -220,14 +223,16 @@
                         <span class="text-muted-foreground"
                             >{$t("trades.filters.modality")}</span
                         >
-                        <span class="text-white">{modality?.name || "-"}</span>
+                        <span class="text-foreground"
+                            >{modality?.name || "-"}</span
+                        >
                     </div>
                 </div>
             </Card.Content>
         </Card.Root>
 
         <!-- Psychology -->
-        <Card.Root class="glass border-white/10 md:col-span-2">
+        <Card.Root class="glass border-border/50 md:col-span-2">
             <Card.Header class="pb-2">
                 <Card.Title
                     class="text-sm font-medium flex items-center gap-2 text-primary"
@@ -296,7 +301,7 @@
                 </div>
 
                 <div
-                    class="mt-4 p-4 rounded-lg bg-white/5 border border-white/5"
+                    class="mt-4 p-4 rounded-lg bg-muted/20 border border-border/20"
                 >
                     <div
                         class="flex items-center gap-2 mb-2 text-xs font-semibold uppercase text-muted-foreground"
@@ -306,10 +311,10 @@
                     </div>
                     <div class="flex items-center gap-2">
                         {#if trade.followed_plan}
-                            <Badge class="bg-green-500 text-black"
+                            <Badge class="bg-emerald-500 text-black"
                                 >{$t("trades.wizard.summary.s")}</Badge
                             >
-                            <span class="text-sm text-green-500/80"
+                            <span class="text-sm text-emerald-500/80"
                                 >{$t("trades.wizard.adherence.yes_msg")}</span
                             >
                         {:else}
@@ -326,7 +331,7 @@
         </Card.Root>
 
         <!-- Notes & Images -->
-        <Card.Root class="glass border-white/10 md:col-span-2">
+        <Card.Root class="glass border-border/50 md:col-span-2">
             <Card.Header class="pb-2">
                 <Card.Title
                     class="text-sm font-medium flex items-center gap-2 text-primary"
@@ -337,10 +342,10 @@
             </Card.Header>
             <Card.Content class="space-y-4">
                 <div
-                    class="p-4 rounded-lg bg-white/5 border border-dashed border-white/10"
+                    class="p-4 rounded-lg bg-muted/20 border border-dashed border-border/50"
                 >
                     <p
-                        class="text-sm text-white/90 leading-relaxed whitespace-pre-wrap"
+                        class="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap"
                     >
                         {trade.notes || $t("trades.details.no_notes")}
                     </p>
@@ -350,7 +355,7 @@
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
                         {#each trade.images as img}
                             <div
-                                class="aspect-video bg-black/40 rounded overflow-hidden border border-white/5 group relative"
+                                class="aspect-video bg-muted/50 rounded overflow-hidden border border-border/10 group relative"
                             >
                                 <img
                                     src={img}
@@ -360,7 +365,7 @@
                                 <div
                                     class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                                 >
-                                    <Camera class="w-5 h-5 text-white" />
+                                    <Camera class="w-5 h-5 text-foreground" />
                                 </div>
                             </div>
                         {/each}
@@ -383,13 +388,13 @@
         width: 4px;
     }
     .custom-scrollbar::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.02);
+        background: rgba(var(--muted), 0.05);
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(var(--muted-foreground), 0.2);
         border-radius: 10px;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(var(--muted-foreground), 0.3);
     }
 </style>

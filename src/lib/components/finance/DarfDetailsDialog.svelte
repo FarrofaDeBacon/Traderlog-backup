@@ -52,15 +52,7 @@
                     );
                 }
 
-                // Check for complementary (search other darfs for same period and code)
-                // We access the store's darf list (which should be loaded for the year)
-                const otherDarfs = irpfStore.darfs.filter(
-                    (d) =>
-                        d.period === darf?.period &&
-                        d.revenue_code === darf?.revenue_code &&
-                        irpfStore.getId(d.id) !== irpfStore.getId(darf?.id),
-                );
-                isComplementary = otherDarfs.length > 0;
+                isComplementary = darf.is_complementary;
             } else {
                 console.warn(
                     "[DARF DIALOG] No DARF found for transactionId:",
@@ -103,14 +95,14 @@
 
 <Dialog.Root bind:open>
     <Dialog.Content
-        class="sm:max-w-[500px] bg-zinc-950 border-zinc-800 text-zinc-100"
+        class="sm:max-w-[500px] bg-popover/80 backdrop-blur-md border-border text-foreground"
     >
         <Dialog.Header>
             <Dialog.Title class="flex items-center gap-2 text-xl">
                 <FileText class="w-5 h-5 text-amber-500" />
                 {$t("finance.darfDetails.title")}
             </Dialog.Title>
-            <Dialog.Description class="text-zinc-400">
+            <Dialog.Description class="text-muted-foreground">
                 {$t("finance.darfDetails.description")}
             </Dialog.Description>
         </Dialog.Header>
@@ -120,7 +112,7 @@
                 <div
                     class="w-8 h-8 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"
                 ></div>
-                <p class="text-sm text-zinc-500">
+                <p class="text-sm text-muted-foreground">
                     {$t("finance.darfDetails.loading")}
                 </p>
             </div>
@@ -130,11 +122,13 @@
                 <div class="flex items-center justify-between">
                     <div class="space-y-1">
                         <span
-                            class="text-xs text-zinc-500 uppercase font-bold tracking-wider"
+                            class="text-xs text-muted-foreground uppercase font-bold tracking-wider"
                             >{$t("finance.darfDetails.period")}</span
                         >
                         <div class="flex items-center gap-2">
-                            <Calendar class="w-4 h-4 text-zinc-400" />
+                            <Calendar
+                                class="w-4 h-4 text-muted-foreground/70"
+                            />
                             <span class="text-lg font-medium"
                                 >{darf.period}</span
                             >
@@ -158,36 +152,38 @@
                                 {$t("finance.darfDetails.statusPending")}
                             </Badge>
                         {/if}
-                        {#if isComplementary}
-                            <Badge
-                                variant="outline"
-                                class="bg-blue-500/10 text-blue-400 border-blue-500/20 px-2 py-0.5 text-[10px]"
-                            >
-                                {$t("finance.darfDetails.complementaryBadge")}
-                            </Badge>
-                        {/if}
+                        <Badge
+                            variant="outline"
+                            class={darf.is_complementary
+                                ? "bg-blue-500/10 text-blue-400 border-blue-500/20 px-2 py-0.5 text-[10px]"
+                                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 px-2 py-0.5 text-[10px]"}
+                        >
+                            {darf.is_complementary
+                                ? $t("finance.darfDetails.complementaryBadge")
+                                : "Guia Principal"}
+                        </Badge>
                     </div>
                 </div>
 
-                <Separator class="bg-zinc-800" />
+                <Separator class="bg-border/30" />
 
                 <!-- Codes Section -->
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-1">
                         <span
-                            class="text-xs text-zinc-500 uppercase font-bold tracking-wider"
+                            class="text-xs text-muted-foreground uppercase font-bold tracking-wider"
                             >{$t("finance.darfDetails.revenueCode")}</span
                         >
-                        <div class="text-base font-semibold text-zinc-200">
+                        <div class="text-base font-semibold text-foreground">
                             {darf.revenue_code}
                         </div>
                     </div>
                     <div class="space-y-1">
                         <span
-                            class="text-xs text-zinc-500 uppercase font-bold tracking-wider"
+                            class="text-xs text-muted-foreground uppercase font-bold tracking-wider"
                             >{$t("finance.darfDetails.dueDate")}</span
                         >
-                        <div class="text-base font-semibold text-zinc-200">
+                        <div class="text-base font-semibold text-foreground">
                             {darf.due_date
                                 ? new Date(darf.due_date).toLocaleDateString(
                                       $locale || "pt-BR",
@@ -201,17 +197,17 @@
                 {#if appraisal}
                     <div class="space-y-3">
                         <h4
-                            class="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"
+                            class="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2"
                         >
                             <Info class="w-3.5 h-3.5" />
                             {$t("finance.darfDetails.calculationInfo")}
                         </h4>
                         <div
-                            class="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-4 grid grid-cols-2 gap-y-4 gap-x-6"
+                            class="bg-muted/30 border border-border/40 rounded-xl p-4 grid grid-cols-2 gap-y-4 gap-x-6"
                         >
                             <div class="space-y-1">
                                 <span
-                                    class="text-[10px] text-zinc-500 uppercase"
+                                    class="text-[10px] text-muted-foreground uppercase"
                                     >{$t(
                                         "finance.darfDetails.grossResult",
                                     )}</span
@@ -219,21 +215,21 @@
                                 <p
                                     class="text-sm font-semibold {appraisal.gross_profit >=
                                     0
-                                        ? 'text-emerald-400'
-                                        : 'text-red-400'}"
+                                        ? 'text-emerald-500 dark:text-emerald-400'
+                                        : 'text-rose-500 dark:text-red-400'}"
                                 >
                                     {formatCurrency(appraisal.gross_profit)}
                                 </p>
                             </div>
                             <div class="space-y-1">
                                 <span
-                                    class="text-[10px] text-zinc-500 uppercase"
+                                    class="text-[10px] text-muted-foreground uppercase"
                                     >{$t(
                                         "finance.darfDetails.compensatedLosses",
                                     )}</span
                                 >
                                 <p
-                                    class="text-sm font-semibold text-amber-500/80"
+                                    class="text-sm font-semibold text-amber-600 dark:text-amber-500/80"
                                 >
                                     {formatCurrency(
                                         appraisal.compensated_loss || 0,
@@ -242,12 +238,14 @@
                             </div>
                             <div class="space-y-1">
                                 <span
-                                    class="text-[10px] text-zinc-500 uppercase"
+                                    class="text-[10px] text-muted-foreground uppercase"
                                     >{$t(
                                         "finance.darfDetails.calculationBasis",
                                     )}</span
                                 >
-                                <p class="text-sm font-semibold text-zinc-200">
+                                <p
+                                    class="text-sm font-semibold text-foreground"
+                                >
                                     {formatCurrency(
                                         appraisal.calculation_basis,
                                     )}
@@ -255,10 +253,12 @@
                             </div>
                             <div class="space-y-1">
                                 <span
-                                    class="text-[10px] text-zinc-500 uppercase"
+                                    class="text-[10px] text-muted-foreground uppercase"
                                     >{$t("finance.darfDetails.taxRate")}</span
                                 >
-                                <p class="text-sm font-semibold text-zinc-200">
+                                <p
+                                    class="text-sm font-semibold text-foreground"
+                                >
                                     {appraisal.tax_rate}%
                                 </p>
                             </div>
@@ -268,13 +268,13 @@
 
                 <!-- Values Breakdown -->
                 <div
-                    class="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800/50 space-y-3"
+                    class="bg-muted/40 rounded-xl p-4 border border-border/30 space-y-3"
                 >
                     <div class="flex justify-between items-center text-sm">
-                        <span class="text-zinc-400"
+                        <span class="text-muted-foreground"
                             >{$t("finance.darfDetails.principalValue")}</span
                         >
-                        <span class="font-mono text-zinc-200"
+                        <span class="font-mono text-foreground"
                             >{formatCurrency(darf.principal_value)}</span
                         >
                     </div>
@@ -282,12 +282,13 @@
                     {#if darf.fine > 0}
                         <div class="flex justify-between items-center text-sm">
                             <span
-                                class="text-zinc-400 flex items-center gap-1.5"
+                                class="text-muted-foreground flex items-center gap-1.5"
                             >
                                 {$t("finance.darfDetails.fine")}
                                 <Percent class="w-3 h-3" />
                             </span>
-                            <span class="font-mono text-amber-500"
+                            <span
+                                class="font-mono text-amber-600 dark:text-amber-500"
                                 >+{formatCurrency(darf.fine)}</span
                             >
                         </div>
@@ -296,25 +297,26 @@
                     {#if darf.interest > 0}
                         <div class="flex justify-between items-center text-sm">
                             <span
-                                class="text-zinc-400 flex items-center gap-1.5"
+                                class="text-muted-foreground flex items-center gap-1.5"
                             >
                                 {$t("finance.darfDetails.interest")}
                                 <Info class="w-3 h-3" />
                             </span>
-                            <span class="font-mono text-amber-500"
+                            <span
+                                class="font-mono text-amber-600 dark:text-amber-500"
                                 >+{formatCurrency(darf.interest)}</span
                             >
                         </div>
                     {/if}
 
                     <div
-                        class="pt-2 border-t border-zinc-800 flex justify-between items-center"
+                        class="pt-2 border-t border-border/20 flex justify-between items-center"
                     >
-                        <span class="font-bold text-zinc-100"
+                        <span class="font-bold text-foreground"
                             >{$t("finance.darfDetails.totalPaid")}</span
                         >
                         <span
-                            class="text-lg font-bold text-green-400 font-mono"
+                            class="text-lg font-bold text-emerald-600 dark:text-green-400 font-mono"
                         >
                             {formatCurrency(darf.total_value)}
                         </span>
@@ -323,16 +325,16 @@
 
                 <!-- Payment Info -->
                 <div
-                    class="flex items-center gap-3 p-3 bg-zinc-900/30 rounded-lg border border-zinc-800/30"
+                    class="flex items-center gap-3 p-3 bg-muted/20 rounded-lg border border-border/30"
                 >
-                    <Wallet class="w-5 h-5 text-zinc-500" />
+                    <Wallet class="w-5 h-5 text-muted-foreground" />
                     <div class="space-y-0.5">
                         <p
-                            class="text-[10px] text-zinc-500 uppercase font-bold"
+                            class="text-[10px] text-muted-foreground uppercase font-bold"
                         >
                             {$t("finance.darfDetails.paidAt")}
                         </p>
-                        <p class="text-xs text-zinc-300">
+                        <p class="text-xs text-foreground/80">
                             {darf.payment_date
                                 ? new Date(
                                       darf.payment_date,
@@ -348,15 +350,15 @@
             </div>
         {:else}
             <div class="py-12 text-center space-y-2">
-                <Info class="w-8 h-8 text-zinc-600 mx-auto" />
-                <p class="text-zinc-500">
+                <Info class="w-8 h-8 text-muted-foreground/30 mx-auto" />
+                <p class="text-muted-foreground">
                     {$t("finance.darfDetails.errorMessage")}
                 </p>
             </div>
         {/if}
 
         <Dialog.Footer
-            class="mt-4 flex flex-col sm:flex-row gap-2 border-t border-zinc-800/50 pt-4"
+            class="mt-4 flex flex-col sm:flex-row gap-2 border-t border-border/20 pt-4"
         >
             {#if showUnpayConfirm}
                 <div class="flex items-center gap-2 mr-auto">
@@ -375,7 +377,7 @@
                 <Button
                     variant="outline"
                     onclick={() => (showUnpayConfirm = false)}
-                    class="border-zinc-700 text-zinc-400 hover:bg-zinc-800"
+                    class="border-border text-muted-foreground hover:bg-accent"
                 >
                     {$t("finance.darfDetails.unpayCancel")}
                 </Button>
@@ -384,7 +386,7 @@
                     <Button
                         variant="destructive"
                         onclick={handleUnpay}
-                        class="bg-red-600/20 hover:bg-red-600 text-white border border-red-500/30 mr-auto group transition-all"
+                        class="bg-red-600/10 hover:bg-red-600 text-red-600 dark:text-white hover:text-white border border-red-500/30 mr-auto group transition-all"
                     >
                         <Undo2
                             class="w-4 h-4 mr-2 text-red-500 group-hover:text-white"
@@ -395,7 +397,7 @@
                 <Button
                     variant="secondary"
                     onclick={() => (open = false)}
-                    class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700"
+                    class="bg-muted hover:bg-accent text-foreground border-border"
                 >
                     {$t("general.close")}
                 </Button>

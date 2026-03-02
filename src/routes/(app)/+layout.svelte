@@ -14,10 +14,10 @@
 
     onMount(async () => {
         console.log("[Layout] Initializing stores and dumping diagnostics...");
-        
+
         // --- DIAGNOSTICS ---
-        invoke("diagnostic_dump_trades").catch(e => console.error(e));
-        invoke("diagnostic_dump_users").catch(e => console.error(e));
+        invoke("diagnostic_dump_trades").catch((e) => console.error(e));
+        invoke("diagnostic_dump_users").catch((e) => console.error(e));
         // -------------------
 
         await Promise.all([settingsStore.loadData(), tradesStore.loadTrades()]);
@@ -44,10 +44,7 @@
 {/if}
 
 <div
-    class="grid min-h-screen w-full transition-all duration-300 bg-muted/40 md:grid-cols-[var(--sidebar-width)_1fr] {dataLoaded &&
-    !settingsStore.userProfile.onboarding_completed
-        ? ''
-        : ''}"
+    class="grid min-h-screen w-full transition-all duration-300 bg-background md:grid-cols-[var(--sidebar-width)_1fr]"
     style="--sidebar-width: {sidebarState.isCollapsed ? '70px' : '280px'};"
 >
     <AppSidebar />

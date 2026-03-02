@@ -170,7 +170,7 @@
 <!-- Desktop Sidebar -->
 <!-- Desktop Sidebar -->
 <aside
-    class="hidden border-r bg-muted/40 md:flex md:flex-col h-screen sticky top-0 transition-all duration-300 relative group"
+    class="hidden border-r bg-sidebar/70 backdrop-blur-xl md:flex md:flex-col h-screen sticky top-0 transition-all duration-300 relative group"
 >
     <!-- Floating Toggle Button -->
     <Button

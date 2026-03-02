@@ -86,19 +86,19 @@
 </script>
 
 <div
-    class="min-h-screen flex items-center justify-center bg-zinc-950 p-4 relative overflow-hidden text-zinc-50"
+    class="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden text-foreground"
 >
     <!-- Ambient Background Effects -->
     <div
-        class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[128px] pointer-events-none opacity-50"
+        class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[128px] pointer-events-none opacity-50 dark:opacity-30"
     ></div>
     <div
-        class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[128px] pointer-events-none opacity-50"
+        class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[128px] pointer-events-none opacity-50 dark:opacity-20"
     ></div>
 
     {#if !showRecovery}
         <Card.Root
-            class="w-full max-w-md border-zinc-800 bg-zinc-900/50 backdrop-blur-xl shadow-2xl relative z-10"
+            class="w-full max-w-md border-border bg-card/50 backdrop-blur-xl shadow-2xl relative z-10"
         >
             <Card.Header class="space-y-1 text-center pb-8 pt-10">
                 <div
@@ -106,34 +106,35 @@
                 >
                     <LogIn class="w-6 h-6 text-primary" />
                 </div>
-                <Card.Title class="text-2xl font-bold tracking-tight text-white"
+                <Card.Title
+                    class="text-2xl font-bold tracking-tight text-foreground"
                     >{$t("auth.login.title")}</Card.Title
                 >
-                <Card.Description class="text-zinc-400">
+                <Card.Description class="text-muted-foreground">
                     {$t("auth.login.description")}
                 </Card.Description>
             </Card.Header>
             <Card.Content class="space-y-4">
                 <div class="space-y-2">
-                    <Label for="email" class="text-zinc-200"
+                    <Label for="email" class="text-foreground/80"
                         >{$t("auth.login.email")}</Label
                     >
                     <div class="relative">
                         <Mail
-                            class="absolute left-3 top-3 h-4 w-4 text-zinc-500"
+                            class="absolute left-3 top-3 h-4 w-4 text-muted-foreground"
                         />
                         <Input
                             id="email"
                             type="email"
                             placeholder="nome@exemplo.com"
-                            class="pl-9 bg-zinc-950/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-primary/50"
+                            class="pl-9 bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/50"
                             bind:value={email}
                         />
                     </div>
                 </div>
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
-                        <Label for="password" class="text-zinc-200"
+                        <Label for="password" class="text-foreground/80"
                             >{$t("auth.login.password")}</Label
                         >
                         <Button
@@ -145,13 +146,13 @@
                     </div>
                     <div class="relative">
                         <Lock
-                            class="absolute left-3 top-3 h-4 w-4 text-zinc-500"
+                            class="absolute left-3 top-3 h-4 w-4 text-muted-foreground"
                         />
                         <Input
                             id="password"
                             type="password"
                             placeholder="••••••••"
-                            class="pl-9 bg-zinc-950/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-primary/50"
+                            class="pl-9 bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/50"
                             bind:value={password}
                             onkeydown={(e) =>
                                 e.key === "Enter" && handleLogin()}
@@ -175,7 +176,7 @@
         </Card.Root>
     {:else}
         <Card.Root
-            class="w-full max-w-md border-zinc-800 bg-zinc-900/50 backdrop-blur-xl shadow-2xl relative z-10"
+            class="w-full max-w-md border-border bg-card/50 backdrop-blur-xl shadow-2xl relative z-10"
         >
             <Card.Header class="space-y-1 text-center pb-8 pt-10">
                 <div
@@ -184,49 +185,51 @@
                     <Lock class="w-6 h-6 text-primary" />
                 </div>
                 <Card.Title
-                    class="text-2xl font-bold tracking-tight text-white"
+                    class="text-2xl font-bold tracking-tight text-foreground"
                 >
                     {$t("auth.login.recovery.title")}
                 </Card.Title>
-                <Card.Description class="text-zinc-400">
+                <Card.Description class="text-muted-foreground">
                     {$t("auth.login.recovery.description")}
                 </Card.Description>
             </Card.Header>
             <Card.Content class="space-y-4">
                 <div class="space-y-2">
-                    <Label for="recoveryKey" class="text-zinc-200"
+                    <Label for="recoveryKey" class="text-foreground/80"
                         >{$t("auth.login.recovery.keyLabel")}</Label
                     >
                     <Input
                         id="recoveryKey"
                         type="text"
                         placeholder="XXXX-XXXX-XXXX-XXXX"
-                        class="bg-zinc-950/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-primary/50"
+                        class="bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/50"
                         bind:value={recoveryData.key}
                     />
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-2">
-                        <Label for="newPassword" class="text-zinc-200"
+                        <Label for="newPassword" class="text-foreground/80"
                             >{$t("auth.login.recovery.newPassword")}</Label
                         >
                         <Input
                             id="newPassword"
                             type="password"
                             placeholder="••••••••"
-                            class="bg-zinc-950/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-primary/50"
+                            class="bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/50"
                             bind:value={recoveryData.newPassword}
                         />
                     </div>
                     <div class="space-y-2">
-                        <Label for="confirmNewPassword" class="text-zinc-200"
+                        <Label
+                            for="confirmNewPassword"
+                            class="text-foreground/80"
                             >{$t("auth.login.recovery.confirm")}</Label
                         >
                         <Input
                             id="confirmNewPassword"
                             type="password"
                             placeholder="••••••••"
-                            class="bg-zinc-950/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-primary/50"
+                            class="bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/50"
                             bind:value={recoveryData.confirmPassword}
                         />
                     </div>
@@ -244,7 +247,7 @@
                 </Button>
                 <Button
                     variant="ghost"
-                    class="w-full text-zinc-500 hover:text-white"
+                    class="w-full text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                     onclick={() => (showRecovery = false)}
                 >
                     {$t("auth.login.recovery.back")}

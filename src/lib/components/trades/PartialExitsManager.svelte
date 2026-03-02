@@ -66,7 +66,7 @@
 <div class="space-y-4">
     <!-- Header/Summary Card -->
     <div
-        class="flex items-center justify-between p-3 bg-muted/20 border border-muted rounded-lg"
+        class="flex items-center justify-between p-3 bg-muted/20 border border-border/40 rounded-lg"
     >
         <div class="flex gap-6">
             <div class="space-y-0.5">
@@ -99,7 +99,7 @@
                 <p
                     class="text-sm font-mono font-bold {remaining < 0
                         ? 'text-red-500'
-                        : 'text-zinc-400'}"
+                        : 'text-muted-foreground'}"
                 >
                     {remaining}
                 </p>
@@ -109,7 +109,7 @@
         <div class="flex items-center gap-2">
             <!-- Pre-seletor de Tipo (c4e6b7d1) -->
             <div
-                class="flex items-center bg-black/40 rounded-lg p-0.5 border border-white/10 gap-0.5"
+                class="flex items-center bg-muted/30 rounded-lg p-0.5 border border-border/40 gap-0.5"
             >
                 <button
                     onclick={() => (nextType = "exit")}
@@ -144,7 +144,9 @@
     </div>
 
     <!-- Partials Table -->
-    <div class="rounded-lg border border-muted overflow-hidden bg-black/20">
+    <div
+        class="rounded-lg border border-border/40 overflow-hidden bg-muted/20 backdrop-blur-sm"
+    >
         <Table.Root>
             <Table.Header>
                 <Table.Row class="hover:bg-transparent border-muted/50">
@@ -224,7 +226,7 @@
                                 <Input
                                     type="datetime-local"
                                     bind:value={partial.date}
-                                    class="h-7 w-full bg-transparent border-0 text-[10px] font-mono p-0 focus-visible:ring-0 text-muted-foreground focus:text-white transition-colors"
+                                    class="h-7 w-full bg-transparent border-0 text-[10px] font-mono p-0 focus-visible:ring-0 text-muted-foreground focus:text-foreground transition-colors"
                                 />
                             </Table.Cell>
                             <Table.Cell class="py-1">
@@ -232,14 +234,14 @@
                                     type="number"
                                     step="0.01"
                                     bind:value={partial.price}
-                                    class="h-7 w-full bg-transparent border-0 text-[10px] font-mono text-right p-0 focus-visible:ring-0 text-white font-bold"
+                                    class="h-7 w-full bg-transparent border-0 text-[10px] font-mono text-right p-0 focus-visible:ring-0 text-foreground font-bold"
                                 />
                             </Table.Cell>
                             <Table.Cell class="py-1">
                                 <Input
                                     type="number"
                                     bind:value={partial.quantity}
-                                    class="h-7 w-full bg-transparent border-0 text-[10px] font-mono text-center p-0 focus-visible:ring-0 text-white"
+                                    class="h-7 w-full bg-transparent border-0 text-[10px] font-mono text-center p-0 focus-visible:ring-0 text-foreground"
                                 />
                             </Table.Cell>
                             <Table.Cell class="py-1 text-right">

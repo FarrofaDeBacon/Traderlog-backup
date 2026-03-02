@@ -659,6 +659,7 @@
     }
   },
   "finance": {
+    "title": "Hub Financeiro",
     "description": "Gestão centralizada de caixa, extratos e fechamentos.",
     "dailyClosure": "Fechamento Diário",
     "newTransaction": "Novo Aporte/Retirada",

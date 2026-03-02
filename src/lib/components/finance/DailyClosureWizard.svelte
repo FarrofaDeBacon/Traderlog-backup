@@ -372,7 +372,9 @@
                                 type="single"
                                 bind:value={emotionalStateId}
                             >
-                                <Select.Trigger>
+                                <Select.Trigger
+                                    class="bg-muted/30 border-border/40"
+                                >
                                     {emotionalStates.find(
                                         (e) => e.id === emotionalStateId,
                                     )?.name ||
@@ -440,11 +442,9 @@
                     class="flex flex-col items-center justify-center py-8 text-center space-y-4"
                 >
                     <div
-                        class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center dark:bg-green-900/20"
+                        class="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center"
                     >
-                        <CheckCircle2
-                            class="w-8 h-8 text-green-600 dark:text-green-400"
-                        />
+                        <CheckCircle2 class="w-8 h-8 text-emerald-500" />
                     </div>
                     <div>
                         <h3 class="text-lg font-semibold">

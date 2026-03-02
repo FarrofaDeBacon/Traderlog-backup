@@ -110,7 +110,9 @@
 <div class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
     <div class="flex items-center justify-between">
         <div>
-            <h3 class="text-lg font-medium text-white flex items-center gap-2">
+            <h3
+                class="text-lg font-medium text-foreground flex items-center gap-2"
+            >
                 <Crown class="w-5 h-5 text-yellow-500" />
                 {$t("settings.license.management")}
             </h3>
@@ -160,7 +162,7 @@
     {#if settingsStore.licenseStatus === "active" && settingsStore.licenseDetails}
         <div class="grid gap-4 md:grid-cols-3">
             <div
-                class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 flex items-center gap-4"
+                class="bg-card/50 backdrop-blur-md border border-border rounded-xl p-4 flex items-center gap-4"
             >
                 <div
                     class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"
@@ -169,11 +171,11 @@
                 </div>
                 <div>
                     <p
-                        class="text-[10px] text-zinc-500 uppercase font-bold tracking-tight"
+                        class="text-[10px] text-muted-foreground uppercase font-bold tracking-tight"
                     >
                         Tipo de Licença
                     </p>
-                    <p class="text-sm font-semibold text-white">
+                    <p class="text-sm font-semibold text-foreground">
                         {settingsStore.licensePlanName}
                     </p>
                 </div>
@@ -181,7 +183,7 @@
 
             {#if settingsStore.licenseTotalDays}
                 <div
-                    class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 flex items-center gap-4"
+                    class="bg-card/50 backdrop-blur-md border border-border rounded-xl p-4 flex items-center gap-4"
                 >
                     <div
                         class="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center"
@@ -190,18 +192,18 @@
                     </div>
                     <div>
                         <p
-                            class="text-[10px] text-zinc-500 uppercase font-bold tracking-tight"
+                            class="text-[10px] text-muted-foreground uppercase font-bold tracking-tight"
                         >
                             Duração Contratada
                         </p>
-                        <p class="text-sm font-semibold text-white">
+                        <p class="text-sm font-semibold text-foreground">
                             {settingsStore.licenseTotalDays} dias
                         </p>
                     </div>
                 </div>
             {:else if settingsStore.licenseDetails?.plan === "Lifetime"}
                 <div
-                    class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 flex items-center gap-4"
+                    class="bg-card/50 backdrop-blur-md border border-border rounded-xl p-4 flex items-center gap-4"
                 >
                     <div
                         class="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center"
@@ -210,11 +212,11 @@
                     </div>
                     <div>
                         <p
-                            class="text-[10px] text-zinc-500 uppercase font-bold tracking-tight"
+                            class="text-[10px] text-muted-foreground uppercase font-bold tracking-tight"
                         >
                             Duração Contratada
                         </p>
-                        <p class="text-sm font-semibold text-white">
+                        <p class="text-sm font-semibold text-foreground">
                             Vitalícia
                         </p>
                     </div>
@@ -223,7 +225,7 @@
 
             {#if settingsStore.licenseDaysRemaining !== null}
                 <div
-                    class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 flex items-center gap-4"
+                    class="bg-card/50 backdrop-blur-md border border-border rounded-xl p-4 flex items-center gap-4"
                 >
                     <div
                         class="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center"
@@ -232,11 +234,11 @@
                     </div>
                     <div>
                         <p
-                            class="text-[10px] text-zinc-500 uppercase font-bold tracking-tight"
+                            class="text-[10px] text-muted-foreground uppercase font-bold tracking-tight"
                         >
                             Restante
                         </p>
-                        <p class="text-sm font-semibold text-white">
+                        <p class="text-sm font-semibold text-foreground">
                             {settingsStore.licenseDaysRemaining} dias
                         </p>
                     </div>
@@ -249,7 +251,7 @@
 
     <div class="grid gap-6 md:grid-cols-2">
         <!-- Passo 1: PIN -->
-        <Card.Root class="bg-zinc-900/40 border-zinc-800">
+        <Card.Root class="bg-card/50 backdrop-blur-sm border-border">
             <Card.Header>
                 <Card.Title class="text-base flex items-center gap-2">
                     <span
@@ -264,11 +266,11 @@
             </Card.Header>
             <Card.Content class="space-y-4">
                 <div
-                    class="p-4 bg-zinc-950/50 rounded-lg border border-zinc-800 space-y-3"
+                    class="p-4 bg-background/50 backdrop-blur-md rounded-lg border border-border space-y-3 shadow-inner"
                 >
                     <div class="space-y-1">
                         <span
-                            class="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter"
+                            class="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter"
                             >{$t("settings.license.pinLabel")}</span
                         >
                         <div class="flex items-center justify-between gap-2">
@@ -293,19 +295,19 @@
                             </Button>
                         </div>
                     </div>
-                    <p class="text-xs text-zinc-400 leading-relaxed">
+                    <p class="text-xs text-muted-foreground/80 leading-relaxed">
                         {$t("settings.license.sendPinInfo")}
                     </p>
                 </div>
 
-                <div class="pt-2 text-xs text-zinc-500 italic">
+                <div class="pt-2 text-xs text-muted-foreground/60 italic">
                     {$t("settings.license.pinDisclaimer")}
                 </div>
             </Card.Content>
         </Card.Root>
 
         <!-- Passo 2: Upload -->
-        <Card.Root class="bg-zinc-900/40 border-zinc-800">
+        <Card.Root class="bg-card/50 backdrop-blur-sm border-border">
             <Card.Header>
                 <Card.Title class="text-base flex items-center gap-2">
                     <span
@@ -319,18 +321,18 @@
                 </Card.Description>
             </Card.Header>
             <Card.Content
-                class="flex flex-col items-center justify-center py-8 space-y-4 border-2 border-dashed border-zinc-800 rounded-lg mx-6 mb-6"
+                class="flex flex-col items-center justify-center py-8 space-y-4 border-2 border-dashed border-border rounded-lg mx-6 mb-6 bg-muted/20"
             >
                 <div
-                    class="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center"
+                    class="w-12 h-12 rounded-full bg-muted/50 border border-border flex items-center justify-center"
                 >
-                    <FileCode class="w-6 h-6 text-zinc-400" />
+                    <FileCode class="w-6 h-6 text-muted-foreground" />
                 </div>
                 <div class="text-center">
-                    <p class="text-sm font-medium text-zinc-300">
+                    <p class="text-sm font-medium text-foreground/90">
                         {$t("settings.license.noFile")}
                     </p>
-                    <p class="text-xs text-zinc-500">
+                    <p class="text-xs text-muted-foreground/60">
                         {$t("settings.license.formatAccepted")}
                     </p>
                 </div>
@@ -350,27 +352,29 @@
         </Card.Root>
     </div>
 
-    <div class="bg-primary/5 rounded-lg p-6 border border-primary/20 space-y-4">
-        <h4 class="font-bold text-white flex items-center gap-2">
+    <div
+        class="bg-primary/5 rounded-lg p-6 border border-primary/20 space-y-4 backdrop-blur-sm"
+    >
+        <h4 class="font-bold text-foreground flex items-center gap-2">
             <ShieldCheck class="w-5 h-5 text-primary" />
             {$t("settings.license.perksTitle")}
         </h4>
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div class="flex gap-3">
                 <CheckCircle2 class="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-                <span class="text-sm text-zinc-300"
+                <span class="text-sm text-foreground/90"
                     >{$t("settings.license.perk1")}</span
                 >
             </div>
             <div class="flex gap-3">
                 <CheckCircle2 class="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-                <span class="text-sm text-zinc-300"
+                <span class="text-sm text-foreground/90"
                     >{$t("settings.license.perk2")}</span
                 >
             </div>
             <div class="flex gap-3">
                 <CheckCircle2 class="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-                <span class="text-sm text-zinc-300"
+                <span class="text-sm text-foreground/90"
                     >{$t("settings.license.perk3")}</span
                 >
             </div>

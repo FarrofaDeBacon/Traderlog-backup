@@ -233,7 +233,7 @@
                         <Label>{$t("finance.transactionDialog.type")}</Label>
                         <Select.Root type="single" bind:value={transactionType}>
                             <Select.Trigger
-                                class="w-full bg-zinc-950/50 border-zinc-800"
+                                class="w-full bg-muted/30 border-border/40"
                             >
                                 {transactionTypes.find(
                                     (o) => o.value === transactionType,
@@ -253,7 +253,7 @@
                         <Label>{$t("finance.transactionDialog.account")}</Label>
                         <Select.Root type="single" bind:value={accountId}>
                             <Select.Trigger
-                                class="w-full bg-zinc-950/50 border-zinc-800"
+                                class="w-full bg-muted/30 border-border/40"
                             >
                                 {accountOptions.find(
                                     (o) => o.value === accountId,
@@ -327,7 +327,7 @@
                         <Label class="text-xs">{$t("general.from")}</Label>
                         <Select.Root type="single" bind:value={fromAccountId}>
                             <Select.Trigger
-                                class="bg-zinc-950/50 border-zinc-800 h-9 w-full"
+                                class="bg-muted/30 border-border/40 h-9 w-full"
                             >
                                 {accountOptions.find(
                                     (a) => a.value === fromAccountId,
@@ -352,7 +352,7 @@
                         <Label class="text-xs">{$t("general.to")}</Label>
                         <Select.Root type="single" bind:value={toAccountId}>
                             <Select.Trigger
-                                class="bg-zinc-950/50 border-zinc-800 h-9 w-full"
+                                class="bg-muted/30 border-border/40 h-9 w-full"
                             >
                                 {accountOptions.find(
                                     (a) => a.value === toAccountId,

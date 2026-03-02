@@ -892,7 +892,7 @@
     </div>
 
     <!-- Main Content Area (Glassmorphism inspired) -->
-    <div class="flex-1 overflow-y-auto p-4 bg-zinc-950/20">
+    <div class="flex-1 overflow-y-auto p-4 bg-muted/40 backdrop-blur-md">
         <div class="max-w-3xl mx-auto space-y-4">
             {#if currentStep === 1}
                 <div
@@ -985,7 +985,7 @@
                                     bind:value={formData.account_id}
                                 >
                                     <Select.Trigger
-                                        class="h-8 bg-muted/30 border-0 focus:ring-1 focus:ring-primary/40 text-xs text-white"
+                                        class="h-8 bg-muted/20 border-border/40 focus:ring-1 focus:ring-primary/40 text-xs text-foreground"
                                     >
                                         {accountsList.find(
                                             (a) => a.id === formData.account_id,
@@ -1015,7 +1015,7 @@
                                     bind:value={formData.strategy_id}
                                 >
                                     <Select.Trigger
-                                        class="h-8 bg-muted/30 border-0 focus:ring-1 focus:ring-primary/40 text-xs text-white"
+                                        class="h-8 bg-muted/20 border-border/40 focus:ring-1 focus:ring-primary/40 text-xs text-foreground"
                                     >
                                         {strategiesList.find(
                                             (s) =>
@@ -1046,7 +1046,7 @@
                                     bind:value={formData.timeframe}
                                 >
                                     <Select.Trigger
-                                        class="h-8 bg-muted/30 border-0 focus:ring-1 focus:ring-primary/40 text-xs text-white"
+                                        class="h-8 bg-muted/20 border-border/40 focus:ring-1 focus:ring-primary/40 text-xs text-foreground"
                                     >
                                         {formData.timeframe ||
                                             $t(
@@ -1080,7 +1080,7 @@
                                     bind:value={formData.volatility}
                                 >
                                     <Select.Trigger
-                                        class="h-8 bg-muted/30 border-0 focus:ring-1 focus:ring-primary/40 text-xs text-white"
+                                        class="h-8 bg-muted/20 border-border/40 focus:ring-1 focus:ring-primary/40 text-xs text-foreground"
                                     >
                                         {formData.volatility ||
                                             $t(
@@ -1141,7 +1141,7 @@
                                             }}
                                         >
                                             <Select.Trigger
-                                                class="h-8 bg-zinc-900 border-muted/20 text-[10px] w-full"
+                                                class="h-8 bg-muted/40 border-border/20 text-[10px] w-full"
                                             >
                                                 {assetTypesList.find(
                                                     (t) =>
@@ -1180,7 +1180,7 @@
                                             bind:value={formData.asset}
                                         >
                                             <Select.Trigger
-                                                class="h-10 bg-zinc-900 border-muted/40 text-xs font-bold w-full"
+                                                class="h-10 bg-muted/40 border-border/20 text-xs font-bold w-full"
                                             >
                                                 <div
                                                     class="flex items-center gap-2"
@@ -1292,7 +1292,7 @@
                                             <Input
                                                 type="datetime-local"
                                                 bind:value={formData.entry_date}
-                                                class="h-10 bg-zinc-900 border-muted/40 text-xs text-white pl-3 pr-8 w-full"
+                                                class="h-10 bg-muted/40 border-border/20 text-xs text-foreground pl-3 pr-8 w-full"
                                             />
                                             <Calendar
                                                 class="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -1319,7 +1319,7 @@
                                                 bind:value={
                                                     formData.entry_price
                                                 }
-                                                class="h-10 bg-zinc-900 border-muted/40 text-sm font-mono font-bold text-white flex-1"
+                                                class="h-10 bg-muted/40 border-border/40 text-sm font-mono font-bold text-foreground flex-1"
                                             />
                                             {#if true || settingsStore.rtdEnabled || rtdStore.symbols.length > 0}
                                                 <Button
@@ -1407,7 +1407,7 @@
                                     type="number"
                                     step="any"
                                     bind:value={formData.quantity}
-                                    class="h-10 bg-zinc-900 border-muted/40 text-sm font-mono font-bold text-white pl-4"
+                                    class="h-10 bg-muted/40 border-border/40 text-sm font-mono font-bold text-foreground pl-4"
                                 />
                             </div>
                             <div class="space-y-1.5">
@@ -1424,7 +1424,7 @@
                                     }
                                 >
                                     <Select.Trigger
-                                        class="h-10 bg-zinc-900 border-muted/40 text-xs text-white"
+                                        class="h-10 bg-muted/40 border-border/40 text-xs text-foreground"
                                     >
                                         {settingsStore.emotionalStates.find(
                                             (e) =>
@@ -1462,7 +1462,7 @@
                                     bind:value={formData.modality_id}
                                 >
                                     <Select.Trigger
-                                        class="h-10 bg-zinc-900 border-muted/40 text-xs text-white"
+                                        class="h-10 bg-muted/40 border-border/40 text-xs text-foreground"
                                     >
                                         {settingsStore.modalities.find(
                                             (m) =>
@@ -1491,8 +1491,8 @@
                                 <Input
                                     type="number"
                                     step="0.00001"
-                                    bind:value={formData.stop_loss}
-                                    class="h-10 bg-zinc-900 border-muted/40 text-xs font-mono font-bold text-white"
+                                    bind:value={formData.take_profit}
+                                    class="h-10 bg-muted/40 border-border/40 text-xs font-mono font-bold text-foreground"
                                     placeholder="0.00"
                                 />
                                 {#if formData.stop_loss && formData.entry_price && formData.asset}
@@ -1524,7 +1524,7 @@
                                     type="number"
                                     step="0.00001"
                                     bind:value={formData.take_profit}
-                                    class="h-10 bg-zinc-900 border-muted/40 text-xs font-mono font-bold text-white"
+                                    class="h-10 bg-input/30 border-border/20 text-xs font-mono font-bold text-foreground"
                                     placeholder="0.00"
                                 />
                                 {#if formData.take_profit && formData.entry_price && formData.asset}
@@ -1597,9 +1597,10 @@
                                         : 'text-muted-foreground'}">Aberto</span
                                 >
                                 <button
-                                    class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 transition-colors bg-zinc-800"
+                                    class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 transition-colors bg-muted/40 border border-border/40"
                                     type="button"
                                     role="switch"
+                                    aria-label="Toggle trade status"
                                     aria-checked={formData.status === "closed"}
                                     onclick={(e) => {
                                         e.preventDefault();
@@ -1648,7 +1649,7 @@
                                         type="number"
                                         step="any"
                                         bind:value={formData.exit_price}
-                                        class="bg-muted/30 border-0 h-8 text-xs font-mono font-bold"
+                                        class="bg-muted/30 border-border/40 h-8 text-xs font-mono font-bold text-foreground"
                                     />
                                 </div>
                                 <div class="space-y-1.5">
@@ -1662,7 +1663,7 @@
                                         <Input
                                             type="datetime-local"
                                             bind:value={formData.exit_date}
-                                            class="bg-muted/30 border-0 pr-8 h-10 text-xs w-full"
+                                            class="bg-muted/30 border-border/40 pr-8 h-10 text-xs w-full text-foreground"
                                         />
                                         <Calendar
                                             class="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -1681,7 +1682,7 @@
                                         bind:value={formData.exit_reason}
                                     >
                                         <Select.Trigger
-                                            class="h-8 bg-muted/30 border-0 focus:ring-1 focus:ring-primary/40 text-xs text-left"
+                                            class="h-8 bg-muted/30 border-border/40 focus:ring-1 focus:ring-primary/40 text-xs text-left"
                                         >
                                             {formData.exit_reason ||
                                                 $t(
@@ -1733,7 +1734,7 @@
                                         }
                                     >
                                         <Select.Trigger
-                                            class="h-8 bg-muted/30 border-0 focus:ring-1 focus:ring-primary/40 text-xs"
+                                            class="h-8 bg-input/20 border-border/20 focus:ring-1 focus:ring-primary/40 text-xs"
                                         >
                                             {settingsStore.emotionalStates.find(
                                                 (e) =>
@@ -1765,7 +1766,7 @@
 
                     <!-- Financial Summary Display -->
                     <div
-                        class="mt-4 p-4 rounded-xl bg-zinc-900 border border-white/5 shadow-lg overflow-hidden relative group"
+                        class="mt-4 p-4 rounded-xl bg-card border border-border/40 shadow-lg overflow-hidden relative group"
                     >
                         <div
                             class="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
@@ -1801,7 +1802,7 @@
                                     >
                                         {$t("trades.wizard.fields.entry")}:
                                         <span
-                                            class="text-white font-mono font-bold"
+                                            class="text-foreground font-mono font-bold"
                                             >{formData.entry_price}</span
                                         >
                                         |
@@ -1859,7 +1860,7 @@
                                     placeholder={$t(
                                         "trades.wizard.placeholders.rationale",
                                     )}
-                                    class="bg-muted/30 border-0 h-24 text-sm resize-none"
+                                    class="bg-muted/30 border-border/40 h-24 text-sm resize-none"
                                 />
                             </div>
                             <div class="space-y-2">
@@ -1873,7 +1874,7 @@
                                     placeholder={$t(
                                         "trades.wizard.placeholders.signals",
                                     )}
-                                    class="bg-muted/30 border-0 h-24 text-sm resize-none"
+                                    class="bg-input/20 border-border/20 h-24 text-sm resize-none"
                                 />
                             </div>
                         </div>
@@ -1889,7 +1890,7 @@
                                     placeholder={$t(
                                         "trades.wizard.placeholders.context",
                                     )}
-                                    class="bg-muted/30 border-0 h-24 text-sm resize-none"
+                                    class="bg-input/20 border-border/20 h-24 text-sm resize-none"
                                 />
                             </div>
                             <div class="space-y-2">
@@ -1903,7 +1904,7 @@
                                     placeholder={$t(
                                         "trades.wizard.placeholders.improvements",
                                     )}
-                                    class="bg-muted/30 border-0 h-24 text-sm resize-none"
+                                    class="bg-muted/30 border-border/40 h-24 text-sm resize-none"
                                 />
                             </div>
                         </div>
@@ -1912,7 +1913,7 @@
                             <div class="flex items-center justify-between">
                                 <div class="space-y-0.5">
                                     <Label
-                                        class="text-xs font-bold text-white uppercase tracking-tight flex items-center gap-2"
+                                        class="text-xs font-bold text-foreground uppercase tracking-tight flex items-center gap-2"
                                     >
                                         <Brain
                                             class="w-3.5 h-3.5 text-primary"
@@ -1940,7 +1941,7 @@
                                 max="10"
                                 step="1"
                                 bind:value={formData.intensity}
-                                class="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary"
+                                class="w-full h-1.5 bg-muted/40 rounded-lg appearance-none cursor-pointer accent-primary"
                             />
                             <div
                                 class="flex justify-between text-[8px] text-zinc-500 font-bold uppercase tracking-widest px-1"
@@ -1978,7 +1979,7 @@
                         </p>
 
                         <div
-                            class="mt-4 text-left bg-zinc-950/30 rounded-xl p-4 border border-white/5"
+                            class="mt-4 text-left bg-muted/30 rounded-xl p-4 border border-border/40"
                         >
                             <ImageUploader bind:images={formData.images} />
                         </div>
@@ -1989,7 +1990,7 @@
                     class="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300"
                 >
                     <div
-                        class="group relative overflow-hidden rounded-2xl bg-zinc-950 p-4 border border-white/5 shadow-xl"
+                        class="group relative overflow-hidden rounded-2xl bg-card p-4 border border-border/40 shadow-xl"
                     >
                         <div
                             class="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent"
@@ -1998,7 +1999,7 @@
                             <div class="flex-1 space-y-6">
                                 <div class="space-y-2">
                                     <h3
-                                        class="text-lg font-black tracking-tighter text-white uppercase italic flex items-center gap-2"
+                                        class="text-lg font-black tracking-tighter text-foreground uppercase italic flex items-center gap-2"
                                     >
                                         <ShieldCheck
                                             class="w-5 h-5 text-primary"
@@ -2023,7 +2024,7 @@
                                         </p>
                                         <div class="flex items-center gap-2">
                                             <span
-                                                class="text-base font-mono font-bold text-white"
+                                                class="text-base font-mono font-bold text-foreground"
                                                 >{formData.asset}</span
                                             >
                                             <span
@@ -2076,7 +2077,7 @@
                                             {$t("trades.table.date")}
                                         </p>
                                         <p
-                                            class="text-xs font-medium text-white/80"
+                                            class="text-xs font-medium text-foreground/80"
                                         >
                                             {new Date(
                                                 formData.entry_date,
@@ -2096,7 +2097,7 @@
                                             {$t("trades.table.strategy")}
                                         </p>
                                         <p
-                                            class="text-xs font-medium text-white/80 truncate"
+                                            class="text-xs font-medium text-foreground/80 truncate"
                                         >
                                             {settingsStore.strategies.find(
                                                 (s) =>
@@ -2110,7 +2111,7 @@
 
                                 <!-- Memória de Cálculo -->
                                 <div
-                                    class="space-y-3 pt-6 border-t border-white/5"
+                                    class="space-y-3 pt-6 border-t border-border/40"
                                 >
                                     <h4
                                         class="text-[10px] font-black tracking-widest text-primary uppercase flex items-center gap-2"
@@ -2142,7 +2143,7 @@
                                         <div class="space-y-1">
                                             {#each calculationResult.memoryItems as item}
                                                 <div
-                                                    class="flex justify-between items-center bg-white/5 rounded p-2 border border-white/5 transition-colors hover:bg-white/10"
+                                                    class="flex justify-between items-center bg-muted/30 rounded p-2 border border-border/40 transition-colors hover:bg-muted/40"
                                                 >
                                                     <div
                                                         class="flex items-center gap-2"
@@ -2163,7 +2164,7 @@
                                                             >
                                                         {/if}
                                                         <span
-                                                            class="text-[10px] font-medium text-white/70"
+                                                            class="text-[10px] font-medium text-foreground/70"
                                                             >{item.label}</span
                                                         >
                                                     </div>
@@ -2212,7 +2213,7 @@
                                                 )}</span
                                             >
                                             <span
-                                                class="text-xs font-mono font-black text-white"
+                                                class="text-xs font-mono font-black text-foreground"
                                             >
                                                 {calculationResult.assetType
                                                     ?.result_type === "currency"
@@ -2261,7 +2262,7 @@
 
                             <div class="w-full md:w-56 space-y-4">
                                 <div
-                                    class="p-4 rounded-xl bg-white/5 border border-white/5 space-y-4 shadow-inner"
+                                    class="p-4 rounded-xl bg-muted/20 border border-border/40 space-y-4 shadow-inner"
                                 >
                                     <div
                                         class="flex justify-between items-center"
@@ -2273,12 +2274,12 @@
                                             )}</span
                                         >
                                         <span
-                                            class="text-lg font-black text-white"
+                                            class="text-lg font-black text-foreground"
                                             >{formData.images.length}</span
                                         >
                                     </div>
                                     <div
-                                        class="flex justify-between items-center pt-2 border-t border-white/5"
+                                        class="flex justify-between items-center pt-2 border-t border-border/20"
                                     >
                                         <span
                                             class="text-[9px] text-muted-foreground uppercase font-bold"
@@ -2289,7 +2290,7 @@
                                         <span
                                             class="px-2 py-0.5 rounded-full text-[8px] font-black {formData.followed_plan
                                                 ? 'bg-emerald-500/10 text-emerald-400'
-                                                : 'bg-red-500/10 text-red-400'} border border-white/5"
+                                                : 'bg-red-500/10 text-red-400'} border border-border/20"
                                         >
                                             {formData.followed_plan
                                                 ? $t("trades.wizard.summary.s")

@@ -590,9 +590,13 @@ pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), Stri
     db.0.query(&sql).await.map_err(|e| e.to_string())?;
 
     // --- AUTO-SYNC DAILY CLOSURE (EXTRATO) ---
-    // If there is an existing cash_transaction for this account and date, auto-update it.
-    let date_only = trade.date.split('T').next().unwrap_or(&trade.date).split(' ').next().unwrap_or(&trade.date);
-    let acc_clean = trade
+    let date_only = if let Some(ref ed) = trade.exit_date {
+        ed.split('T').next().unwrap_or(ed).split(' ').next().unwrap_or(ed)
+    } else {
+        trade.date.split('T').next().unwrap_or(&trade.date).split(' ').next().unwrap_or(&trade.date)
+    };
+
+    let acc_clean_current = trade
         .account_id
         .split(':')
         .last()
@@ -602,111 +606,139 @@ pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), Stri
         .replace("`", "")
         .trim()
         .to_string();
-    let acc_full = format!("account:⟨{}⟩", acc_clean);
 
-    // Find closure for this date and account safely
-    let find_ct_sql = format!(
-        "SELECT *, type::string(id) as id, type::string(account_id) as account_id FROM cash_transaction WHERE system_linked = true AND string::startsWith(type::string(date), '{}')",
-        date_only
+    // 1. Find ALL closures that currently contain this trade ID
+    // and ALSO find the "target" closure for the trade's current date/account
+    let find_sync_sql = format!(
+        "SELECT *, type::string(id) as id, type::string(account_id) as account_id FROM cash_transaction WHERE system_linked = true"
     );
 
-    if let Ok(mut find_res) = db.0.query(&find_ct_sql).await {
-        if let Ok(closures) = find_res.take::<Vec<crate::models::CashTransaction>>(0) {
-            let matching_closures: Vec<_> = closures.into_iter().filter(|c| {
+    if let Ok(mut find_res) = db.0.query(&find_sync_sql).await {
+        if let Ok(all_system_closures) = find_res.take::<Vec<crate::models::CashTransaction>>(0) {
+            
+            // A. Identify closures to update
+            let mut closures_to_process = Vec::new();
+            let mut target_closure_found = false;
+
+            for c in all_system_closures {
                 let c_acc_clean = c.account_id.split(':').last().unwrap_or(&c.account_id)
                     .replace("⟨", "").replace("⟩", "").replace("`", "").trim().to_string();
-                c_acc_clean == acc_clean
-            }).collect();
+                let c_date_only = c.date.split('T').next().unwrap_or(&c.date).split(' ').next().unwrap_or(&c.date);
+                
+                let is_target = c_acc_clean == acc_clean_current && c_date_only == date_only;
+                let mut contains_trade = false;
 
-            if matching_closures.is_empty() {
-                println!("[COMMAND] save_trade auto-sync: no matching closure found for date {} and account {}", date_only, acc_clean);
-            }
-
-            for mut closure in matching_closures {
-                let ct_clean = closure
-                    .id
-                    .split(':')
-                    .last()
-                    .unwrap_or(&closure.id)
-                    .replace("⟨", "")
-                    .replace("⟩", "")
-                    .replace("`", "")
-                    .to_string();
-                let ct_full = format!("cash_transaction:⟨{}⟩", ct_clean);
-
-                println!(
-                    "[COMMAND] save_trade auto-sync: syncing closure {} for date {}",
-                    ct_full, date_only
-                );
-
-                // Ensure this trade is in the list
-                let mut current_trade_ids = closure.trade_ids.unwrap_or_default();
-                let already_linked = current_trade_ids.iter().any(|tid| {
-                    let tid_clean = tid
-                        .split(':')
-                        .last()
-                        .unwrap_or(tid)
-                        .replace("⟨", "")
-                        .replace("⟩", "")
-                        .replace("`", "");
-                    tid_clean == clean_id
-                });
-
-                if !already_linked {
-                    current_trade_ids.push(full_trade_id.clone());
+                if let Some(ref tids) = c.trade_ids {
+                    contains_trade = tids.iter().any(|tid| {
+                        let tid_clean = tid.split(':').last().unwrap_or(tid)
+                            .replace("⟨", "").replace("⟩", "").replace("`", "");
+                        tid_clean == clean_id
+                    });
                 }
 
-                // Recalculate the sum of all trades in this closure
-                let mut new_total = 0.0_f64;
-                for tid in &current_trade_ids {
-                    let tid_clean = tid
-                        .split(':')
-                        .last()
-                        .unwrap_or(tid)
-                        .replace("⟨", "")
-                        .replace("⟩", "")
-                        .replace("`", "")
-                        .trim()
-                        .to_string();
-                    let sql_res = format!("SELECT result FROM trade:⟨{}⟩ LIMIT 1", tid_clean);
-                    if let Ok(mut res_query) = db.0.query(&sql_res).await {
-                        if let Ok(results) = res_query.take::<Vec<serde_json::Value>>(0) {
-                            if let Some(first) = results.first() {
-                                new_total +=
-                                    first.get("result").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                if is_target {
+                    target_closure_found = true;
+                    closures_to_process.push((c, true)); // (Closure, is_target)
+                } else if contains_trade {
+                    closures_to_process.push((c, false)); // It's an orphan! (Moved trade)
+                }
+            }
+
+            // B. If target closure wasn't found in system closures (maybe newly created or trade just moved), 
+            // we should try specifically finding it even if it doesn't have the trade yet.
+            if !target_closure_found {
+                 let find_target_sql = format!(
+                    "SELECT *, type::string(id) as id, type::string(account_id) as account_id FROM cash_transaction WHERE system_linked = true AND string::startsWith(type::string(date), '{}')",
+                    date_only
+                );
+                if let Ok(mut target_res) = db.0.query(&find_target_sql).await {
+                    if let Ok(target_closures) = target_res.take::<Vec<crate::models::CashTransaction>>(0) {
+                        for c in target_closures {
+                            let c_acc_clean = c.account_id.split(':').last().unwrap_or(&c.account_id)
+                                .replace("⟨", "").replace("⟩", "").replace("`", "").trim().to_string();
+                            if c_acc_clean == acc_clean_current {
+                                closures_to_process.push((c, true));
+                                break; 
                             }
                         }
                     }
                 }
+            }
 
-                let tx_type = if new_total >= 0.0 {
-                    "Deposit"
+            // C. Process updates
+            for (mut closure, is_target) in closures_to_process {
+                let ct_clean = closure.id.split(':').last().unwrap_or(&closure.id)
+                    .replace("⟨", "").replace("⟩", "").replace("`", "").to_string();
+                let ct_full = format!("cash_transaction:⟨{}⟩", ct_clean);
+                
+                let cur_acc_clean = closure.account_id.split(':').last().unwrap_or(&closure.account_id)
+                    .replace("⟨", "").replace("⟩", "").replace("`", "").trim().to_string();
+                let cur_acc_full = format!("account:⟨{}⟩", cur_acc_clean);
+
+                let mut trade_ids = closure.trade_ids.unwrap_or_default();
+                let mut changed = false;
+
+                if is_target {
+                    // Ensure linked
+                    let already_linked = trade_ids.iter().any(|tid| {
+                        let tid_clean = tid.split(':').last().unwrap_or(tid)
+                            .replace("⟨", "").replace("⟩", "").replace("`", "");
+                        tid_clean == clean_id
+                    });
+                    if !already_linked {
+                        trade_ids.push(full_trade_id.clone());
+                        changed = true;
+                    }
                 } else {
-                    "Withdraw"
-                };
+                    // Remove from old closure
+                    let original_len = trade_ids.len();
+                    trade_ids.retain(|tid| {
+                        let tid_clean = tid.split(':').last().unwrap_or(tid)
+                            .replace("⟨", "").replace("⟩", "").replace("`", "");
+                        tid_clean != clean_id
+                    });
+                    if trade_ids.len() != original_len {
+                        changed = true;
+                    }
+                }
 
-                // Calculate difference to update account balance
-                let amount_diff = new_total - closure.amount;
+                if changed || is_target {
+                    // Recalculate Total
+                    let mut new_total = 0.0_f64;
+                    for tid in &trade_ids {
+                        let tid_clean_loop = tid.split(':').last().unwrap_or(tid)
+                            .replace("⟨", "").replace("⟩", "").replace("`", "").trim().to_string();
+                        
+                        if tid_clean_loop == clean_id {
+                            new_total += trade.result;
+                        } else {
+                            let sql_res = format!("SELECT result FROM trade:⟨{}⟩ LIMIT 1", tid_clean_loop);
+                            if let Ok(mut res_query) = db.0.query(&sql_res).await {
+                                if let Ok(results) = res_query.take::<Vec<serde_json::Value>>(0) {
+                                    if let Some(first) = results.first() {
+                                        new_total += first.get("result").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                                    }
+                                }
+                            }
+                        }
+                    }
 
-                println!(
-                    "[COMMAND] save_trade auto-sync: updating {} amount to {} (diff: {})",
-                    ct_full, new_total, amount_diff
-                );
+                    let amount_diff = new_total - closure.amount;
+                    if amount_diff != 0.0 || changed {
+                        println!("[COMMAND] save_trade sync: {} is_target={} amount {} -> {} (diff: {})", ct_full, is_target, closure.amount, new_total, amount_diff);
+                        
+                        let tx_type = if new_total >= 0.0 { "Deposit" } else { "Withdraw" };
+                        let _ = db.0.query(format!("UPDATE {} SET amount = $amount, trade_ids = $t_ids, type = $tx_type", ct_full))
+                            .bind(("amount", new_total))
+                            .bind(("t_ids", trade_ids))
+                            .bind(("tx_type", tx_type.to_string()))
+                            .await;
 
-                let update_ct_sql = format!(
-                    "UPDATE {} SET amount = $amount, trade_ids = $t_ids, type = $tx_type",
-                    ct_full
-                );
-                let _ =
-                    db.0.query(&update_ct_sql)
-                        .bind(("amount", new_total))
-                        .bind(("t_ids", current_trade_ids))
-                        .bind(("tx_type", tx_type.to_string()))
-                        .await;
-
-                if amount_diff != 0.0 {
-                    let sql_acc = format!("UPDATE {} SET balance += $diff", acc_full);
-                    let _ = db.0.query(&sql_acc).bind(("diff", amount_diff)).await;
+                        if amount_diff != 0.0 {
+                            let _ = db.0.query(format!("UPDATE {} SET balance += $diff", cur_acc_full))
+                                .bind(("diff", amount_diff)).await;
+                        }
+                    }
                 }
             }
         }
@@ -807,37 +839,6 @@ pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), Stri
                 tid_clean != clean_id
             });
 
-            if t_ids.is_empty() {
-                // Last trade in the closure → delete the closure
-                println!(
-                    "[COMMAND] delete_trade: deleting empty closure {}",
-                    ct_full_id
-                );
-                let _ = delete_record(&db.0, "cash_transaction", &ct_clean_id).await;
-            } else {
-                // Multiple trades → recalculate and update
-                ct.amount -= trade_result;
-                let tx_type = if ct.amount >= 0.0 {
-                    "Deposit"
-                } else {
-                    "Withdraw"
-                };
-                println!(
-                    "[COMMAND] delete_trade: updating closure {} new_amount={}",
-                    ct_full_id, ct.amount
-                );
-                let sql_update = format!(
-                    "UPDATE {} SET amount = $amount, trade_ids = $t_ids, type = $tx_type",
-                    ct_full_id
-                );
-                let _ =
-                    db.0.query(&sql_update)
-                        .bind(("amount", ct.amount))
-                        .bind(("t_ids", t_ids))
-                        .bind(("tx_type", tx_type.to_string()))
-                        .await;
-            }
-
             // Update account balance: subtract the deleted trade's result
             let acc_clean = ct
                 .account_id
@@ -854,6 +855,59 @@ pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), Stri
                 db.0.query(&sql_acc)
                     .bind(("trade_result", trade_result))
                     .await;
+
+            if t_ids.is_empty() {
+                // Last trade in the closure → delete the closure
+                println!(
+                    "[COMMAND] delete_trade: deleting empty closure {}",
+                    ct_full_id
+                );
+                let _ = delete_record(&db.0, "cash_transaction", &ct_clean_id).await;
+            } else {
+                // Multiple trades → recalculate total based on REMAINING trades
+                let mut new_total = 0.0_f64;
+                for tid in &t_ids {
+                    let tid_clean_rem = tid
+                        .split(':')
+                        .last()
+                        .unwrap_or(tid)
+                        .replace("⟨", "")
+                        .replace("⟩", "")
+                        .replace("`", "")
+                        .trim()
+                        .to_string();
+                    
+                    let sql_res = format!("SELECT result FROM trade:⟨{}⟩ LIMIT 1", tid_clean_rem);
+                    if let Ok(mut res_query) = db.0.query(&sql_res).await {
+                        if let Ok(results) = res_query.take::<Vec<serde_json::Value>>(0) {
+                            if let Some(first) = results.first() {
+                                new_total +=
+                                    first.get("result").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                            }
+                        }
+                    }
+                }
+
+                let tx_type = if new_total >= 0.0 {
+                    "Deposit"
+                } else {
+                    "Withdraw"
+                };
+                println!(
+                    "[COMMAND] delete_trade: updating closure {} new_amount={}",
+                    ct_full_id, new_total
+                );
+                let sql_update = format!(
+                    "UPDATE {} SET amount = $amount, trade_ids = $t_ids, type = $tx_type",
+                    ct_full_id
+                );
+                let _ =
+                    db.0.query(&sql_update)
+                        .bind(("amount", new_total))
+                        .bind(("t_ids", t_ids))
+                        .bind(("tx_type", tx_type.to_string()))
+                        .await;
+            }
         }
     }
 

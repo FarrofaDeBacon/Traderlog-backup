@@ -117,14 +117,14 @@
 </script>
 
 <div
-    class="min-h-screen flex items-center justify-center bg-zinc-950 p-4 relative overflow-hidden text-zinc-50"
+    class="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden text-foreground"
 >
     <!-- Ambient Background Effects -->
     <div
-        class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[128px] pointer-events-none opacity-50"
+        class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[128px] pointer-events-none opacity-50 dark:opacity-30"
     ></div>
     <div
-        class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[128px] pointer-events-none opacity-50"
+        class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[128px] pointer-events-none opacity-50 dark:opacity-20"
     ></div>
 
     <div
@@ -138,7 +138,9 @@
             >
                 <!-- Form Header -->
                 <div class="space-y-2 text-center">
-                    <h1 class="text-3xl font-black tracking-tighter text-white">
+                    <h1
+                        class="text-3xl font-black tracking-tighter text-foreground"
+                    >
                         {$t("auth.register.title")}
                     </h1>
                     <p class="text-muted-foreground">
@@ -147,7 +149,7 @@
                 </div>
 
                 <Card.Root
-                    class="border-zinc-800 bg-zinc-950/50 backdrop-blur-xl"
+                    class="border-border bg-card/50 backdrop-blur-xl shadow-2xl"
                 >
                     <Card.Content class="pt-6 space-y-4">
                         <div class="grid gap-4">
@@ -155,20 +157,20 @@
                             <div class="grid gap-2">
                                 <Label
                                     for="name"
-                                    class="text-xs font-bold uppercase tracking-wider text-zinc-500"
+                                    class="text-xs font-bold uppercase tracking-wider text-muted-foreground"
                                 >
                                     {$t("auth.register.name")}
                                 </Label>
                                 <div class="relative">
                                     <User
-                                        class="absolute left-3 top-2.5 h-4 w-4 text-zinc-500"
+                                        class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"
                                     />
                                     <Input
                                         id="name"
                                         type="text"
                                         bind:value={formData.name}
                                         placeholder="John Doe"
-                                        class="pl-10 bg-zinc-900/50 border-zinc-800"
+                                        class="pl-10 bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/50"
                                     />
                                 </div>
                             </div>
@@ -177,13 +179,13 @@
                                 <div class="grid gap-2">
                                     <Label
                                         for="cpf"
-                                        class="text-xs font-bold uppercase tracking-wider text-zinc-500"
+                                        class="text-xs font-bold uppercase tracking-wider text-muted-foreground"
                                     >
                                         {$t("auth.register.cpf")}
                                     </Label>
                                     <div class="relative">
                                         <IdCard
-                                            class="absolute left-3 top-2.5 h-4 w-4 text-zinc-500"
+                                            class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"
                                         />
                                         <Input
                                             id="cpf"
@@ -191,26 +193,26 @@
                                             value={formData.cpf}
                                             oninput={handleCpfInput}
                                             placeholder="000.000.000-00"
-                                            class="pl-10 bg-zinc-900/50 border-zinc-800"
+                                            class="pl-10 bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/50"
                                         />
                                     </div>
                                 </div>
                                 <div class="grid gap-2">
                                     <Label
                                         for="birthDate"
-                                        class="text-xs font-bold uppercase tracking-wider text-zinc-500"
+                                        class="text-xs font-bold uppercase tracking-wider text-muted-foreground"
                                     >
                                         {$t("auth.register.birthDate")}
                                     </Label>
                                     <div class="relative">
                                         <Calendar
-                                            class="absolute left-3 top-2.5 h-4 w-4 text-zinc-500"
+                                            class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"
                                         />
                                         <Input
                                             id="birthDate"
                                             type="date"
                                             bind:value={formData.birthDate}
-                                            class="pl-10 bg-zinc-900/50 border-zinc-800"
+                                            class="pl-10 bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/50"
                                         />
                                     </div>
                                 </div>
@@ -219,20 +221,20 @@
                             <div class="grid gap-2">
                                 <Label
                                     for="email"
-                                    class="text-xs font-bold uppercase tracking-wider text-zinc-500"
+                                    class="text-xs font-bold uppercase tracking-wider text-muted-foreground"
                                 >
                                     {$t("auth.register.email")}
                                 </Label>
                                 <div class="relative">
                                     <Mail
-                                        class="absolute left-3 top-2.5 h-4 w-4 text-zinc-500"
+                                        class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"
                                     />
                                     <Input
                                         id="email"
                                         type="email"
                                         bind:value={formData.email}
                                         placeholder="email@example.com"
-                                        class="pl-10 bg-zinc-900/50 border-zinc-800"
+                                        class="pl-10 bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/50"
                                     />
                                 </div>
                             </div>
@@ -244,33 +246,33 @@
                                 <div class="grid gap-2">
                                     <Label
                                         for="password"
-                                        class="text-xs font-bold uppercase tracking-wider text-zinc-500"
+                                        class="text-xs font-bold uppercase tracking-wider text-muted-foreground"
                                     >
                                         {$t("auth.register.password")}
                                     </Label>
                                     <div class="relative">
                                         <Lock
-                                            class="absolute left-3 top-2.5 h-4 w-4 text-zinc-500"
+                                            class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"
                                         />
                                         <Input
                                             id="password"
                                             type="password"
                                             bind:value={formData.password}
                                             placeholder="••••••••"
-                                            class="pl-10 bg-zinc-900/50 border-zinc-800"
+                                            class="pl-10 bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/50"
                                         />
                                     </div>
                                 </div>
                                 <div class="grid gap-2">
                                     <Label
                                         for="confirmPassword"
-                                        class="text-xs font-bold uppercase tracking-wider text-zinc-500"
+                                        class="text-xs font-bold uppercase tracking-wider text-muted-foreground"
                                     >
                                         {$t("auth.register.confirmPassword")}
                                     </Label>
                                     <div class="relative">
                                         <Lock
-                                            class="absolute left-3 top-2.5 h-4 w-4 text-zinc-500"
+                                            class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"
                                         />
                                         <Input
                                             id="confirmPassword"
@@ -279,7 +281,7 @@
                                                 formData.confirmPassword
                                             }
                                             placeholder="••••••••"
-                                            class="pl-10 bg-zinc-900/50 border-zinc-800"
+                                            class="pl-10 bg-muted/30 border-border text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/50"
                                             onkeydown={(e) =>
                                                 e.key === "Enter" &&
                                                 handleRegister()}
@@ -289,7 +291,7 @@
                             </div>
 
                             <Button
-                                class="w-full mt-4 font-black"
+                                class="w-full mt-4 font-black shadow-lg shadow-primary/20 h-11"
                                 onclick={handleRegister}
                                 disabled={isLoading}
                             >
@@ -305,11 +307,11 @@
                         </div>
                     </Card.Content>
                     <Card.Footer
-                        class="flex flex-col gap-4 border-t border-zinc-800 pt-6"
+                        class="flex flex-col gap-4 border-t border-border/20 pt-6"
                     >
                         <Button
                             variant="link"
-                            class="text-zinc-500 hover:text-white transition-colors"
+                            class="text-muted-foreground hover:text-primary transition-colors"
                             onclick={() => goto("/login")}
                         >
                             {$t("auth.register.alreadyHaveAccount")}
@@ -320,7 +322,7 @@
 
                 <!-- Terms -->
                 <p
-                    class="text-[10px] text-center text-zinc-600 px-8 uppercase tracking-widest leading-relaxed"
+                    class="text-[10px] text-center text-muted-foreground/60 px-8 uppercase tracking-widest leading-relaxed"
                 >
                     {$t("auth.register.terms")}
                 </p>
@@ -332,11 +334,13 @@
             >
                 <div class="space-y-2 text-center">
                     <div
-                        class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4"
+                        class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4 border border-primary/20"
                     >
                         <Lock class="w-8 h-8 text-primary" />
                     </div>
-                    <h1 class="text-3xl font-black tracking-tighter text-white">
+                    <h1
+                        class="text-3xl font-black tracking-tighter text-foreground"
+                    >
                         {$t("auth.register.recoveryKey.title")}
                     </h1>
                     <p class="text-muted-foreground text-sm">
@@ -348,7 +352,7 @@
                 </div>
 
                 <Card.Root
-                    class="border-primary/20 bg-zinc-950/50 backdrop-blur-xl ring-1 ring-primary/10"
+                    class="border-primary/20 bg-card/50 backdrop-blur-xl ring-1 ring-primary/10 shadow-2xl"
                 >
                     <Card.Content class="pt-8 space-y-6">
                         <div
@@ -361,17 +365,17 @@
                             }}
                         >
                             <p
-                                class="text-xs font-black uppercase tracking-[0.3em] text-zinc-500 mb-2"
+                                class="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground mb-2"
                             >
                                 {$t("auth.register.recoveryKey.label")}
                             </p>
                             <div
-                                class="text-2xl font-mono font-black tracking-widest text-white selection:bg-primary selection:text-white"
+                                class="text-2xl font-mono font-black tracking-widest text-foreground selection:bg-primary selection:text-white"
                             >
                                 {recoveryKey}
                             </div>
                             <p
-                                class="text-[10px] text-zinc-600 mt-4 group-hover:text-primary transition-colors"
+                                class="text-[10px] text-muted-foreground/60 mt-4 group-hover:text-primary transition-colors"
                             >
                                 {$t("auth.register.recoveryKey.copyPrompt")}
                             </p>
@@ -379,7 +383,7 @@
 
                         <div class="space-y-4">
                             <div
-                                class="flex items-start gap-3 text-xs text-zinc-400 leading-relaxed italic"
+                                class="flex items-start gap-3 text-xs text-muted-foreground leading-relaxed italic"
                             >
                                 <div
                                     class="mt-1 w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"
@@ -389,7 +393,7 @@
                         </div>
 
                         <Button
-                            class="w-full font-black py-6 text-lg"
+                            class="w-full font-black py-6 text-lg shadow-lg shadow-primary/20"
                             onclick={confirmRecovery}
                         >
                             {$t("auth.register.recoveryKey.confirm")}

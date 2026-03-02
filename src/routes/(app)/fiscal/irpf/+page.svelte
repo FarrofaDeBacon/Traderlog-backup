@@ -203,11 +203,11 @@
     class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20"
 >
     <div
-        class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-6"
+        class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/30 pb-6"
     >
         <div>
             <h2
-                class="text-3xl font-bold text-white tracking-tight flex items-center gap-3"
+                class="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3"
             >
                 <FileText class="w-8 h-8 text-primary" />
                 {$t("fiscal.irpf.title")}
@@ -220,7 +220,7 @@
             <Button
                 variant="outline"
                 href="/fiscal/irpf/darf"
-                class="border-white/10"
+                class="border-border"
             >
                 <FileText class="w-4 h-4 mr-2" />
                 {$t("fiscal.irpf.manageDarfs")}
@@ -228,7 +228,7 @@
 
             <Button
                 onclick={() => (isAppraisalModalOpen = true)}
-                class="neon-glow bg-primary text-black font-bold"
+                class="neon-glow bg-primary text-primary-foreground font-bold"
             >
                 <Calendar class="w-4 h-4 mr-2" />
                 {$t("fiscal.irpf.newAppraisal")}
@@ -240,7 +240,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Total Devido -->
         <div
-            class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 transition-all hover:border-rose-500/30 border-l-4 border-l-rose-500"
+            class="group relative overflow-hidden rounded-xl border border-border/50 bg-muted/30 transition-all hover:border-rose-500/30 border-l-4 border-l-rose-500"
         >
             <div class="flex items-start justify-between py-2 px-4">
                 <span
@@ -252,7 +252,7 @@
             </div>
             <div class="py-2 px-4">
                 <div
-                    class="text-base font-mono font-bold text-white uppercase tracking-tighter"
+                    class="text-base font-mono font-bold text-foreground uppercase tracking-tighter"
                 >
                     {formatCurrency(irpfStore.totalDue)}
                 </div>
@@ -264,7 +264,7 @@
 
         <!-- Total Pago -->
         <div
-            class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 transition-all hover:border-emerald-500/30 border-l-4 border-l-emerald-500"
+            class="group relative overflow-hidden rounded-xl border border-border/50 bg-muted/30 transition-all hover:border-emerald-500/30 border-l-4 border-l-emerald-500"
         >
             <div class="flex items-start justify-between py-2 px-4">
                 <span
@@ -288,7 +288,7 @@
 
         <!-- Card 3: Pendente Atual -->
         <div
-            class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 transition-all hover:border-amber-500/30 border-l-4 border-l-amber-500"
+            class="group relative overflow-hidden rounded-xl border border-border/50 bg-muted/30 transition-all hover:border-amber-500/30 border-l-4 border-l-amber-500"
         >
             <div class="flex items-start justify-between py-2 px-4">
                 <span
@@ -323,7 +323,7 @@
 
         <!-- Card 4: Prejuízos Acumulados -->
         <div
-            class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 transition-all hover:border-blue-500/30 border-l-4 border-l-blue-500"
+            class="group relative overflow-hidden rounded-xl border border-border/50 bg-muted/30 transition-all hover:border-blue-500/30 border-l-4 border-l-blue-500"
         >
             <div class="flex items-start justify-between py-2 px-4">
                 <span
@@ -362,7 +362,7 @@
 
     <!-- Charts Section -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card.Root class="lg:col-span-2 bg-black/40 border-white/10 glass">
+        <Card.Root class="lg:col-span-2 bg-muted/30 border-border/50 glass">
             <Card.Header>
                 <Card.Title class="text-lg font-medium"
                     >{$t("fiscal.irpf.evolution")} ({irpfStore.selectedYear})</Card.Title
@@ -401,7 +401,7 @@
 
         <!-- Year Selector & Quick Actions (Side) -->
         <div class="space-y-6">
-            <Card.Root class="bg-black/40 border-white/10 glass">
+            <Card.Root class="bg-muted/30 border-border/50 glass">
                 <Card.Header>
                     <Card.Title class="text-sm font-medium"
                         >{$t("fiscal.irpf.periodFilter")}</Card.Title
@@ -419,7 +419,7 @@
                             }}
                         >
                             <Select.Trigger
-                                class="w-full bg-black/20 border-white/10 text-white"
+                                class="w-full bg-muted/20 border-border/30 text-foreground"
                             >
                                 {irpfStore.selectedYear}
                             </Select.Trigger>
@@ -453,14 +453,16 @@
                             <h4 class="font-bold text-amber-500">
                                 {$t("fiscal.darf.title")}
                             </h4>
-                            <p class="text-xs text-amber-200/70 mt-1">
+                            <p
+                                class="text-xs text-amber-900/60 dark:text-amber-200/70 mt-1"
+                            >
                                 {$t("fiscal.darf.description")}
                             </p>
                         </div>
                     </div>
                     <Button
                         variant="secondary"
-                        class="w-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 border-amber-500/20"
+                        class="w-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-100 border-amber-500/20 font-bold"
                         href="/fiscal/irpf/darf"
                     >
                         {$t("fiscal.irpf.manageDarfs")}
@@ -471,7 +473,7 @@
     </div>
 
     <!-- Appraisals List -->
-    <Card.Root class="bg-black/40 border-white/10 glass">
+    <Card.Root class="bg-muted/30 border-border/50 glass">
         <Card.Header>
             <Card.Title>{$t("fiscal.irpf.history")}</Card.Title>
         </Card.Header>
@@ -487,7 +489,7 @@
                 class="mb-6"
             >
                 <Tabs.List
-                    class="grid grid-cols-7 lg:grid-cols-13 gap-1 bg-black/20 p-1"
+                    class="grid grid-cols-7 lg:grid-cols-13 gap-1 bg-muted/20 p-1"
                 >
                     <Tabs.Trigger value="all" class="text-xs"
                         >{$t("general.all")}</Tabs.Trigger
@@ -506,7 +508,7 @@
             {:else if filteredAppraisals.length === 0}
                 <div class="p-12 text-center flex flex-col items-center gap-3">
                     <div
-                        class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center"
+                        class="w-12 h-12 rounded-full bg-muted/30 flex items-center justify-center"
                     >
                         <FileText class="w-6 h-6 text-muted-foreground" />
                     </div>
@@ -529,7 +531,7 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
                         <thead
-                            class="text-xs text-muted-foreground uppercase bg-black/20 border-b border-white/5"
+                            class="text-xs text-muted-foreground uppercase bg-muted/20 border-b border-border/30"
                         >
                             <tr>
                                 <th class="px-6 py-3"
@@ -555,7 +557,7 @@
                                 >
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-white/5">
+                        <tbody class="divide-y divide-border/10">
                             {#each filteredAppraisals as item}
                                 {@const revenueCode =
                                     item.trade_type === "DayTrade"
@@ -569,7 +571,9 @@
                                         (d.period === period &&
                                             d.revenue_code === revenueCode),
                                 )}
-                                <tr class="hover:bg-white/5 transition-colors">
+                                <tr
+                                    class="hover:bg-accent/10 transition-colors"
+                                >
                                     <td class="px-6 py-4 font-medium"
                                         >{item.period_month}/{item.period_year}</td
                                     >
@@ -594,7 +598,7 @@
                                         {formatCurrency(item.net_profit)}
                                     </td>
                                     <td
-                                        class="px-6 py-4 text-right font-mono font-bold tabular-nums leading-none text-white"
+                                        class="px-6 py-4 text-right font-mono font-bold tabular-nums leading-none text-foreground"
                                         title={item.tax_accumulated > 0
                                             ? `${$t("fiscal.irpf.modal.month")}: ${formatCurrency(item.tax_payable)} | Acum.: ${formatCurrency(item.tax_accumulated)}`
                                             : ""}
@@ -701,12 +705,12 @@
                                                         disabled
                                                     >
                                                         <Trash2
-                                                            class="w-4 h-4 text-zinc-500"
+                                                            class="w-4 h-4 text-muted-foreground/40"
                                                         />
                                                     </Button>
                                                 </Tooltip.Trigger>
                                                 <Tooltip.Content
-                                                    class="bg-zinc-950 text-white border-zinc-800 text-xs"
+                                                    class="bg-popover border-border text-foreground text-xs"
                                                 >
                                                     {$t(
                                                         "fiscal.irpf.table.cannotDelete",
@@ -737,23 +741,29 @@
 
     <!-- Appraisal Modal -->
     <Dialog.Root bind:open={isAppraisalModalOpen}>
-        <Dialog.Content class="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+        <Dialog.Content
+            class="sm:max-w-[800px] max-h-[90vh] overflow-y-auto bg-popover/80 border-border/50 backdrop-blur-xl"
+        >
             <Dialog.Header>
-                <Dialog.Title>{$t("fiscal.irpf.modal.title")}</Dialog.Title>
-                <Dialog.Description
+                <Dialog.Title class="text-foreground"
+                    >{$t("fiscal.irpf.modal.title")}</Dialog.Title
+                >
+                <Dialog.Description class="text-muted-foreground"
                     >{$t("fiscal.irpf.modal.description")}</Dialog.Description
                 >
             </Dialog.Header>
 
             <div class="space-y-6 py-4">
                 <div
-                    class="flex flex-col md:flex-row gap-4 items-end bg-black/20 p-4 rounded-lg border border-white/5"
+                    class="flex flex-col md:flex-row gap-4 items-end bg-muted/20 p-4 rounded-lg border border-border/20"
                 >
-                    <div class="space-y-2 w-full md:w-32">
-                        <Label>{$t("fiscal.irpf.modal.month")}</Label>
+                    <div class="space-y-2 w-full md:w-40">
+                        <Label class="text-foreground"
+                            >{$t("fiscal.irpf.modal.month")}</Label
+                        >
                         <Select.Root type="single" bind:value={appraisalMonth}>
                             <Select.Trigger
-                                class="h-10 w-full bg-black/20 border-white/10 text-white"
+                                class="h-10 w-full bg-muted/20 border-border/30 text-foreground"
                             >
                                 {$t(
                                     months.find(
@@ -773,29 +783,31 @@
                         </Select.Root>
                     </div>
                     <div class="space-y-2 w-full md:w-32">
-                        <Label>{$t("fiscal.irpf.modal.year")}</Label>
+                        <Label class="text-foreground"
+                            >{$t("fiscal.irpf.modal.year")}</Label
+                        >
                         <div class="relative w-full">
                             <Input
                                 type="number"
                                 bind:value={appraisalYear}
-                                class="h-10 bg-black/20 border-white/10 text-white text-left pl-3 pr-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                class="h-10 bg-muted/20 border-border/30 text-foreground text-left pl-3 pr-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                             <div
-                                class="absolute inset-y-0 right-0 flex flex-col border-l border-white/10 w-8"
+                                class="absolute inset-y-0 right-0 flex flex-col border-l border-border/10 w-8"
                             >
                                 <button
                                     type="button"
-                                    class="flex-1 flex items-center justify-center hover:bg-white/5 transition-colors"
+                                    class="flex-1 flex items-center justify-center hover:bg-accent/10 transition-colors"
                                     onclick={() => appraisalYear++}
                                 >
                                     <ChevronLeft
-                                        class="w-3 h-3 text-white/70 rotate-90"
+                                        class="w-3 h-3 text-muted-foreground/70 rotate-90"
                                     />
                                 </button>
-                                <div class="h-px w-full bg-white/10"></div>
+                                <div class="h-px w-full bg-border/20"></div>
                                 <button
                                     type="button"
-                                    class="flex-1 flex items-center justify-center hover:bg-white/5 transition-colors"
+                                    class="flex-1 flex items-center justify-center hover:bg-accent/10 transition-colors"
                                     onclick={() => appraisalYear--}
                                 >
                                     <ChevronRight
@@ -806,7 +818,7 @@
                         </div>
                     </div>
                     <Button
-                        class="neon-glow bg-primary text-black font-bold w-full md:w-auto"
+                        class="neon-glow bg-primary text-primary-foreground font-bold w-full md:w-auto"
                         onclick={calculateAppraisal}
                         disabled={irpfStore.loading}
                     >
@@ -823,7 +835,7 @@
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {#each appraisalResults as item}
                             <Card.Root
-                                class="bg-black/40 border-white/10 glass overflow-hidden relative group"
+                                class="bg-card/30 border-border/40 glass overflow-hidden relative group"
                             >
                                 <div
                                     class="absolute top-0 left-0 w-1 h-full {item.trade_type ===
@@ -878,7 +890,7 @@
                                             </div>
                                         </div>
                                         <div
-                                            class="space-y-1 pt-2 border-t border-white/5 col-span-2"
+                                            class="space-y-1 pt-2 border-t border-border/10 col-span-2"
                                         >
                                             <span
                                                 class="text-muted-foreground font-bold"
@@ -887,7 +899,7 @@
                                             <div
                                                 class="text-xl font-mono font-bold tabular-nums {item.net_profit >=
                                                 0
-                                                    ? 'text-white'
+                                                    ? 'text-foreground'
                                                     : 'text-red-400'}"
                                             >
                                                 {formatCurrency(
@@ -898,7 +910,7 @@
 
                                         {#if item.net_profit > 0}
                                             <div
-                                                class="space-y-1 col-span-2 bg-white/5 p-3 rounded border border-white/5"
+                                                class="space-y-1 col-span-2 bg-accent/5 p-3 rounded border border-border/10"
                                             >
                                                 <div
                                                     class="flex justify-between"
@@ -927,7 +939,7 @@
                                                     >
                                                 </div>
                                                 <div
-                                                    class="flex justify-between text-red-300"
+                                                    class="flex justify-between text-red-600 dark:text-red-400"
                                                 >
                                                     <span
                                                         class="text-muted-foreground"
@@ -942,7 +954,7 @@
                                                 </div>
                                                 {#if item.withheld_tax > 0}
                                                     <div
-                                                        class="flex justify-between text-green-300"
+                                                        class="flex justify-between text-emerald-600 dark:text-emerald-400"
                                                     >
                                                         <span
                                                             class="text-muted-foreground"
@@ -958,7 +970,7 @@
                                                 {/if}
                                                 {#if item.withholding_credit_used > 0}
                                                     <div
-                                                        class="flex justify-between text-blue-300"
+                                                        class="flex justify-between text-blue-600 dark:text-blue-400"
                                                     >
                                                         <span
                                                             class="text-muted-foreground"
@@ -974,14 +986,14 @@
                                                     </div>
                                                 {/if}
                                                 <div
-                                                    class="flex justify-between pt-2 border-t border-white/10 mt-2"
+                                                    class="flex justify-between pt-2 border-t border-border/10 mt-2"
                                                 >
                                                     <span
                                                         class="text-muted-foreground"
                                                         >Imposto do Mês:</span
                                                     >
                                                     <span
-                                                        class="font-mono font-bold tabular-nums leading-none text-white"
+                                                        class="font-mono font-bold tabular-nums leading-none text-foreground"
                                                         >{formatCurrency(
                                                             item.tax_payable,
                                                         )}</span
@@ -989,7 +1001,7 @@
                                                 </div>
                                                 {#if item.withholding_credit_remaining > 0}
                                                     <div
-                                                        class="flex justify-between text-cyan-400"
+                                                        class="flex justify-between text-cyan-600 dark:text-cyan-400"
                                                     >
                                                         <span
                                                             class="text-muted-foreground"
@@ -1021,10 +1033,10 @@
                                                     </div>
                                                 {/if}
                                                 <div
-                                                    class="flex justify-between pt-2 border-t border-white/10 mt-1"
+                                                    class="flex justify-between pt-2 border-t border-border/10 mt-1"
                                                 >
                                                     <span
-                                                        class="font-bold text-white"
+                                                        class="font-bold text-foreground"
                                                         >Total a Pagar:</span
                                                     >
                                                     <span
@@ -1040,18 +1052,18 @@
                                                 class="col-span-2 p-3 rounded bg-yellow-500/10 border border-yellow-500/20 flex items-center gap-3"
                                             >
                                                 <AlertTriangle
-                                                    class="w-5 h-5 text-yellow-500"
+                                                    class="w-5 h-5 text-amber-500"
                                                 />
                                                 <div class="flex flex-col">
                                                     <span
-                                                        class="text-xs text-yellow-200"
+                                                        class="text-xs text-amber-600 dark:text-amber-400 font-medium"
                                                         >Prejuízo a compensar: {formatCurrency(
                                                             item.net_profit,
                                                         )}</span
                                                     >
                                                     {#if item.withholding_credit_remaining > 0}
                                                         <span
-                                                            class="text-xs text-cyan-400 font-bold"
+                                                            class="text-xs text-cyan-600 dark:text-cyan-400 font-bold"
                                                         >
                                                             Crédito IRRF
                                                             (Dedo-Duro): {formatCurrency(
@@ -1065,7 +1077,7 @@
                                     </div>
                                 </Card.Content>
                                 <Card.Footer
-                                    class="bg-black/20 border-t border-white/5 p-4 flex justify-end gap-2"
+                                    class="bg-muted/10 border-t border-border/10 p-4 flex justify-end gap-2"
                                 >
                                     {#if item.id}
                                         {#if item.total_payable >= 10}
@@ -1093,6 +1105,7 @@
                                     <Button
                                         variant="outline"
                                         size="sm"
+                                        class="border-border hover:bg-accent/10"
                                         onclick={() =>
                                             saveAppraisalResult(item)}
                                     >

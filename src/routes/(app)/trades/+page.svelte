@@ -25,6 +25,7 @@
         Plus,
         Coins,
         Activity,
+        Percent,
     } from "lucide-svelte";
     import { Badge } from "$lib/components/ui/badge";
     import DeleteConfirmationModal from "$lib/components/settings/DeleteConfirmationModal.svelte";
@@ -627,7 +628,7 @@
                 );
 
                 // Also trigger settings reload to ensure summary is perfectly synced
-                settingsStore.loadSettings();
+                settingsStore.loadData();
             } else {
                 toast.error(
                     $t("trades.messages.delete_error") ||
@@ -649,1161 +650,1173 @@
     }
 </script>
 
-<div class="flex flex-col gap-6 p-4 md:p-8">
-    <div
-        class="flex flex-col md:flex-row md:items-center justify-between gap-4"
-    >
-        <div class="mb-8">
-            <h1 class="text-3xl font-black tracking-tight">
-                {$t("trades.title")}
-            </h1>
-            <p class="text-muted-foreground">
-                {$t("trades.subtitle")}
-            </p>
-        </div>
-        <div class="flex gap-2">
-            <Button
-                variant={showFilters ? "secondary" : "outline"}
-                size="sm"
-                class="h-9"
-                onclick={() => (showFilters = !showFilters)}
-            >
-                <Filter class="w-4 h-4 mr-2" />
-                {$t("trades.filters.title") || "Filtrar"}
-                {#if filterStatus !== "all" || filterAccount !== "all" || filterStrategy !== "all" || filterAssetType !== "all"}
-                    <Badge
-                        class="ml-2 h-4 w-4 p-0 flex items-center justify-center bg-primary text-primary-foreground"
-                        >!</Badge
-                    >
-                {/if}
-            </Button>
-
-            <Button
-                size="sm"
-                class="h-9"
-                variant="outline"
-                onclick={() => {
-                    selectedTrade = null;
-                    isEditOpen = true;
-                }}
-            >
-                <Plus class="w-4 h-4 mr-2" />
-                {$t("trades.actions.new_trade") || "Novo Trade"}
-            </Button>
-            <!-- Importar Trades button hidden for now -->
-        </div>
-    </div>
-
-    <!-- KPI Row -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
-        <Card.Root
-            class="border-l-2 {kpis.profitTotal >= 0
-                ? 'border-l-emerald-500'
-                : 'border-l-rose-500'} shadow-sm bg-card hover:shadow-md transition-shadow"
+<div class="space-y-6 animate-in fade-in duration-500">
+    <div class="flex-1 flex flex-col space-y-8 p-4 md:p-8">
+        <div
+            class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
         >
-            <Card.Content class="py-0.5 px-2">
-                <div class="flex items-center justify-between">
-                    <span
-                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
-                    >
-                        {$t("trades.quickStats.totalBalance")}
-                    </span>
-                    <Coins
-                        class="w-3 h-3 {kpis.profitTotal >= 0
-                            ? 'text-emerald-500'
-                            : 'text-rose-500'}"
-                    />
-                </div>
-                <div
-                    class="mt-1 flex items-center justify-between gap-2 overflow-hidden"
+            <div class="space-y-1">
+                <h2 class="text-3xl font-bold text-foreground tracking-tight">
+                    {$t("trades.title")}
+                </h2>
+                <p class="text-muted-foreground">
+                    {$t("trades.subtitle")}
+                </p>
+            </div>
+            <div class="flex gap-2">
+                <Button
+                    variant={showFilters ? "secondary" : "outline"}
+                    size="sm"
+                    class="h-9"
+                    onclick={() => (showFilters = !showFilters)}
                 >
-                    <div class="flex flex-col">
-                        {#each Object.entries(kpis.pnlByCurrency) as [curr, val]}
-                            <div class="flex items-baseline gap-1 leading-none">
-                                <span
-                                    class="text-[8px] font-black uppercase text-muted-foreground/40"
-                                    >{curr}</span
+                    <Filter class="w-4 h-4 mr-2" />
+                    {$t("trades.filters.title") || "Filtrar"}
+                    {#if filterStatus !== "all" || filterAccount !== "all" || filterStrategy !== "all" || filterAssetType !== "all"}
+                        <Badge
+                            class="ml-2 h-4 w-4 p-0 flex items-center justify-center bg-primary text-primary-foreground"
+                            >!</Badge
+                        >
+                    {/if}
+                </Button>
+
+                <Button
+                    size="sm"
+                    class="h-9"
+                    variant="outline"
+                    onclick={() => {
+                        selectedTrade = null;
+                        isEditOpen = true;
+                    }}
+                >
+                    <Plus class="w-4 h-4 mr-2" />
+                    {$t("trades.actions.new_trade") || "Novo Trade"}
+                </Button>
+                <!-- Importar Trades button hidden for now -->
+            </div>
+        </div>
+
+        <!-- KPI Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+            <Card.Root
+                class="border-l-2 {kpis.profitTotal >= 0
+                    ? 'border-l-emerald-500'
+                    : 'border-l-rose-500'} shadow-sm bg-card hover:shadow-md transition-shadow"
+            >
+                <Card.Content class="py-0.5 px-2">
+                    <div class="flex items-center justify-between">
+                        <span
+                            class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
+                        >
+                            {$t("trades.quickStats.totalBalance")}
+                        </span>
+                        <Coins
+                            class="w-3 h-3 {kpis.profitTotal >= 0
+                                ? 'text-emerald-500'
+                                : 'text-rose-500'}"
+                        />
+                    </div>
+                    <div
+                        class="mt-1 flex items-center justify-between gap-2 overflow-hidden"
+                    >
+                        <div class="flex flex-col">
+                            {#each Object.entries(kpis.pnlByCurrency) as [curr, val]}
+                                <div
+                                    class="flex items-baseline gap-1 leading-none"
                                 >
+                                    <span
+                                        class="text-[8px] font-black uppercase text-muted-foreground/40"
+                                        >{curr}</span
+                                    >
+                                    <span
+                                        class="text-sm font-mono font-bold tabular-nums tracking-tight {(val as number) >=
+                                        0
+                                            ? 'text-emerald-500'
+                                            : 'text-rose-500'}"
+                                    >
+                                        {formatNumber(val as number)}
+                                    </span>
+                                </div>
+                            {/each}
+                        </div>
+                        {#if Object.keys(kpis.pnlByCurrency).length > 1}
+                            <div
+                                class="text-right border-l border-border pl-2 leading-none shrink-0"
+                            >
                                 <span
-                                    class="text-sm font-mono font-bold tabular-nums tracking-tight {(val as number) >=
+                                    class="text-sm font-mono font-bold tabular-nums tracking-tight {kpis.consolidatedTotal >=
                                     0
                                         ? 'text-emerald-500'
                                         : 'text-rose-500'}"
                                 >
-                                    {formatNumber(val as number)}
+                                    {formatCurrency(
+                                        kpis.consolidatedTotal,
+                                        kpis.mainCurrency,
+                                        $locale || "pt-BR",
+                                    )}
                                 </span>
                             </div>
-                        {/each}
-                    </div>
-                    {#if Object.keys(kpis.pnlByCurrency).length > 1}
-                        <div
-                            class="text-right border-l border-border pl-2 leading-none shrink-0"
-                        >
-                            <span
-                                class="text-sm font-mono font-bold tabular-nums tracking-tight {kpis.consolidatedTotal >=
-                                0
-                                    ? 'text-emerald-500'
-                                    : 'text-rose-500'}"
-                            >
-                                {formatCurrency(
-                                    kpis.consolidatedTotal,
-                                    kpis.mainCurrency,
-                                    $locale || "pt-BR",
-                                )}
-                            </span>
-                        </div>
-                    {/if}
-                </div>
-            </Card.Content>
-        </Card.Root>
-
-        <Card.Root
-            class="border-l-2 border-l-blue-500 shadow-sm bg-card hover:shadow-md transition-shadow"
-        >
-            <Card.Content class="py-0.5 px-2">
-                <div class="flex items-center justify-between">
-                    <span
-                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
-                    >
-                        {$t("trades.quickStats.winRate")}
-                    </span>
-                    <Activity class="w-3 h-3 text-blue-500" />
-                </div>
-                <div class="mt-1">
-                    <div
-                        class="text-sm font-mono font-bold text-foreground tabular-nums tracking-tight leading-none"
-                    >
-                        {kpis.winRate}%
-                    </div>
-                    <p
-                        class="text-[9px] text-muted-foreground/50 leading-none mt-0.5"
-                    >
-                        {$t("trades.quickStats.winRateDesc", {
-                            values: {
-                                winners: kpis.winners,
-                                total: kpis.total,
-                            },
-                        })}
-                    </p>
-                </div>
-            </Card.Content>
-        </Card.Root>
-
-        <Card.Root
-            class="border-l-2 border-l-teal-500 shadow-sm bg-card hover:shadow-md transition-shadow"
-        >
-            <Card.Content class="py-0.5 px-2">
-                <div class="flex items-center justify-between">
-                    <span
-                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
-                    >
-                        {$t("trades.quickStats.profitFactor")}
-                    </span>
-                    <TrendingUp class="w-3 h-3 text-teal-500" />
-                </div>
-                <div class="mt-1">
-                    <div
-                        class="text-sm font-mono font-bold text-foreground tabular-nums tracking-tight leading-none"
-                    >
-                        {kpis.profitFactor}
-                    </div>
-                    <p
-                        class="text-[9px] text-muted-foreground/50 leading-none mt-0.5"
-                    >
-                        {$t("trades.quickStats.profitFactorDesc")}
-                    </p>
-                </div>
-            </Card.Content>
-        </Card.Root>
-
-        <Card.Root
-            class="border-l-2 border-l-amber-500 shadow-sm bg-card hover:shadow-md transition-shadow"
-        >
-            <Card.Content class="py-0.5 px-2">
-                <div class="flex items-center justify-between">
-                    <span
-                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
-                    >
-                        {$t("trades.quickStats.openTrades")}
-                    </span>
-                    <Clock class="w-3 h-3 text-amber-500" />
-                </div>
-                <div class="mt-1">
-                    <div
-                        class="text-sm font-mono font-bold text-foreground tabular-nums tracking-tight leading-none"
-                    >
-                        {kpis.openCount}
-                    </div>
-                    <p
-                        class="text-[9px] text-muted-foreground/50 leading-none mt-0.5"
-                    >
-                        {$t("trades.quickStats.openTradesDesc")}
-                    </p>
-                </div>
-            </Card.Content>
-        </Card.Root>
-    </div>
-
-    {#if showFilters}
-        <Card.Root
-            class="bg-card/30 backdrop-blur-md border-primary/10 shadow-xl overflow-visible"
-        >
-            <Card.Content class="p-4 flex flex-wrap gap-4 items-end">
-                <div class="space-y-1 w-[150px]">
-                    <label
-                        for="filter-status"
-                        class="text-[10px] font-bold uppercase text-muted-foreground"
-                        >{$t("trades.filters.status")}</label
-                    >
-                    <Select.Root type="single" bind:value={filterStatus}>
-                        <Select.Trigger
-                            id="filter-status"
-                            class="bg-background/50 h-9"
-                        >
-                            {#if filterStatus === "all"}
-                                {$t("general.all") || "Todos"}
-                            {:else if filterStatus === "open"}
-                                {$t("trades.table.status_open") || "Aberto"}
-                            {:else if filterStatus === "closed"}
-                                {$t("trades.table.status_closed") || "Fechado"}
-                            {:else}
-                                {filterStatus}
-                            {/if}
-                        </Select.Trigger>
-                        <Select.Content>
-                            <Select.Item value="all"
-                                >{$t("general.all") || "Todos"}</Select.Item
-                            >
-                            <Select.Item value="open"
-                                >{$t("trades.table.status_open") ||
-                                    "Aberto"}</Select.Item
-                            >
-                            <Select.Item value="closed"
-                                >{$t("trades.table.status_closed") ||
-                                    "Fechado"}</Select.Item
-                            >
-                        </Select.Content>
-                    </Select.Root>
-                </div>
-
-                <div class="space-y-1 w-[150px]">
-                    <label
-                        for="filter-account"
-                        class="text-[10px] font-bold uppercase text-muted-foreground"
-                        >{$t("trades.filters.account")}</label
-                    >
-                    <Select.Root type="single" bind:value={filterAccount}>
-                        <Select.Trigger
-                            id="filter-account"
-                            class="bg-background/50 h-9"
-                        >
-                            {settingsStore.accounts.find(
-                                (a) => a.id === filterAccount,
-                            )?.nickname ||
-                                $t("general.all") ||
-                                "Todas"}
-                        </Select.Trigger>
-                        <Select.Content>
-                            <Select.Item value="all"
-                                >{$t("general.all") || "Todas"}</Select.Item
-                            >
-                            {#each settingsStore.accounts as acc}
-                                <Select.Item value={acc.id}
-                                    >{acc.nickname}</Select.Item
-                                >
-                            {/each}
-                        </Select.Content>
-                    </Select.Root>
-                </div>
-
-                <div class="space-y-1 w-[150px]">
-                    <label
-                        for="filter-strategy"
-                        class="text-[10px] font-bold uppercase text-muted-foreground"
-                        >{$t("trades.filters.strategy")}</label
-                    >
-                    <Select.Root type="single" bind:value={filterStrategy}>
-                        <Select.Trigger
-                            id="filter-strategy"
-                            class="bg-background/50 h-9"
-                        >
-                            {settingsStore.strategies.find(
-                                (s) => s.id === filterStrategy,
-                            )?.name ||
-                                $t("general.all") ||
-                                "Todas"}
-                        </Select.Trigger>
-                        <Select.Content>
-                            <Select.Item value="all"
-                                >{$t("general.all") || "Todas"}</Select.Item
-                            >
-                            {#each settingsStore.strategies as strat}
-                                <Select.Item value={strat.id}
-                                    >{strat.name}</Select.Item
-                                >
-                            {/each}
-                        </Select.Content>
-                    </Select.Root>
-                </div>
-
-                <div class="space-y-1 w-[150px]">
-                    <label
-                        for="filter-asset-type"
-                        class="text-[10px] font-bold uppercase text-muted-foreground"
-                        >{$t("trades.filters.assetType")}</label
-                    >
-                    <Select.Root type="single" bind:value={filterAssetType}>
-                        <Select.Trigger
-                            id="filter-asset-type"
-                            class="bg-background/50 h-9"
-                        >
-                            {settingsStore.assetTypes.find(
-                                (at) => at.id === filterAssetType,
-                            )?.name ||
-                                $t("general.all") ||
-                                "Todos"}
-                        </Select.Trigger>
-                        <Select.Content>
-                            <Select.Item value="all"
-                                >{$t("general.all") || "Todos"}</Select.Item
-                            >
-                            {#each settingsStore.assetTypes as type}
-                                <Select.Item value={type.id}
-                                    >{type.name}</Select.Item
-                                >
-                            {/each}
-                        </Select.Content>
-                    </Select.Root>
-                </div>
-
-                <div class="space-y-1 w-[150px]">
-                    <label
-                        for="filter-currency"
-                        class="text-[10px] font-bold uppercase text-muted-foreground"
-                    >
-                        {$t("trades.filters.currency") || "Moeda"}
-                    </label>
-                    <Select.Root type="single" bind:value={filterCurrency}>
-                        <Select.Trigger
-                            id="filter-currency"
-                            class="bg-background/50 h-9"
-                        >
-                            {filterCurrency === "all"
-                                ? $t("general.all") || "Todas"
-                                : filterCurrency}
-                        </Select.Trigger>
-                        <Select.Content>
-                            <Select.Item value="all"
-                                >{$t("general.all") || "Todas"}</Select.Item
-                            >
-                            {#each [...new Set(settingsStore.accounts.map((a) => a.currency))] as curr}
-                                <Select.Item value={curr}>{curr}</Select.Item>
-                            {/each}
-                        </Select.Content>
-                    </Select.Root>
-                </div>
-
-                <div class="flex-1 flex justify-end gap-2">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        class="text-xs h-8"
-                        onclick={clearFilters}
-                    >
-                        <X class="w-3 h-3 mr-1" />
-                        {$t("trades.actions.clear_filters")}
-                    </Button>
-                </div>
-            </Card.Content>
-        </Card.Root>
-    {/if}
-
-    <!-- Main Split Content -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <!-- Left: Month/Week/Day Trade Hierarchy (MAIN LIST) -->
-        <div class="lg:col-span-9 space-y-4">
-            {#if hierarchicalTradesData.length === 0}
-                <div
-                    class="mt-8 flex flex-1 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-muted-foreground/20 p-12 text-center bg-accent/5"
-                >
-                    <div
-                        class="p-6 rounded-full bg-zinc-950 border border-primary/10 mb-4 shadow-xl"
-                    >
-                        <BookOpen class="w-12 h-12 text-zinc-500/50" />
-                    </div>
-                    <h3 class="text-xl font-bold tracking-tight">
-                        {$t("trades.empty.title")}
-                    </h3>
-                    <p
-                        class="text-sm text-muted-foreground max-w-xs mx-auto mt-2"
-                    >
-                        {$t("trades.empty.description")}
-                    </p>
-                    <Button
-                        class="mt-8 h-11 px-8 rounded-full shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
-                        onclick={() => {
-                            selectedTrade = null;
-                            isEditOpen = true;
-                        }}
-                    >
-                        {$t("trades.actions.new_trade")}
-                    </Button>
-                </div>
-            {:else}
-                <div class="space-y-4">
-                    {#each hierarchicalTradesData as month (month.key)}
-                        {@const isMonthExpanded = expandedMonths.has(month.key)}
-                        <div
-                            class="rounded-xl border border-zinc-800/50 overflow-hidden bg-zinc-900/20"
-                        >
-                            <!-- Month Header -->
-                            <button
-                                class="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors border-none bg-transparent cursor-pointer {activeContext.key ===
-                                month.key
-                                    ? 'bg-primary/5 ring-1 ring-inset ring-primary/20'
-                                    : ''}"
-                                onclick={() => toggleMonth(month.key)}
-                            >
-                                <div class="flex items-center gap-4">
-                                    <div
-                                        class="p-2.5 rounded-xl bg-primary/10 border border-primary/20"
-                                    >
-                                        <CalendarIcon
-                                            class="w-4 h-4 text-primary"
-                                        />
-                                    </div>
-                                    <div class="text-left">
-                                        <h4
-                                            class="text-sm font-black text-white uppercase tracking-tight"
-                                        >
-                                            {month.label}
-                                        </h4>
-                                        <div
-                                            class="flex items-center gap-2 mt-0"
-                                        >
-                                            <Badge
-                                                variant="outline"
-                                                class="text-[9px] px-1.5 h-4 bg-zinc-800 border-zinc-700 font-bold uppercase"
-                                            >
-                                                {month.trades.length}
-                                                {$t(
-                                                    "trades.messages.trades_count",
-                                                )}
-                                            </Badge>
-                                            <div class="flex gap-2">
-                                                {#each month.pnlEntries as entry}
-                                                    <div
-                                                        class="flex items-baseline gap-0.5"
-                                                    >
-                                                        <span
-                                                            class="text-[8px] text-muted-foreground uppercase"
-                                                            >{entry.curr}</span
-                                                        >
-                                                        <span
-                                                            class="text-[9px] font-mono font-bold {entry.val >=
-                                                            0
-                                                                ? 'text-emerald-500'
-                                                                : 'text-red-500'}"
-                                                            >{formatNumber(
-                                                                entry.val,
-                                                            )}</span
-                                                        >
-                                                    </div>
-                                                {/each}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <ChevronDown
-                                    class="w-4 h-4 text-zinc-500 transition-transform duration-300 {isMonthExpanded
-                                        ? 'rotate-180'
-                                        : ''}"
-                                />
-                            </button>
-
-                            {#if isMonthExpanded}
-                                <div
-                                    class="px-4 pb-4 space-y-3 animate-in fade-in slide-in-from-top-2"
-                                >
-                                    <Separator class="bg-zinc-800/50 mb-3" />
-                                    {#each month.weeks as week (week.key)}
-                                        {@const isWeekExpanded =
-                                            expandedWeeks.has(week.key)}
-                                        <div
-                                            class="rounded-lg border border-zinc-800/30 bg-zinc-950/30 overflow-hidden"
-                                        >
-                                            <!-- Week Header -->
-                                            <button
-                                                class="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors border-none bg-transparent cursor-pointer {activeContext.key ===
-                                                week.key
-                                                    ? 'bg-primary/5 ring-1 ring-inset ring-primary/20'
-                                                    : ''}"
-                                                onclick={() =>
-                                                    toggleWeek(week.key)}
-                                            >
-                                                <div
-                                                    class="flex items-center gap-3"
-                                                >
-                                                    <div
-                                                        class="p-1.5 rounded-lg bg-zinc-800 border border-zinc-700"
-                                                    >
-                                                        <Activity
-                                                            class="w-3 h-3 text-zinc-400"
-                                                        />
-                                                    </div>
-                                                    <div class="text-left">
-                                                        <span
-                                                            class="text-[10px] font-black text-zinc-200 uppercase tracking-wide"
-                                                        >
-                                                            {week.label}
-                                                        </span>
-                                                        <div
-                                                            class="flex items-center gap-2"
-                                                        >
-                                                            <span
-                                                                class="text-[8px] text-zinc-500 font-bold uppercase"
-                                                            >
-                                                                {week.trades
-                                                                    .length}
-                                                                {$t(
-                                                                    "trades.messages.trades_count",
-                                                                )}
-                                                            </span>
-                                                            <div
-                                                                class="flex gap-2"
-                                                            >
-                                                                {#each week.pnlEntries as entry}
-                                                                    <div
-                                                                        class="flex items-baseline gap-0.5"
-                                                                    >
-                                                                        <span
-                                                                            class="text-[7px] text-muted-foreground uppercase"
-                                                                            >{entry.curr}</span
-                                                                        >
-                                                                        <span
-                                                                            class="text-[8px] font-mono font-bold {entry.val >=
-                                                                            0
-                                                                                ? 'text-emerald-500'
-                                                                                : 'text-rose-500'}"
-                                                                            >{formatNumber(
-                                                                                entry.val,
-                                                                            )}</span
-                                                                        >
-                                                                    </div>
-                                                                {/each}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <ChevronDown
-                                                    class="w-3 h-3 text-zinc-600 transition-transform duration-300 {isWeekExpanded
-                                                        ? 'rotate-180'
-                                                        : ''}"
-                                                />
-                                            </button>
-
-                                            {#if isWeekExpanded}
-                                                <div
-                                                    class="p-2 space-y-2 animate-in fade-in slide-in-from-top-1"
-                                                >
-                                                    {#each week.days as day (day.key)}
-                                                        {@const isExpanded =
-                                                            expandedDays[
-                                                                day.date
-                                                            ]}
-                                                        <div
-                                                            class="group rounded-lg border border-white/5 bg-zinc-900/40 overflow-hidden"
-                                                        >
-                                                            <button
-                                                                class="w-full flex items-center justify-between p-2 hover:bg-white/5 transition-colors border-none bg-transparent cursor-pointer {activeContext.key ===
-                                                                day.date
-                                                                    ? 'bg-primary/5 ring-1 ring-inset ring-primary/20'
-                                                                    : ''}"
-                                                                onclick={() =>
-                                                                    toggleDay(
-                                                                        day.date,
-                                                                    )}
-                                                            >
-                                                                <div
-                                                                    class="flex items-center gap-3"
-                                                                >
-                                                                    <div
-                                                                        class="flex flex-col items-center justify-center p-0.5 rounded-md bg-zinc-950 border border-white/5 min-w-[32px] h-8"
-                                                                    >
-                                                                        <span
-                                                                            class="text-[7px] uppercase font-bold text-zinc-500 leading-none mb-0.5"
-                                                                        >
-                                                                            {new Date(
-                                                                                day.date +
-                                                                                    "T12:00:00",
-                                                                            )
-                                                                                .toLocaleDateString(
-                                                                                    $locale ||
-                                                                                        "pt-BR",
-                                                                                    {
-                                                                                        month: "short",
-                                                                                    },
-                                                                                )
-                                                                                .replace(
-                                                                                    ".",
-                                                                                    "",
-                                                                                )}
-                                                                        </span>
-                                                                        <span
-                                                                            class="text-xs font-black text-zinc-200 leading-none"
-                                                                        >
-                                                                            {new Date(
-                                                                                day.date +
-                                                                                    "T12:00:00",
-                                                                            ).getDate()}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div
-                                                                        class="text-left"
-                                                                    >
-                                                                        <span
-                                                                            class="text-[9px] font-bold text-zinc-400 uppercase tracking-tight"
-                                                                        >
-                                                                            {day.label}
-                                                                        </span>
-                                                                        <div
-                                                                            class="flex items-center gap-2"
-                                                                        >
-                                                                            <span
-                                                                                class="text-[8px] text-zinc-500 font-medium"
-                                                                                >({day
-                                                                                    .trades
-                                                                                    .length}
-                                                                                {$t(
-                                                                                    "trades.messages.trades_count",
-                                                                                )})</span
-                                                                            >
-                                                                            {#each day.pnlEntries as entry}
-                                                                                <div
-                                                                                    class="flex items-baseline gap-0.5"
-                                                                                >
-                                                                                    <span
-                                                                                        class="text-[7px] text-muted-foreground uppercase"
-                                                                                        >{entry.curr}</span
-                                                                                    >
-                                                                                    <span
-                                                                                        class="text-[8px] font-mono font-bold {entry.val >=
-                                                                                        0
-                                                                                            ? 'text-emerald-500'
-                                                                                            : 'text-rose-500'}"
-                                                                                        >{formatNumber(
-                                                                                            entry.val,
-                                                                                        )}</span
-                                                                                    >
-                                                                                </div>
-                                                                            {/each}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <ChevronRight
-                                                                    class="w-3 h-3 text-zinc-700 transition-transform duration-300 {isExpanded
-                                                                        ? 'rotate-90'
-                                                                        : ''}"
-                                                                />
-                                                            </button>
-
-                                                            {#if isExpanded}
-                                                                <div
-                                                                    class="p-2 pt-0 animate-in zoom-in-95 duration-200"
-                                                                >
-                                                                    <Table.Root>
-                                                                        <Table.Header
-                                                                        >
-                                                                            <Table.Row
-                                                                                class="hover:bg-transparent border-white/5"
-                                                                            >
-                                                                                <Table.Head
-                                                                                    class="h-8 text-[9px] font-black uppercase text-zinc-500"
-                                                                                    >{$t(
-                                                                                        "trades.table.asset",
-                                                                                    )}</Table.Head
-                                                                                >
-                                                                                <Table.Head
-                                                                                    class="h-8 text-[9px] font-black uppercase text-zinc-500"
-                                                                                    >{$t(
-                                                                                        "trades.table.direction",
-                                                                                    )}</Table.Head
-                                                                                >
-                                                                                <Table.Head
-                                                                                    class="h-8 text-[9px] font-black uppercase text-zinc-500"
-                                                                                    >{$t(
-                                                                                        "trades.table.entry",
-                                                                                    )}</Table.Head
-                                                                                >
-                                                                                <Table.Head
-                                                                                    class="h-8 text-[9px] font-black uppercase text-zinc-500"
-                                                                                    >{$t(
-                                                                                        "trades.table.exit",
-                                                                                    )}</Table.Head
-                                                                                >
-                                                                                <Table.Head
-                                                                                    class="h-8 text-[9px] font-black uppercase text-zinc-500 text-right"
-                                                                                    >{$t(
-                                                                                        "trades.table.pl",
-                                                                                    )}</Table.Head
-                                                                                >
-                                                                                <Table.Head
-                                                                                    class="h-8 text-[9px] font-black uppercase text-zinc-500 text-right"
-                                                                                    >{$t(
-                                                                                        "trades.table.actions",
-                                                                                    )}</Table.Head
-                                                                                >
-                                                                            </Table.Row>
-                                                                        </Table.Header>
-                                                                        <Table.Body
-                                                                        >
-                                                                            {#each day.trades as trade (trade.id)}
-                                                                                <Table.Row
-                                                                                    class="group/row hover:bg-white/5 border-white/5 cursor-pointer {activeContext.key ===
-                                                                                    trade.id
-                                                                                        ? 'bg-primary/5 border-l-2 border-l-primary'
-                                                                                        : ''}"
-                                                                                    onclick={() =>
-                                                                                        handleSelectTrade(
-                                                                                            trade,
-                                                                                        )}
-                                                                                >
-                                                                                    <Table.Cell
-                                                                                        class="py-2"
-                                                                                    >
-                                                                                        <div
-                                                                                            class="flex flex-col"
-                                                                                        >
-                                                                                            <span
-                                                                                                class="font-bold text-xs"
-                                                                                                >{trade.asset_symbol}</span
-                                                                                            >
-                                                                                            <span
-                                                                                                class="text-[8px] text-zinc-500 uppercase tracking-tighter"
-                                                                                            >
-                                                                                                {settingsStore.strategies.find(
-                                                                                                    (
-                                                                                                        s,
-                                                                                                    ) =>
-                                                                                                        s.id ===
-                                                                                                        trade.strategy_id,
-                                                                                                )
-                                                                                                    ?.name ||
-                                                                                                    "-"}
-                                                                                            </span>
-                                                                                        </div>
-                                                                                    </Table.Cell>
-                                                                                    <Table.Cell
-                                                                                        class="py-2"
-                                                                                    >
-                                                                                        <div
-                                                                                            class="flex flex-col gap-1 items-start"
-                                                                                        >
-                                                                                            <Badge
-                                                                                                variant="secondary"
-                                                                                                class="text-[9px] font-black uppercase h-5 {trade.exit_price ||
-                                                                                                trade.exit_date
-                                                                                                    ? 'bg-emerald-500/10 text-emerald-500'
-                                                                                                    : 'bg-amber-500/10 text-amber-500'}"
-                                                                                            >
-                                                                                                {trade.exit_price ||
-                                                                                                trade.exit_date
-                                                                                                    ? $t(
-                                                                                                          "trades.table.status_closed",
-                                                                                                      ) ||
-                                                                                                      "Fechado"
-                                                                                                    : $t(
-                                                                                                          "trades.table.status_open",
-                                                                                                      ) ||
-                                                                                                      "Aberto"}
-                                                                                            </Badge>
-                                                                                            <Badge
-                                                                                                variant="outline"
-                                                                                                class="text-[8px] font-black px-1.5 h-4 border-none {trade.direction ===
-                                                                                                'Buy'
-                                                                                                    ? 'bg-blue-500/10 text-blue-500'
-                                                                                                    : 'bg-orange-500/10 text-orange-500'}"
-                                                                                            >
-                                                                                                {trade.direction ===
-                                                                                                "Buy"
-                                                                                                    ? $t(
-                                                                                                          "trades.table.buy",
-                                                                                                      )
-                                                                                                    : $t(
-                                                                                                          "trades.table.sell",
-                                                                                                      )}
-                                                                                            </Badge>
-                                                                                        </div>
-                                                                                    </Table.Cell>
-                                                                                    <Table.Cell
-                                                                                        class="py-2"
-                                                                                    >
-                                                                                        <div
-                                                                                            class="flex flex-col"
-                                                                                        >
-                                                                                            <span
-                                                                                                class="text-xs font-mono font-bold tabular-nums"
-                                                                                                >{trade.entry_price}</span
-                                                                                            >
-                                                                                            <span
-                                                                                                class="text-[8px] text-zinc-500"
-                                                                                                >{format(
-                                                                                                    new Date(
-                                                                                                        trade.date,
-                                                                                                    ),
-                                                                                                    "HH:mm",
-                                                                                                )}</span
-                                                                                            >
-                                                                                        </div>
-                                                                                    </Table.Cell>
-                                                                                    <Table.Cell
-                                                                                        class="py-2"
-                                                                                    >
-                                                                                        <div
-                                                                                            class="flex flex-col"
-                                                                                        >
-                                                                                            <span
-                                                                                                class="text-xs font-mono font-bold tabular-nums"
-                                                                                                >{trade.exit_price ||
-                                                                                                    "-"}</span
-                                                                                            >
-                                                                                            <span
-                                                                                                class="text-[8px] text-zinc-500"
-                                                                                                >{trade.exit_date
-                                                                                                    ? format(
-                                                                                                          new Date(
-                                                                                                              trade.exit_date,
-                                                                                                          ),
-                                                                                                          "HH:mm",
-                                                                                                      )
-                                                                                                    : "-"}</span
-                                                                                            >
-                                                                                        </div>
-                                                                                    </Table.Cell>
-                                                                                    <Table.Cell
-                                                                                        class="py-2 text-right"
-                                                                                    >
-                                                                                        <span
-                                                                                            class="text-xs font-mono font-bold {trade.result >=
-                                                                                            0
-                                                                                                ? 'text-emerald-500'
-                                                                                                : 'text-rose-500'}"
-                                                                                        >
-                                                                                            {formatCurrency(
-                                                                                                trade.result,
-                                                                                                settingsStore.accounts.find(
-                                                                                                    (
-                                                                                                        a,
-                                                                                                    ) =>
-                                                                                                        a.id ===
-                                                                                                        trade.account_id,
-                                                                                                )
-                                                                                                    ?.currency ||
-                                                                                                    "BRL",
-                                                                                            )}
-                                                                                        </span>
-                                                                                    </Table.Cell>
-                                                                                    <Table.Cell
-                                                                                        class="py-2 text-right"
-                                                                                    >
-                                                                                        <div
-                                                                                            class="flex justify-end gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity"
-                                                                                        >
-                                                                                            <Button
-                                                                                                variant="ghost"
-                                                                                                size="icon"
-                                                                                                class="h-6 w-6"
-                                                                                                onclick={() =>
-                                                                                                    handleView(
-                                                                                                        trade,
-                                                                                                    )}
-                                                                                            >
-                                                                                                <Eye
-                                                                                                    class="h-3 w-3"
-                                                                                                />
-                                                                                            </Button>
-                                                                                            <Button
-                                                                                                variant="ghost"
-                                                                                                size="icon"
-                                                                                                class="h-6 w-6"
-                                                                                                onclick={() =>
-                                                                                                    handleEdit(
-                                                                                                        trade,
-                                                                                                    )}
-                                                                                            >
-                                                                                                <Pencil
-                                                                                                    class="h-3 w-3"
-                                                                                                />
-                                                                                            </Button>
-                                                                                            <button
-                                                                                                class="p-1 px-2 rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer border-none bg-transparent"
-                                                                                                title={$t(
-                                                                                                    "trades.table.actions_delete",
-                                                                                                ) ||
-                                                                                                    "Excluir"}
-                                                                                                onclick={(
-                                                                                                    e,
-                                                                                                ) => {
-                                                                                                    e.stopPropagation();
-                                                                                                    requestDelete(
-                                                                                                        trade,
-                                                                                                    );
-                                                                                                }}
-                                                                                            >
-                                                                                                <Trash2
-                                                                                                    class="h-3 w-3"
-                                                                                                />
-                                                                                            </button>
-                                                                                        </div>
-                                                                                    </Table.Cell>
-                                                                                </Table.Row>
-                                                                            {/each}
-                                                                        </Table.Body>
-                                                                    </Table.Root>
-                                                                </div>
-                                                            {/if}
-                                                        </div>
-                                                    {/each}
-                                                </div>
-                                            {/if}
-                                        </div>
-                                    {/each}
-                                </div>
-                            {/if}
-                        </div>
-                    {/each}
-                </div>
-            {/if}
-        </div>
-
-        <!-- Right Sidebar: Interactive Metrics & Charts -->
-        <div class="lg:col-span-3 space-y-4 self-start sticky top-4">
-            <div class="flex items-center justify-between px-2 h-9">
-                <h3
-                    class="text-sm font-bold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-2"
-                >
-                    <Activity class="w-4 h-4" />
-                    {$t("trades.sidebar.summary")}
-                </h3>
-                <div class="flex items-center gap-2">
-                    <Badge
-                        variant="outline"
-                        class="text-[10px] font-black bg-white/5 border-white/10 uppercase tracking-tighter"
-                    >
-                        {activeContext.label}
-                    </Badge>
-                    {#if activeContext.type !== "global"}
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            class="h-6 w-6 text-muted-foreground hover:text-rose-500 transition-colors"
-                            onclick={() =>
-                                (activeContext = {
-                                    type: "global",
-                                    key: null,
-                                    label:
-                                        $t("trades.messages.all_period") ||
-                                        "Todo o Período",
-                                })}
-                        >
-                            <X class="w-3 h-3" />
-                        </Button>
-                    {/if}
-                </div>
-            </div>
-
-            {#if activeContext.type === "trade" && activeContext.data}
-                <!-- Card: Trade Essential Info (Visible only when trade selected) -->
-                <Card.Root
-                    class="shadow-sm bg-card/80 border-white/5 overflow-hidden"
-                >
-                    <Card.Header class="pb-2">
-                        <div class="flex items-center justify-between">
-                            <Badge
-                                variant="secondary"
-                                class="bg-primary/10 text-primary border-none font-black"
-                            >
-                                {activeContext.data.asset_symbol}
-                            </Badge>
-                            <span
-                                class="text-[10px] font-bold text-muted-foreground uppercase opacity-50"
-                            >
-                                {format(
-                                    new Date(activeContext.data.date),
-                                    "dd MMMM yyyy HH:mm",
-                                    {
-                                        locale:
-                                            $locale === "en-US"
-                                                ? undefined
-                                                : undefined,
-                                    },
-                                )}
-                            </span>
-                        </div>
-                    </Card.Header>
-                    <Card.Content class="grid grid-cols-2 gap-4">
-                        <div class="space-y-1">
-                            <span
-                                class="text-[9px] font-bold text-muted-foreground uppercase"
-                                >Resultado</span
-                            >
-                            <div
-                                class="text-xl font-black {activeContext.data
-                                    .result >= 0
-                                    ? 'text-emerald-500'
-                                    : 'text-rose-500'}"
-                            >
-                                {formatCurrency(
-                                    activeContext.data.result,
-                                    settingsStore.accounts.find(
-                                        (a) =>
-                                            a.id ===
-                                            activeContext.data.account_id,
-                                    )?.currency || "BRL",
-                                )}
-                            </div>
-                        </div>
-                        <div class="space-y-1 text-right">
-                            <span
-                                class="text-[9px] font-bold text-muted-foreground uppercase"
-                                >Tipo</span
-                            >
-                            <div
-                                class="text-xs font-bold uppercase tracking-widest"
-                            >
-                                {activeContext.data.type || "N/A"}
-                            </div>
-                        </div>
-                    </Card.Content>
-                </Card.Root>
-            {/if}
-
-            <div
-                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4"
-            >
-                <!-- Card: KPIs Dashboard -->
-                <Card.Root
-                    class="shadow-sm bg-card/80 border-white/5 flex flex-col justify-between"
-                >
-                    <Card.Header
-                        class="p-4 pb-2 border-b border-white/5 flex flex-row items-center justify-between space-y-0"
-                    >
-                        <span
-                            class="text-[10px] font-black uppercase tracking-tighter text-muted-foreground"
-                            >{$t("trades.sidebar.performance")}</span
-                        >
-                        <TrendingUp
-                            class="w-3 h-3 text-emerald-500 opacity-50"
-                        />
-                    </Card.Header>
-                    <Card.Content class="p-4 pt-4">
-                        <div class="space-y-6">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="space-y-0.5">
-                                    <span
-                                        class="text-[8px] font-black text-muted-foreground uppercase opacity-50"
-                                        >Profit Factor</span
-                                    >
-                                    <div
-                                        class="text-sm font-mono font-bold tracking-tighter text-teal-400"
-                                    >
-                                        {activeContextStats.profitFactor}
-                                    </div>
-                                </div>
-                                <div class="space-y-0.5 text-right">
-                                    <span
-                                        class="text-[8px] font-black text-rose-500 uppercase opacity-80"
-                                        >Drawdown</span
-                                    >
-                                    <div
-                                        class="text-[11px] font-mono font-bold text-rose-500 tracking-tighter"
-                                    >
-                                        {formatCurrency(
-                                            activeContextStats.maxDrawdown,
-                                            activeContextStats.mainCurrency,
-                                            $locale || "pt-BR",
-                                        ).replace(/[^\d.,+-]/g, "")}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <Separator class="bg-white/5" />
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="space-y-0.5">
-                                    <span
-                                        class="text-[8px] font-black text-muted-foreground uppercase opacity-50"
-                                        >Win Rate</span
-                                    >
-                                    <div
-                                        class="text-sm font-mono font-bold tracking-tighter"
-                                    >
-                                        {activeContextStats.winRate}%
-                                    </div>
-                                </div>
-                                <div class="space-y-0.5 text-right">
-                                    <span
-                                        class="text-[8px] font-black text-muted-foreground uppercase opacity-50"
-                                        >Risco:Retorno</span
-                                    >
-                                    <div
-                                        class="text-[11px] font-mono font-bold tracking-tighter {parseFloat(
-                                            activeContextStats.riskReward,
-                                        ) >= 1
-                                            ? 'text-emerald-500'
-                                            : ''}"
-                                    >
-                                        1:{activeContextStats.riskReward}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </Card.Content>
-                </Card.Root>
-
-                <!-- Card: Outcome/Pie Chart -->
-                <Card.Root
-                    class="shadow-sm bg-card/80 border-white/5 overflow-hidden"
-                >
-                    <Card.Header
-                        class="p-4 pb-0 border-b border-white/5 flex flex-row items-center justify-between space-y-0 bg-white/[0.02]"
-                    >
-                        <span
-                            class="text-[10px] font-black uppercase tracking-tighter text-muted-foreground"
-                            >{$t("trades.sidebar.distribution")}</span
-                        >
-                        <div
-                            class="text-[9px] font-mono font-bold opacity-30 uppercase"
-                        >
-                            {activeContextStats.total} Trades
-                        </div>
-                    </Card.Header>
-                    <Card.Content class="p-2 pb-0">
-                        <div class="h-[220px] w-full">
-                            <TradeOutcomePieChart
-                                trades={filteredTradesForChart}
-                            />
-                        </div>
-                    </Card.Content>
-                </Card.Root>
-            </div>
-
-            <!-- Card: Equity Curve with Drawdown -->
-            <Card.Root class="shadow-sm bg-card/80 border-white/5">
-                <Card.Header
-                    class="p-4 py-3 border-b border-white/5 flex flex-row items-center justify-between space-y-0"
-                >
-                    <span
-                        class="text-[10px] font-black uppercase tracking-tighter text-muted-foreground"
-                        >{$t("trades.sidebar.equityCurve")}</span
-                    >
-                </Card.Header>
-                <Card.Content class="p-2">
-                    <div class="h-[260px] w-full">
-                        <TradeEquityChart trades={filteredTradesForChart} />
+                        {/if}
                     </div>
                 </Card.Content>
             </Card.Root>
+
+            <Card.Root
+                class="border-l-2 border-l-blue-500 shadow-sm bg-card hover:shadow-md transition-shadow"
+            >
+                <Card.Content class="py-1 px-3">
+                    <div class="flex items-center justify-between">
+                        <span
+                            class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
+                        >
+                            {$t("trades.quickStats.winRate")}
+                        </span>
+                        <Percent class="w-3 h-3 text-blue-500" />
+                    </div>
+                    <div class="mt-1">
+                        <div
+                            class="text-sm font-mono font-bold text-foreground tabular-nums tracking-tight leading-none"
+                        >
+                            {kpis.winRate}%
+                        </div>
+                        <p
+                            class="text-[9px] text-muted-foreground/50 leading-none mt-0.5"
+                        >
+                            {$t("trades.quickStats.winRateDesc", {
+                                values: {
+                                    winners: kpis.winners,
+                                    total: kpis.total,
+                                },
+                            })}
+                        </p>
+                    </div>
+                </Card.Content>
+            </Card.Root>
+
+            <Card.Root
+                class="border-l-2 border-l-blue-500 shadow-sm bg-card hover:shadow-md transition-shadow"
+            >
+                <Card.Content class="py-1 px-3">
+                    <div class="flex items-center justify-between">
+                        <span
+                            class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
+                        >
+                            {$t("trades.quickStats.profitFactor")}
+                        </span>
+                        <TrendingUp class="w-3 h-3 text-blue-500" />
+                    </div>
+                    <div class="mt-1">
+                        <div
+                            class="text-sm font-mono font-bold text-foreground tabular-nums tracking-tight leading-none"
+                        >
+                            {kpis.profitFactor}
+                        </div>
+                        <p
+                            class="text-[9px] text-muted-foreground/50 leading-none mt-0.5"
+                        >
+                            {$t("trades.quickStats.profitFactorDesc")}
+                        </p>
+                    </div>
+                </Card.Content>
+            </Card.Root>
+
+            <Card.Root
+                class="border-l-2 border-l-amber-500 shadow-sm bg-card hover:shadow-md transition-shadow"
+            >
+                <Card.Content class="py-1 px-3">
+                    <div class="flex items-center justify-between">
+                        <span
+                            class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
+                        >
+                            {$t("trades.quickStats.openTrades")}
+                        </span>
+                        <Clock class="w-3 h-3 text-amber-500" />
+                    </div>
+                    <div class="mt-1">
+                        <div
+                            class="text-sm font-mono font-bold text-foreground tabular-nums tracking-tight leading-none"
+                        >
+                            {kpis.openCount}
+                        </div>
+                        <p
+                            class="text-[9px] text-muted-foreground/50 leading-none mt-0.5"
+                        >
+                            {$t("trades.quickStats.openTradesDesc")}
+                        </p>
+                    </div>
+                </Card.Content>
+            </Card.Root>
+        </div>
+
+        {#if showFilters}
+            <Card.Root
+                class="bg-card/30 backdrop-blur-md border-primary/10 shadow-xl overflow-visible"
+            >
+                <Card.Content class="p-4 flex flex-wrap gap-4 items-end">
+                    <div class="space-y-1 w-[150px]">
+                        <label
+                            for="filter-status"
+                            class="text-[10px] font-bold uppercase text-muted-foreground"
+                            >{$t("trades.filters.status")}</label
+                        >
+                        <Select.Root type="single" bind:value={filterStatus}>
+                            <Select.Trigger
+                                id="filter-status"
+                                class="bg-background/50 h-9"
+                            >
+                                {#if filterStatus === "all"}
+                                    {$t("general.all") || "Todos"}
+                                {:else if filterStatus === "open"}
+                                    {$t("trades.table.status_open") || "Aberto"}
+                                {:else if filterStatus === "closed"}
+                                    {$t("trades.table.status_closed") ||
+                                        "Fechado"}
+                                {:else}
+                                    {filterStatus}
+                                {/if}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value="all"
+                                    >{$t("general.all") || "Todos"}</Select.Item
+                                >
+                                <Select.Item value="open"
+                                    >{$t("trades.table.status_open") ||
+                                        "Aberto"}</Select.Item
+                                >
+                                <Select.Item value="closed"
+                                    >{$t("trades.table.status_closed") ||
+                                        "Fechado"}</Select.Item
+                                >
+                            </Select.Content>
+                        </Select.Root>
+                    </div>
+
+                    <div class="space-y-1 w-[150px]">
+                        <label
+                            for="filter-account"
+                            class="text-[10px] font-bold uppercase text-muted-foreground"
+                            >{$t("trades.filters.account")}</label
+                        >
+                        <Select.Root type="single" bind:value={filterAccount}>
+                            <Select.Trigger
+                                id="filter-account"
+                                class="bg-background/50 h-9"
+                            >
+                                {settingsStore.accounts.find(
+                                    (a) => a.id === filterAccount,
+                                )?.nickname ||
+                                    $t("general.all") ||
+                                    "Todas"}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value="all"
+                                    >{$t("general.all") || "Todas"}</Select.Item
+                                >
+                                {#each settingsStore.accounts as acc}
+                                    <Select.Item value={acc.id}
+                                        >{acc.nickname}</Select.Item
+                                    >
+                                {/each}
+                            </Select.Content>
+                        </Select.Root>
+                    </div>
+
+                    <div class="space-y-1 w-[150px]">
+                        <label
+                            for="filter-strategy"
+                            class="text-[10px] font-bold uppercase text-muted-foreground"
+                            >{$t("trades.filters.strategy")}</label
+                        >
+                        <Select.Root type="single" bind:value={filterStrategy}>
+                            <Select.Trigger
+                                id="filter-strategy"
+                                class="bg-background/50 h-9"
+                            >
+                                {settingsStore.strategies.find(
+                                    (s) => s.id === filterStrategy,
+                                )?.name ||
+                                    $t("general.all") ||
+                                    "Todas"}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value="all"
+                                    >{$t("general.all") || "Todas"}</Select.Item
+                                >
+                                {#each settingsStore.strategies as strat}
+                                    <Select.Item value={strat.id}
+                                        >{strat.name}</Select.Item
+                                    >
+                                {/each}
+                            </Select.Content>
+                        </Select.Root>
+                    </div>
+
+                    <div class="space-y-1 w-[150px]">
+                        <label
+                            for="filter-asset-type"
+                            class="text-[10px] font-bold uppercase text-muted-foreground"
+                            >{$t("trades.filters.assetType")}</label
+                        >
+                        <Select.Root type="single" bind:value={filterAssetType}>
+                            <Select.Trigger
+                                id="filter-asset-type"
+                                class="bg-background/50 h-9"
+                            >
+                                {settingsStore.assetTypes.find(
+                                    (at) => at.id === filterAssetType,
+                                )?.name ||
+                                    $t("general.all") ||
+                                    "Todos"}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value="all"
+                                    >{$t("general.all") || "Todos"}</Select.Item
+                                >
+                                {#each settingsStore.assetTypes as type}
+                                    <Select.Item value={type.id}
+                                        >{type.name}</Select.Item
+                                    >
+                                {/each}
+                            </Select.Content>
+                        </Select.Root>
+                    </div>
+
+                    <div class="space-y-1 w-[150px]">
+                        <label
+                            for="filter-currency"
+                            class="text-[10px] font-bold uppercase text-muted-foreground"
+                        >
+                            {$t("trades.filters.currency") || "Moeda"}
+                        </label>
+                        <Select.Root type="single" bind:value={filterCurrency}>
+                            <Select.Trigger
+                                id="filter-currency"
+                                class="bg-background/50 h-9"
+                            >
+                                {filterCurrency === "all"
+                                    ? $t("general.all") || "Todas"
+                                    : filterCurrency}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value="all"
+                                    >{$t("general.all") || "Todas"}</Select.Item
+                                >
+                                {#each [...new Set(settingsStore.accounts.map((a) => a.currency))] as curr}
+                                    <Select.Item value={curr}
+                                        >{curr}</Select.Item
+                                    >
+                                {/each}
+                            </Select.Content>
+                        </Select.Root>
+                    </div>
+
+                    <div class="flex-1 flex justify-end gap-2">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            class="text-xs h-8"
+                            onclick={clearFilters}
+                        >
+                            <X class="w-3 h-3 mr-1" />
+                            {$t("trades.actions.clear_filters")}
+                        </Button>
+                    </div>
+                </Card.Content>
+            </Card.Root>
+        {/if}
+
+        <!-- Main Split Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Left: Month/Week/Day Trade Hierarchy (MAIN LIST) -->
+            <div class="lg:col-span-9 space-y-4">
+                {#if hierarchicalTradesData.length === 0}
+                    <div
+                        class="mt-8 flex flex-1 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-muted-foreground/20 p-12 text-center bg-accent/5"
+                    >
+                        <div
+                            class="p-6 rounded-full bg-muted border border-primary/10 mb-4 shadow-xl"
+                        >
+                            <BookOpen
+                                class="w-12 h-12 text-muted-foreground/50"
+                            />
+                        </div>
+                        <h3 class="text-xl font-bold tracking-tight">
+                            {$t("trades.empty.title")}
+                        </h3>
+                        <p
+                            class="text-sm text-muted-foreground max-w-xs mx-auto mt-2"
+                        >
+                            {$t("trades.empty.description")}
+                        </p>
+                        <Button
+                            class="mt-8 h-11 px-8 rounded-full shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+                            onclick={() => {
+                                selectedTrade = null;
+                                isEditOpen = true;
+                            }}
+                        >
+                            {$t("trades.actions.new_trade")}
+                        </Button>
+                    </div>
+                {:else}
+                    <div class="space-y-4">
+                        {#each hierarchicalTradesData as month (month.key)}
+                            {@const isMonthExpanded = expandedMonths.has(
+                                month.key,
+                            )}
+                            <div
+                                class="rounded-xl border border-border/40 overflow-hidden bg-muted/20 backdrop-blur-sm"
+                            >
+                                <!-- Month Header -->
+                                <button
+                                    class="w-full flex items-center justify-between p-3 rounded-xl bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors sticky top-0 z-10 backdrop-blur-md {activeContext.key ===
+                                    month.key
+                                        ? 'bg-primary/20 ring-1 ring-inset ring-primary/30'
+                                        : ''}"
+                                    onclick={() => toggleMonth(month.key)}
+                                >
+                                    <div class="flex items-center gap-4">
+                                        <div
+                                            class="p-2 rounded-lg bg-primary/20"
+                                        >
+                                            <CalendarIcon
+                                                class="w-4 h-4 text-primary"
+                                            />
+                                        </div>
+                                        <div class="text-left">
+                                            <h4
+                                                class="text-sm font-black text-foreground uppercase tracking-tight"
+                                            >
+                                                {month.label}
+                                            </h4>
+                                            <div
+                                                class="flex items-center gap-2 mt-0"
+                                            >
+                                                <Badge
+                                                    variant="outline"
+                                                    class="text-[9px] px-1.5 h-4 bg-muted/50 border-border/50 font-bold uppercase"
+                                                >
+                                                    {month.trades.length}
+                                                    {$t(
+                                                        "trades.messages.trades_count",
+                                                    )}
+                                                </Badge>
+                                                <div class="flex gap-2">
+                                                    {#each month.pnlEntries as entry}
+                                                        <div
+                                                            class="flex items-baseline gap-0.5"
+                                                        >
+                                                            <span
+                                                                class="text-[8px] text-muted-foreground uppercase"
+                                                                >{entry.curr}</span
+                                                            >
+                                                            <span
+                                                                class="text-[9px] font-mono font-bold {entry.val >=
+                                                                0
+                                                                    ? 'text-emerald-500'
+                                                                    : 'text-red-500'}"
+                                                                >{formatNumber(
+                                                                    entry.val,
+                                                                )}</span
+                                                            >
+                                                        </div>
+                                                    {/each}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <ChevronDown
+                                        class="w-4 h-4 text-muted-foreground transition-transform duration-300 {isMonthExpanded
+                                            ? 'rotate-180'
+                                            : ''}"
+                                    />
+                                </button>
+
+                                {#if isMonthExpanded}
+                                    <div
+                                        class="pl-4 pb-4 space-y-3 border-l-2 border-border/30 ml-6 animate-in fade-in slide-in-from-top-2"
+                                    >
+                                        <Separator class="bg-border/20 mb-3" />
+                                        {#each month.weeks as week (week.key)}
+                                            {@const isWeekExpanded =
+                                                expandedWeeks.has(week.key)}
+                                            <div
+                                                class="rounded-lg border border-border/40 bg-muted/20 overflow-hidden"
+                                            >
+                                                <!-- Week Header -->
+                                                <button
+                                                    class="w-full flex items-center justify-between p-3 hover:bg-muted/40 transition-colors border-none bg-transparent cursor-pointer {activeContext.key ===
+                                                    week.key
+                                                        ? 'bg-primary/5 ring-1 ring-inset ring-primary/20'
+                                                        : ''}"
+                                                    onclick={() =>
+                                                        toggleWeek(week.key)}
+                                                >
+                                                    <div
+                                                        class="flex items-center gap-3"
+                                                    >
+                                                        <div
+                                                            class="p-1.5 rounded-lg bg-muted border border-border/40"
+                                                        >
+                                                            <Activity
+                                                                class="w-3 h-3 text-muted-foreground"
+                                                            />
+                                                        </div>
+                                                        <div class="text-left">
+                                                            <span
+                                                                class="text-[10px] font-black text-foreground uppercase tracking-wide"
+                                                            >
+                                                                {week.label}
+                                                            </span>
+                                                            <div
+                                                                class="flex items-center gap-2"
+                                                            >
+                                                                <span
+                                                                    class="text-[8px] text-muted-foreground font-bold uppercase"
+                                                                >
+                                                                    {week.trades
+                                                                        .length}
+                                                                    {$t(
+                                                                        "trades.messages.trades_count",
+                                                                    )}
+                                                                </span>
+                                                                <div
+                                                                    class="flex gap-2"
+                                                                >
+                                                                    {#each week.pnlEntries as entry}
+                                                                        <div
+                                                                            class="flex items-baseline gap-0.5"
+                                                                        >
+                                                                            <span
+                                                                                class="text-[7px] text-muted-foreground uppercase"
+                                                                                >{entry.curr}</span
+                                                                            >
+                                                                            <span
+                                                                                class="text-[8px] font-mono font-bold {entry.val >=
+                                                                                0
+                                                                                    ? 'text-emerald-500'
+                                                                                    : 'text-rose-500'}"
+                                                                                >{formatNumber(
+                                                                                    entry.val,
+                                                                                )}</span
+                                                                            >
+                                                                        </div>
+                                                                    {/each}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <ChevronDown
+                                                        class="w-3 h-3 text-muted-foreground transition-transform duration-300 {isWeekExpanded
+                                                            ? 'rotate-180'
+                                                            : ''}"
+                                                    />
+                                                </button>
+
+                                                {#if isWeekExpanded}
+                                                    <div
+                                                        class="pl-4 pb-2 space-y-2 border-l-2 border-border/20 ml-6 animate-in fade-in slide-in-from-top-1"
+                                                    >
+                                                        {#each week.days as day (day.key)}
+                                                            {@const isExpanded =
+                                                                expandedDays[
+                                                                    day.date
+                                                                ]}
+                                                            <div
+                                                                class="group rounded-xl border border-border/50 bg-muted/20 overflow-hidden shadow-sm"
+                                                            >
+                                                                <button
+                                                                    class="w-full flex items-center justify-between p-2 hover:bg-muted/40 transition-colors border-none bg-transparent cursor-pointer {activeContext.key ===
+                                                                    day.date
+                                                                        ? 'bg-primary/5 ring-1 ring-inset ring-primary/20'
+                                                                        : ''}"
+                                                                    onclick={() =>
+                                                                        toggleDay(
+                                                                            day.date,
+                                                                        )}
+                                                                >
+                                                                    <div
+                                                                        class="flex items-center gap-3"
+                                                                    >
+                                                                        <div
+                                                                            class="flex flex-col items-center justify-center bg-muted/80 rounded-lg min-w-[36px] h-9 border border-border/50 shadow-inner"
+                                                                        >
+                                                                            <span
+                                                                                class="text-[7px] uppercase font-bold text-muted-foreground/60 leading-none mb-0.5"
+                                                                            >
+                                                                                {new Date(
+                                                                                    day.date +
+                                                                                        "T12:00:00",
+                                                                                )
+                                                                                    .toLocaleDateString(
+                                                                                        $locale ||
+                                                                                            "pt-BR",
+                                                                                        {
+                                                                                            month: "short",
+                                                                                        },
+                                                                                    )
+                                                                                    .replace(
+                                                                                        ".",
+                                                                                        "",
+                                                                                    )}
+                                                                            </span>
+                                                                            <span
+                                                                                class="text-xs font-black text-foreground leading-none"
+                                                                            >
+                                                                                {new Date(
+                                                                                    day.date +
+                                                                                        "T12:00:00",
+                                                                                ).getDate()}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div
+                                                                            class="text-left"
+                                                                        >
+                                                                            <span
+                                                                                class="text-[9px] font-bold text-muted-foreground uppercase tracking-tight"
+                                                                            >
+                                                                                {day.label}
+                                                                            </span>
+                                                                            <div
+                                                                                class="flex items-center gap-2"
+                                                                            >
+                                                                                <span
+                                                                                    class="text-[8px] text-muted-foreground/60 font-medium"
+                                                                                    >({day
+                                                                                        .trades
+                                                                                        .length}
+                                                                                    {$t(
+                                                                                        "trades.messages.trades_count",
+                                                                                    )})</span
+                                                                                >
+                                                                                {#each day.pnlEntries as entry}
+                                                                                    <div
+                                                                                        class="flex items-baseline gap-0.5"
+                                                                                    >
+                                                                                        <span
+                                                                                            class="text-[7px] text-muted-foreground uppercase"
+                                                                                            >{entry.curr}</span
+                                                                                        >
+                                                                                        <span
+                                                                                            class="text-[8px] font-mono font-bold {entry.val >=
+                                                                                            0
+                                                                                                ? 'text-emerald-500'
+                                                                                                : 'text-rose-500'}"
+                                                                                            >{formatNumber(
+                                                                                                entry.val,
+                                                                                            )}</span
+                                                                                        >
+                                                                                    </div>
+                                                                                {/each}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <ChevronRight
+                                                                        class="w-3 h-3 text-muted-foreground transition-transform duration-300 {isExpanded
+                                                                            ? 'rotate-90'
+                                                                            : ''}"
+                                                                    />
+                                                                </button>
+
+                                                                {#if isExpanded}
+                                                                    <div
+                                                                        class="p-2 pt-0 animate-in zoom-in-95 duration-200"
+                                                                    >
+                                                                        <Table.Root
+                                                                        >
+                                                                            <Table.Header
+                                                                            >
+                                                                                <Table.Row
+                                                                                    class="hover:bg-transparent border-border/10"
+                                                                                >
+                                                                                    <Table.Head
+                                                                                        class="h-8 text-[9px] font-black uppercase text-muted-foreground"
+                                                                                        >{$t(
+                                                                                            "trades.table.asset",
+                                                                                        )}</Table.Head
+                                                                                    >
+                                                                                    <Table.Head
+                                                                                        class="h-8 text-[9px] font-black uppercase text-muted-foreground"
+                                                                                        >{$t(
+                                                                                            "trades.table.direction",
+                                                                                        )}</Table.Head
+                                                                                    >
+                                                                                    <Table.Head
+                                                                                        class="h-8 text-[9px] font-black uppercase text-muted-foreground"
+                                                                                        >{$t(
+                                                                                            "trades.table.entry",
+                                                                                        )}</Table.Head
+                                                                                    >
+                                                                                    <Table.Head
+                                                                                        class="h-8 text-[9px] font-black uppercase text-muted-foreground"
+                                                                                        >{$t(
+                                                                                            "trades.table.exit",
+                                                                                        )}</Table.Head
+                                                                                    >
+                                                                                    <Table.Head
+                                                                                        class="h-8 text-[9px] font-black uppercase text-muted-foreground text-right"
+                                                                                        >{$t(
+                                                                                            "trades.table.pl",
+                                                                                        )}</Table.Head
+                                                                                    >
+                                                                                    <Table.Head
+                                                                                        class="h-8 text-[9px] font-black uppercase text-muted-foreground text-right"
+                                                                                        >{$t(
+                                                                                            "trades.table.actions",
+                                                                                        )}</Table.Head
+                                                                                    >
+                                                                                </Table.Row>
+                                                                            </Table.Header>
+                                                                            <Table.Body
+                                                                            >
+                                                                                {#each day.trades as trade (trade.id)}
+                                                                                    <Table.Row
+                                                                                        class="group/row hover:bg-muted/30 border-border/10 cursor-pointer {activeContext.key ===
+                                                                                        trade.id
+                                                                                            ? 'bg-primary/5 border-l-2 border-l-primary'
+                                                                                            : ''}"
+                                                                                        onclick={() =>
+                                                                                            handleSelectTrade(
+                                                                                                trade,
+                                                                                            )}
+                                                                                    >
+                                                                                        <Table.Cell
+                                                                                            class="py-2"
+                                                                                        >
+                                                                                            <div
+                                                                                                class="flex flex-col"
+                                                                                            >
+                                                                                                <span
+                                                                                                    class="font-bold text-xs"
+                                                                                                    >{trade.asset_symbol}</span
+                                                                                                >
+                                                                                                <span
+                                                                                                    class="text-[8px] text-muted-foreground uppercase tracking-tighter"
+                                                                                                >
+                                                                                                    {settingsStore.strategies.find(
+                                                                                                        (
+                                                                                                            s,
+                                                                                                        ) =>
+                                                                                                            s.id ===
+                                                                                                            trade.strategy_id,
+                                                                                                    )
+                                                                                                        ?.name ||
+                                                                                                        "-"}
+                                                                                                </span>
+                                                                                            </div>
+                                                                                        </Table.Cell>
+                                                                                        <Table.Cell
+                                                                                            class="py-2"
+                                                                                        >
+                                                                                            <div
+                                                                                                class="flex flex-col gap-1 items-start"
+                                                                                            >
+                                                                                                <Badge
+                                                                                                    variant="secondary"
+                                                                                                    class="text-[9px] font-black uppercase h-5 {trade.exit_price ||
+                                                                                                    trade.exit_date
+                                                                                                        ? 'bg-emerald-500/10 text-emerald-500'
+                                                                                                        : 'bg-amber-500/10 text-amber-500'}"
+                                                                                                >
+                                                                                                    {trade.exit_price ||
+                                                                                                    trade.exit_date
+                                                                                                        ? $t(
+                                                                                                              "trades.table.status_closed",
+                                                                                                          ) ||
+                                                                                                          "Fechado"
+                                                                                                        : $t(
+                                                                                                              "trades.table.status_open",
+                                                                                                          ) ||
+                                                                                                          "Aberto"}
+                                                                                                </Badge>
+                                                                                                <Badge
+                                                                                                    variant="outline"
+                                                                                                    class="text-[8px] font-black px-1.5 h-4 border-none {trade.direction ===
+                                                                                                    'Buy'
+                                                                                                        ? 'bg-blue-500/10 text-blue-500'
+                                                                                                        : 'bg-orange-500/10 text-orange-500'}"
+                                                                                                >
+                                                                                                    {trade.direction ===
+                                                                                                    "Buy"
+                                                                                                        ? $t(
+                                                                                                              "trades.table.buy",
+                                                                                                          )
+                                                                                                        : $t(
+                                                                                                              "trades.table.sell",
+                                                                                                          )}
+                                                                                                </Badge>
+                                                                                            </div>
+                                                                                        </Table.Cell>
+                                                                                        <Table.Cell
+                                                                                            class="py-2"
+                                                                                        >
+                                                                                            <div
+                                                                                                class="flex flex-col"
+                                                                                            >
+                                                                                                <span
+                                                                                                    class="text-xs font-mono font-bold tabular-nums"
+                                                                                                    >{trade.entry_price}</span
+                                                                                                >
+                                                                                                <span
+                                                                                                    class="text-[8px] text-muted-foreground/60"
+                                                                                                    >{format(
+                                                                                                        new Date(
+                                                                                                            trade.date,
+                                                                                                        ),
+                                                                                                        "HH:mm",
+                                                                                                    )}</span
+                                                                                                >
+                                                                                            </div>
+                                                                                        </Table.Cell>
+                                                                                        <Table.Cell
+                                                                                            class="py-2"
+                                                                                        >
+                                                                                            <div
+                                                                                                class="flex flex-col"
+                                                                                            >
+                                                                                                <span
+                                                                                                    class="text-xs font-mono font-bold tabular-nums"
+                                                                                                    >{trade.exit_price ||
+                                                                                                        "-"}</span
+                                                                                                >
+                                                                                                <span
+                                                                                                    class="text-[8px] text-muted-foreground/60"
+                                                                                                    >{trade.exit_date
+                                                                                                        ? format(
+                                                                                                              new Date(
+                                                                                                                  trade.exit_date,
+                                                                                                              ),
+                                                                                                              "HH:mm",
+                                                                                                          )
+                                                                                                        : "-"}</span
+                                                                                                >
+                                                                                            </div>
+                                                                                        </Table.Cell>
+                                                                                        <Table.Cell
+                                                                                            class="py-2 text-right"
+                                                                                        >
+                                                                                            <span
+                                                                                                class="text-xs font-mono font-bold {trade.result >=
+                                                                                                0
+                                                                                                    ? 'text-emerald-500'
+                                                                                                    : 'text-rose-500'}"
+                                                                                            >
+                                                                                                {formatCurrency(
+                                                                                                    trade.result,
+                                                                                                    settingsStore.accounts.find(
+                                                                                                        (
+                                                                                                            a,
+                                                                                                        ) =>
+                                                                                                            a.id ===
+                                                                                                            trade.account_id,
+                                                                                                    )
+                                                                                                        ?.currency ||
+                                                                                                        "BRL",
+                                                                                                )}
+                                                                                            </span>
+                                                                                        </Table.Cell>
+                                                                                        <Table.Cell
+                                                                                            class="py-2 text-right"
+                                                                                        >
+                                                                                            <div
+                                                                                                class="flex justify-end gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity"
+                                                                                            >
+                                                                                                <Button
+                                                                                                    variant="ghost"
+                                                                                                    size="icon"
+                                                                                                    class="h-6 w-6"
+                                                                                                    onclick={() =>
+                                                                                                        handleView(
+                                                                                                            trade,
+                                                                                                        )}
+                                                                                                >
+                                                                                                    <Eye
+                                                                                                        class="h-3 w-3"
+                                                                                                    />
+                                                                                                </Button>
+                                                                                                <Button
+                                                                                                    variant="ghost"
+                                                                                                    size="icon"
+                                                                                                    class="h-6 w-6"
+                                                                                                    onclick={() =>
+                                                                                                        handleEdit(
+                                                                                                            trade,
+                                                                                                        )}
+                                                                                                >
+                                                                                                    <Pencil
+                                                                                                        class="h-3 w-3"
+                                                                                                    />
+                                                                                                </Button>
+                                                                                                <button
+                                                                                                    class="p-1 px-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer border-none bg-transparent"
+                                                                                                    title={$t(
+                                                                                                        "trades.table.actions_delete",
+                                                                                                    ) ||
+                                                                                                        "Excluir"}
+                                                                                                    onclick={(
+                                                                                                        e,
+                                                                                                    ) => {
+                                                                                                        e.stopPropagation();
+                                                                                                        requestDelete(
+                                                                                                            trade,
+                                                                                                        );
+                                                                                                    }}
+                                                                                                >
+                                                                                                    <Trash2
+                                                                                                        class="h-3 w-3"
+                                                                                                    />
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        </Table.Cell>
+                                                                                    </Table.Row>
+                                                                                {/each}
+                                                                            </Table.Body>
+                                                                        </Table.Root>
+                                                                    </div>
+                                                                {/if}
+                                                            </div>
+                                                        {/each}
+                                                    </div>
+                                                {/if}
+                                            </div>
+                                        {/each}
+                                    </div>
+                                {/if}
+                            </div>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+
+            <!-- Right Sidebar: Interactive Metrics & Charts -->
+            <div class="lg:col-span-3 space-y-4 self-start sticky top-4">
+                <div class="flex items-center justify-between px-2 h-9">
+                    <h3
+                        class="text-sm font-bold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-2"
+                    >
+                        <Activity class="w-4 h-4" />
+                        {$t("trades.sidebar.summary")}
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <Badge
+                            variant="outline"
+                            class="text-[10px] font-black bg-muted border-border/40 uppercase tracking-tighter"
+                        >
+                            {activeContext.label}
+                        </Badge>
+                        {#if activeContext.type !== "global"}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                class="h-6 w-6 text-muted-foreground hover:text-rose-500 transition-colors"
+                                onclick={() =>
+                                    (activeContext = {
+                                        type: "global",
+                                        key: null,
+                                        label:
+                                            $t("trades.messages.all_period") ||
+                                            "Todo o Período",
+                                    })}
+                            >
+                                <X class="w-3 h-3" />
+                            </Button>
+                        {/if}
+                    </div>
+                </div>
+
+                {#if activeContext.type === "trade" && activeContext.data}
+                    <!-- Card: Trade Essential Info (Visible only when trade selected) -->
+                    <Card.Root
+                        class="shadow-sm bg-card border-border/10 overflow-hidden"
+                    >
+                        <Card.Header class="pb-2">
+                            <div class="flex items-center justify-between">
+                                <Badge
+                                    variant="secondary"
+                                    class="bg-primary/10 text-primary border-none font-black"
+                                >
+                                    {activeContext.data.asset_symbol}
+                                </Badge>
+                                <span
+                                    class="text-[10px] font-bold text-muted-foreground uppercase opacity-50"
+                                >
+                                    {format(
+                                        new Date(activeContext.data.date),
+                                        "dd MMMM yyyy HH:mm",
+                                        {
+                                            locale:
+                                                $locale === "en-US"
+                                                    ? undefined
+                                                    : undefined,
+                                        },
+                                    )}
+                                </span>
+                            </div>
+                        </Card.Header>
+                        <Card.Content class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <span
+                                    class="text-[9px] font-bold text-muted-foreground uppercase"
+                                    >Resultado</span
+                                >
+                                <div
+                                    class="text-xl font-black {activeContext
+                                        .data.result >= 0
+                                        ? 'text-emerald-500'
+                                        : 'text-rose-500'}"
+                                >
+                                    {formatCurrency(
+                                        activeContext.data.result,
+                                        settingsStore.accounts.find(
+                                            (a) =>
+                                                a.id ===
+                                                activeContext.data.account_id,
+                                        )?.currency || "BRL",
+                                    )}
+                                </div>
+                            </div>
+                            <div class="space-y-1 text-right">
+                                <span
+                                    class="text-[9px] font-bold text-muted-foreground uppercase"
+                                    >Tipo</span
+                                >
+                                <div
+                                    class="text-xs font-bold uppercase tracking-widest"
+                                >
+                                    {activeContext.data.type || "N/A"}
+                                </div>
+                            </div>
+                        </Card.Content>
+                    </Card.Root>
+                {/if}
+
+                <div
+                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4"
+                >
+                    <!-- Card: KPIs Dashboard -->
+                    <Card.Root
+                        class="shadow-sm bg-card border-border/10 flex flex-col justify-between"
+                    >
+                        <Card.Header
+                            class="p-4 pb-2 border-b border-border/10 flex flex-row items-center justify-between space-y-0"
+                        >
+                            <span
+                                class="text-[10px] font-black uppercase tracking-tighter text-muted-foreground"
+                                >{$t("trades.sidebar.performance")}</span
+                            >
+                            <TrendingUp
+                                class="w-3 h-3 text-emerald-500 opacity-50"
+                            />
+                        </Card.Header>
+                        <Card.Content class="p-4 pt-4">
+                            <div class="space-y-6">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="space-y-0.5">
+                                        <span
+                                            class="text-[8px] font-black text-muted-foreground uppercase opacity-50"
+                                            >Profit Factor</span
+                                        >
+                                        <div
+                                            class="text-sm font-mono font-bold tracking-tighter text-teal-400"
+                                        >
+                                            {activeContextStats.profitFactor}
+                                        </div>
+                                    </div>
+                                    <div class="space-y-0.5 text-right">
+                                        <span
+                                            class="text-[8px] font-black text-rose-500 uppercase opacity-80"
+                                            >Drawdown</span
+                                        >
+                                        <div
+                                            class="text-[11px] font-mono font-bold text-rose-500 tracking-tighter"
+                                        >
+                                            {formatCurrency(
+                                                activeContextStats.maxDrawdown,
+                                                activeContextStats.mainCurrency,
+                                                $locale || "pt-BR",
+                                            ).replace(/[^\d.,+-]/g, "")}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <Separator class="bg-border/10" />
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="space-y-0.5">
+                                        <span
+                                            class="text-[8px] font-black text-muted-foreground uppercase opacity-50"
+                                            >Win Rate</span
+                                        >
+                                        <div
+                                            class="text-sm font-mono font-bold tracking-tighter"
+                                        >
+                                            {activeContextStats.winRate}%
+                                        </div>
+                                    </div>
+                                    <div class="space-y-0.5 text-right">
+                                        <span
+                                            class="text-[8px] font-black text-muted-foreground uppercase opacity-50"
+                                            >Risco:Retorno</span
+                                        >
+                                        <div
+                                            class="text-[11px] font-mono font-bold tracking-tighter {parseFloat(
+                                                activeContextStats.riskReward,
+                                            ) >= 1
+                                                ? 'text-emerald-500'
+                                                : ''}"
+                                        >
+                                            1:{activeContextStats.riskReward}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </Card.Content>
+                    </Card.Root>
+
+                    <!-- Card: Outcome/Pie Chart -->
+                    <Card.Root
+                        class="shadow-sm bg-card border-border/10 overflow-hidden"
+                    >
+                        <Card.Header
+                            class="p-4 pb-0 border-b border-border/10 flex flex-row items-center justify-between space-y-0 bg-muted/5"
+                        >
+                            <span
+                                class="text-[10px] font-black uppercase tracking-tighter text-muted-foreground"
+                                >{$t("trades.sidebar.distribution")}</span
+                            >
+                            <div
+                                class="text-[9px] font-mono font-bold opacity-30 uppercase"
+                            >
+                                {activeContextStats.total} Trades
+                            </div>
+                        </Card.Header>
+                        <Card.Content class="p-2 pb-0">
+                            <div class="h-[220px] w-full">
+                                <TradeOutcomePieChart
+                                    trades={filteredTradesForChart}
+                                />
+                            </div>
+                        </Card.Content>
+                    </Card.Root>
+                </div>
+
+                <!-- Card: Equity Curve with Drawdown -->
+                <Card.Root class="shadow-sm bg-card border-border/10">
+                    <Card.Header
+                        class="p-4 py-3 border-b border-border/10 flex flex-row items-center justify-between space-y-0"
+                    >
+                        <span
+                            class="text-[10px] font-black uppercase tracking-tighter text-muted-foreground"
+                            >{$t("trades.sidebar.equityCurve")}</span
+                        >
+                    </Card.Header>
+                    <Card.Content class="p-2">
+                        <div class="h-[260px] w-full">
+                            <TradeEquityChart trades={filteredTradesForChart} />
+                        </div>
+                    </Card.Content>
+                </Card.Root>
+            </div>
         </div>
     </div>
 </div>

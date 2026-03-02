@@ -26,6 +26,7 @@ export interface TaxAppraisal {
     calculation_date: string;
     status: "Pending" | "Paid" | "Ok";
     trade_ids: string[];
+    is_complementary: boolean;
 }
 
 export interface TaxLoss {
@@ -51,6 +52,7 @@ export interface TaxDarf {
     darf_number?: string;
     account_id?: string;
     transaction_id?: string;
+    is_complementary: boolean;
 }
 
 class IrpfStore {

@@ -28,8 +28,10 @@
     import DeleteConfirmationModal from "$lib/components/settings/DeleteConfirmationModal.svelte";
     import { invoke } from "@tauri-apps/api/core";
     import { untrack } from "svelte";
+    import type { EChartsOption } from "echarts";
     import Skeleton from "$lib/components/ui/skeleton.svelte";
     import { getLocalDatePart } from "$lib/utils";
+    import type { Trade } from "$lib/types";
 
     let showCheckinDialog = $state(false);
     let showDeleteConfirm = $state(false);
@@ -634,10 +636,15 @@
         for (const s of emotionalStates || []) statesMap.set(s.id, s);
 
         for (const state of emotionalStates || []) {
+            let stateColor = "#71717a"; // Neutral/Zinc-500 fallback
+            if (state.impact === "Positive")
+                stateColor = "#10b981"; // Emerald-500
+            else if (state.impact === "Negative") stateColor = "#ef4444"; // Red-500
+
             stats.set(state.id, {
                 id: state.id,
                 name: state.name,
-                color: state.color,
+                color: stateColor,
                 count: 0,
                 wins: 0,
                 losses: 0,
@@ -810,14 +817,16 @@
 />
 
 <Dialog.Root bind:open={isDeleteWithClosureOpen}>
-    <Dialog.Content class="max-w-[425px] w-full bg-zinc-950 border-zinc-800">
+    <Dialog.Content
+        class="max-w-[425px] w-full bg-popover/90 border-border backdrop-blur-xl shadow-2xl"
+    >
         <Dialog.Header>
-            <Dialog.Title class="text-white">
+            <Dialog.Title class="text-foreground">
                 {$t("general.confirmDelete") || "Excluir Registro Psicológico"}
             </Dialog.Title>
-            <Dialog.Description class="text-zinc-400">
+            <Dialog.Description class="text-muted-foreground">
                 Este registro psicológico possui um <strong
-                    >Fechamento Diário Financeiro</strong
+                    class="text-foreground">Fechamento Diário Financeiro</strong
                 > associado. Você deseja excluir apenas o registro psicológico ou
                 ambos?
             </Dialog.Description>
@@ -845,925 +854,951 @@
 </Dialog.Root>
 
 <div class="space-y-6 animate-in fade-in duration-500">
-    <!-- Header -->
-    <div class="mb-4 space-y-1">
-        <h1 class="text-xl font-black text-white uppercase tracking-tighter">
-            {$t("psychology.title")}
-        </h1>
-        <p class="text-[10px] text-muted-foreground font-bold uppercase">
-            {$t("psychology.description")}
-        </p>
-    </div>
-
-    <div
-        class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-    >
-        <div class="flex items-center gap-2">
-            <Button variant="outline" size="sm" onclick={syncWeights}>
-                <TrendingUp class="w-3 h-3 mr-1" />
-                {$t("psychology.syncWeights")}
-            </Button>
-            <Button onclick={() => (showCheckinDialog = true)} size="sm">
-                <Brain class="w-4 h-4 mr-2" />
-                {$t("psychology.checkin.button")}
-            </Button>
-        </div>
-    </div>
-
-    <Separator class="bg-zinc-800/50" />
-
-    <!-- KPI Cards (Padronização Estilo Financeiro) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {#if isLoading}
-            {#each Array(4) as _}
-                <Skeleton class="h-32 rounded-xl" />
-            {/each}
-        {:else}
-            <!-- Melhor Mindset -->
-            <div
-                class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 transition-all hover:border-emerald-500/30 border-l-4 border-l-emerald-500"
-            >
-                <div class="flex items-start justify-between py-1.5 px-3">
-                    <span
-                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
-                    >
-                        {$t("psychology.kpi.bestMindset")}
-                    </span>
-                    <Brain class="h-3 w-3 text-emerald-500" />
-                </div>
-                <div class="py-1 px-3 pb-2">
-                    <div
-                        class="text-base font-mono font-bold text-emerald-500 uppercase tracking-tight leading-none"
-                    >
-                        {bestMindset?.name || "-"}
-                    </div>
-                    <p
-                        class="text-[10px] text-muted-foreground mt-1 underline decoration-emerald-500/30 underline-offset-2 decoration-dotted"
-                    >
-                        {$t("psychology.kpi.consolidated")}:
-                        <span class="font-mono font-bold"
-                            >{formatCurrency(
-                                bestMindset?.totalResult || 0,
-                            )}</span
-                        >
-                    </p>
-                </div>
+    <div class="flex-1 flex flex-col space-y-8 p-4 md:p-8">
+        <div
+            class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+        >
+            <div class="space-y-1">
+                <h2 class="text-3xl font-bold text-foreground tracking-tight">
+                    {$t("psychology.title")}
+                </h2>
+                <p class="text-muted-foreground">
+                    {$t("psychology.description")}
+                </p>
             </div>
-
-            <!-- Pior Mindset -->
-            <div
-                class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 transition-all hover:border-red-500/30 border-l-4 border-l-red-500"
-            >
-                <div class="flex items-start justify-between py-1.5 px-3">
-                    <span
-                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
-                    >
-                        {$t("psychology.kpi.worstMindset")}
-                    </span>
-                    <AlertTriangle class="h-3 w-3 text-red-500" />
-                </div>
-                <div class="py-1 px-3 pb-2">
-                    <div
-                        class="text-base font-mono font-bold text-red-500 uppercase tracking-tight leading-none"
-                    >
-                        {worstMindset?.name || "-"}
-                    </div>
-                    <p
-                        class="text-[10px] text-muted-foreground mt-1 underline decoration-red-500/30 underline-offset-2 decoration-dotted"
-                    >
-                        {$t("psychology.kpi.accumulatedLoss")}:
-                        <span class="font-mono font-bold"
-                            >{formatCurrency(
-                                worstMindset?.totalResult || 0,
-                            )}</span
-                        >
-                    </p>
-                </div>
-            </div>
-
-            <!-- Custo do Tilt -->
-            <div
-                class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 transition-all hover:border-orange-500/30 border-l-4 border-l-orange-500"
-            >
-                <div class="flex items-start justify-between py-1.5 px-3">
-                    <span
-                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
-                    >
-                        {$t("psychology.kpi.tiltCost")}
-                    </span>
-                    <TrendingDown class="h-3 w-3 text-orange-500" />
-                </div>
-                <div class="py-1 px-3 pb-2">
-                    <div
-                        class="text-base font-mono font-bold text-orange-500 tracking-tight leading-none"
-                    >
-                        {formatCurrency(tiltResult)}
-                    </div>
-                    <p
-                        class="text-[10px] text-muted-foreground mt-1 whitespace-nowrap opacity-70"
-                    >
-                        {$t("psychology.kpi.tiltDescription", {
-                            values: { count: tiltTrades.length },
-                        })}
-                    </p>
-                </div>
-            </div>
-
-            <!-- Registros -->
-            <div
-                class="group relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/40 transition-all hover:border-blue-500/30 border-l-4 border-l-blue-500"
-            >
-                <div class="flex items-start justify-between py-1.5 px-3">
-                    <span
-                        class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
-                    >
-                        {$t("psychology.kpi.records")}
-                    </span>
-                    <CheckCircle2 class="h-3 w-3 text-blue-500" />
-                </div>
-                <div class="py-1 px-3 pb-2">
-                    <div
-                        class="text-base font-mono font-bold text-blue-500 tracking-tight leading-none"
-                    >
-                        {filteredJournal.length}
-                    </div>
-                    <p
-                        class="text-[10px] text-muted-foreground mt-1 opacity-70"
-                    >
-                        {$t("psychology.kpi.recordsDescription")}
-                    </p>
-                </div>
-            </div>
-        {/if}
-    </div>
-
-    <!-- Charts Section (3 Columns - Restored) -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {#if isLoading}
-            {#each Array(3) as _}
-                <Card.Root class="bg-zinc-900/20 border-zinc-800 h-[300px]">
-                    <Card.Content class="p-6">
-                        <Skeleton class="w-full h-full" />
-                    </Card.Content>
-                </Card.Root>
-            {/each}
-        {:else}
-            <Card.Root class="bg-zinc-900/20 border-zinc-800">
-                <Card.Header class="pb-1">
-                    <Card.Title
-                        class="text-[10px] font-black uppercase tracking-widest text-zinc-500"
-                        >{$t("psychology.charts.pnlByEmotion")}</Card.Title
-                    >
-                </Card.Header>
-                <Card.Content class="h-[250px] p-2">
-                    <EChart options={resultByEmotionChartOption} />
-                </Card.Content>
-            </Card.Root>
-
-            <Card.Root class="bg-zinc-900/20 border-zinc-800">
-                <Card.Header class="pb-1">
-                    <Card.Title
-                        class="text-[10px] font-black uppercase tracking-widest text-zinc-500"
-                        >{$t("psychology.charts.winRate")}</Card.Title
-                    >
-                </Card.Header>
-                <Card.Content class="h-[250px] p-2">
-                    <EChart options={winRateChartOption} />
-                </Card.Content>
-            </Card.Root>
-
-            <Card.Root class="bg-zinc-900/20 border-zinc-800">
-                <Card.Header class="pb-1">
-                    <Card.Title
-                        class="text-[10px] font-black uppercase tracking-widest text-zinc-500"
-                        >{$t("psychology.charts.correlation")}</Card.Title
-                    >
-                </Card.Header>
-                <Card.Content class="h-[250px] p-2">
-                    <EChart options={correlationChartOption} />
-                </Card.Content>
-            </Card.Root>
-        {/if}
-    </div>
-
-    <!-- Detailed Analysis & Filters -->
-    <div
-        class="flex flex-col sm:flex-row gap-4 justify-between items-end bg-zinc-900/40 p-4 rounded-xl border border-zinc-800/50"
-    >
-        <div class="space-y-1">
-            <h3
-                class="text-sm font-black uppercase tracking-widest text-zinc-400"
-            >
-                {$t("psychology.analysis.title")}
-            </h3>
-            <p
-                class="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter"
-            >
-                {$t("psychology.analysis.hierarchy")}
-            </p>
         </div>
 
-        <div class="flex items-center gap-2">
-            <DateFilter bind:value={timeFilter} bind:startDate bind:endDate />
-            <Select.Root type="single" bind:value={itemsLimit}>
-                <Select.Trigger
-                    class="w-[120px] h-9 bg-zinc-950 border-white/5 text-[10px] font-bold uppercase"
-                >
-                    {itemsLimit === "all"
-                        ? $t("general.all")
-                        : `${itemsLimit} items`}
-                </Select.Trigger>
-                <Select.Content class="bg-zinc-950 border-zinc-800">
-                    <Select.Item
-                        value="10"
-                        class="text-[10px] font-bold uppercase"
-                        >10 Itens</Select.Item
-                    >
-                    <Select.Item
-                        value="25"
-                        class="text-[10px] font-bold uppercase"
-                        >25 Itens</Select.Item
-                    >
-                    <Select.Item
-                        value="50"
-                        class="text-[10px] font-bold uppercase"
-                        >50 Itens</Select.Item
-                    >
-                    <Select.Item
-                        value="all"
-                        class="text-[10px] font-bold uppercase"
-                        >TUDO</Select.Item
-                    >
-                </Select.Content>
-            </Select.Root>
+        <div
+            class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+        >
+            <div class="flex items-center gap-2">
+                <Button variant="outline" size="sm" onclick={syncWeights}>
+                    <TrendingUp class="w-3 h-3 mr-1" />
+                    {$t("psychology.syncWeights")}
+                </Button>
+                <Button onclick={() => (showCheckinDialog = true)} size="sm">
+                    <Brain class="w-4 h-4 mr-2" />
+                    {$t("psychology.checkin.button")}
+                </Button>
+            </div>
         </div>
-    </div>
 
-    <!-- Main Split Content -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-20">
-        <!-- Left: Hierarchical Analysis -->
-        <div class="lg:col-span-8 space-y-4">
-            {#if hierarchicalPsychologyData.length === 0}
-                <div
-                    class="h-40 flex items-center justify-center text-muted-foreground border-2 border-dashed rounded-xl border-zinc-800 uppercase text-[10px] font-black"
-                >
-                    {$t("general.noData")}
-                </div>
+        <Separator class="bg-border/20" />
+
+        <!-- KPI Cards (Padronização Estilo Financeiro) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {#if isLoading}
+                {#each Array(4) as _}
+                    <Skeleton class="h-32 rounded-xl" />
+                {/each}
             {:else}
-                <div class="space-y-4">
-                    {#each hierarchicalPsychologyData as month}
-                        {@const isMonthExpanded = expandedMonths.has(month.key)}
-                        <div
-                            class="rounded-xl border border-zinc-800/50 overflow-hidden bg-zinc-900/20"
+                <!-- Melhor Mindset -->
+                <div
+                    class="group relative overflow-hidden rounded-xl border border-border/50 bg-muted/30 transition-all hover:border-emerald-500/30 border-l-4 border-l-emerald-500"
+                >
+                    <div class="flex items-start justify-between py-1.5 px-3">
+                        <span
+                            class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
                         >
-                            <!-- Month Header -->
-                            <button
-                                class="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
-                                onclick={() => toggleMonth(month.key)}
-                            >
-                                <div class="flex items-center gap-4">
-                                    <div
-                                        class="p-2.5 rounded-xl bg-primary/10 border border-primary/20"
-                                    >
-                                        <Calendar
-                                            class="w-4 h-4 text-primary"
-                                        />
-                                    </div>
-                                    <div class="text-left">
-                                        <h4
-                                            class="text-sm font-black text-white uppercase tracking-tight"
-                                        >
-                                            {month.label}
-                                        </h4>
-                                        <div
-                                            class="flex items-center gap-2 mt-0.5"
-                                        >
-                                            <Badge
-                                                variant="outline"
-                                                class="text-[9px] px-1.5 h-4 bg-zinc-800 border-zinc-700 font-bold uppercase"
-                                            >
-                                                {month.weeks.length}
-                                                {$t("general.weeks_upper")}
-                                            </Badge>
-                                            <div
-                                                class="flex gap-1.5 opacity-60"
-                                            >
-                                                {#each Object.entries(month.totalPnlByCurrency) as [curr, total]}
-                                                    <span
-                                                        class="text-[9px] font-bold {(total as number) >=
-                                                        0
-                                                            ? 'text-emerald-500'
-                                                            : 'text-red-500'}"
-                                                    >
-                                                        {formatCurrency(
-                                                            total as number,
-                                                            curr,
-                                                        )}
-                                                    </span>
-                                                {/each}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-6">
-                                    <div class="flex items-center gap-2">
-                                        <div
-                                            class="flex flex-col items-end mr-2"
-                                        >
-                                            <div
-                                                class="flex items-baseline gap-1.5"
-                                            >
-                                                <span
-                                                    class="text-xs font-black text-white"
-                                                >
-                                                    {month.avgWeight.toFixed(1)}
-                                                </span>
-                                                <span
-                                                    class="text-[7px] font-bold text-zinc-500 uppercase tracking-tighter"
-                                                    >SCORE</span
-                                                >
-                                            </div>
-                                            <Badge
-                                                class="text-[7px] h-3.5 px-1 font-black uppercase {month
-                                                    .equivalentState.impact ===
-                                                'Positive'
-                                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                                    : 'bg-red-500/10 text-red-400 border-red-500/20'}"
-                                                variant="outline"
-                                            >
-                                                {month.equivalentState.name}
-                                            </Badge>
-                                        </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            class="h-7 w-7 hover:bg-white/10"
-                                            onclick={(e) => {
-                                                e.stopPropagation();
-                                                openInsight(month);
-                                            }}
-                                        >
-                                            <Eye
-                                                class="w-3.5 h-3.5 text-zinc-500 hover:text-white"
-                                            />
-                                        </Button>
-                                    </div>
-                                    <ChevronDown
-                                        class="w-4 h-4 text-zinc-500 transition-transform duration-300 {isMonthExpanded
-                                            ? 'rotate-180'
-                                            : ''}"
-                                    />
-                                </div>
-                            </button>
-
-                            {#if isMonthExpanded}
-                                <div
-                                    class="px-4 pb-4 space-y-3 animate-in fade-in slide-in-from-top-2"
-                                >
-                                    <Separator class="bg-zinc-800/50 mb-3" />
-                                    {#each month.weeks as week}
-                                        {@const isWeekExpanded =
-                                            expandedWeeks.has(week.key)}
-                                        <div
-                                            class="rounded-lg border border-zinc-800/50 bg-zinc-950/40 overflow-hidden"
-                                        >
-                                            <button
-                                                class="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
-                                                onclick={() =>
-                                                    toggleWeek(week.key)}
-                                            >
-                                                <div
-                                                    class="flex items-center gap-3"
-                                                >
-                                                    <TrendingUp
-                                                        class="w-3.5 h-3.5 text-emerald-400"
-                                                    />
-                                                    <div class="text-left">
-                                                        <h5
-                                                            class="text-xs font-black text-zinc-200 uppercase tracking-tight"
-                                                        >
-                                                            {week.label}
-                                                        </h5>
-                                                        <div
-                                                            class="flex gap-1.5 opacity-60 mt-0.5"
-                                                        >
-                                                            {#each Object.entries(week.totalPnlByCurrency) as [curr, total]}
-                                                                <span
-                                                                    class="text-[9px] font-bold {(total as number) >=
-                                                                    0
-                                                                        ? 'text-emerald-500'
-                                                                        : 'text-red-500'}"
-                                                                >
-                                                                    {formatCurrency(
-                                                                        total as number,
-                                                                        curr,
-                                                                    )}
-                                                                </span>
-                                                            {/each}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div
-                                                    class="flex items-center gap-4"
-                                                >
-                                                    <div
-                                                        class="flex items-center gap-2"
-                                                    >
-                                                        <div
-                                                            class="flex flex-col items-end mr-1"
-                                                        >
-                                                            <div
-                                                                class="flex items-baseline gap-1"
-                                                            >
-                                                                <span
-                                                                    class="text-[10px] font-black text-zinc-100"
-                                                                >
-                                                                    {week.avgWeight.toFixed(
-                                                                        1,
-                                                                    )}
-                                                                </span>
-                                                                <span
-                                                                    class="text-[6px] font-bold text-zinc-500 uppercase tracking-tighter"
-                                                                    >SCORE</span
-                                                                >
-                                                            </div>
-                                                            <Badge
-                                                                class="text-[6px] h-3 px-1 font-black uppercase {week
-                                                                    .equivalentState
-                                                                    .impact ===
-                                                                'Positive'
-                                                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                                                    : 'bg-red-500/10 text-red-400 border-red-500/20'}"
-                                                                variant="outline"
-                                                            >
-                                                                {week
-                                                                    .equivalentState
-                                                                    .name}
-                                                            </Badge>
-                                                        </div>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            class="h-6 w-6 hover:bg-white/10"
-                                                            onclick={(e) => {
-                                                                e.stopPropagation();
-                                                                openInsight(
-                                                                    week,
-                                                                );
-                                                            }}
-                                                        >
-                                                            <Eye
-                                                                class="w-3 h-3 text-zinc-500 hover:text-white"
-                                                            />
-                                                        </Button>
-                                                    </div>
-                                                    <ChevronDown
-                                                        class="w-3.5 h-3.5 text-zinc-500 transition-transform {isWeekExpanded
-                                                            ? 'rotate-180'
-                                                            : ''}"
-                                                    />
-                                                </div>
-                                            </button>
-
-                                            {#if isWeekExpanded}
-                                                <div class="p-3 pt-0 space-y-2">
-                                                    {#each week.days as day}
-                                                        {@const isDayExpanded =
-                                                            expandedDays.has(
-                                                                day.date,
-                                                            )}
-                                                        <div
-                                                            class="group/day relative bg-zinc-950/20 rounded-lg border border-zinc-800/20 hover:border-zinc-700/50 transition-all duration-300"
-                                                        >
-                                                            <button
-                                                                class="w-full flex items-center justify-between p-2 sm:p-3 hover:bg-white/5 transition-colors text-left"
-                                                                onclick={() =>
-                                                                    toggleDay(
-                                                                        day.date,
-                                                                    )}
-                                                            >
-                                                                <!-- LHS: Date Badge & Summary -->
-                                                                <div
-                                                                    class="flex items-center gap-4"
-                                                                >
-                                                                    <div
-                                                                        class="flex flex-col items-center justify-center bg-zinc-800/80 rounded-lg h-9 w-9 border border-zinc-700/50"
-                                                                    >
-                                                                        <span
-                                                                            class="text-[10px] font-black leading-none"
-                                                                            >{new Date(
-                                                                                day.date +
-                                                                                    "T12:00:00",
-                                                                            )
-                                                                                .toLocaleString(
-                                                                                    $locale ||
-                                                                                        "pt-BR",
-                                                                                    {
-                                                                                        weekday:
-                                                                                            "short",
-                                                                                    },
-                                                                                )
-                                                                                .toUpperCase()}</span
-                                                                        >
-                                                                        <span
-                                                                            class="text-sm font-black leading-none mt-0.5"
-                                                                            >{new Date(
-                                                                                day.date +
-                                                                                    "T12:00:00",
-                                                                            ).getDate()}</span
-                                                                        >
-                                                                    </div>
-                                                                    <div
-                                                                        class="flex flex-col items-start px-1"
-                                                                    >
-                                                                        <span
-                                                                            class="text-xs font-bold text-zinc-100"
-                                                                            >{$t(
-                                                                                "general.dayClosure",
-                                                                            )}</span
-                                                                        >
-                                                                        <div
-                                                                            class="flex items-center gap-2"
-                                                                        >
-                                                                            <span
-                                                                                class="text-[9px] font-medium text-zinc-500 uppercase tracking-widest whitespace-nowrap"
-                                                                                >{day
-                                                                                    .trades
-                                                                                    .length}
-                                                                                trades</span
-                                                                            >
-                                                                            <span
-                                                                                class="w-1 h-1 rounded-full bg-zinc-700"
-
-                                                                            ></span>
-                                                                            <div
-                                                                                class="flex gap-1.5 opacity-60"
-                                                                            >
-                                                                                {#each Object.entries(day.totalPnlByCurrency) as [curr, total]}
-                                                                                    <span
-                                                                                        class="text-[9px] font-bold {(total as number) >=
-                                                                                        0
-                                                                                            ? 'text-emerald-500'
-                                                                                            : 'text-red-500'}"
-                                                                                    >
-                                                                                        {formatCurrency(
-                                                                                            total as number,
-                                                                                            curr,
-                                                                                        )}
-                                                                                    </span>
-                                                                                {/each}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                <!-- RHS: PnL & Actions -->
-                                                                <div
-                                                                    class="flex items-center gap-6"
-                                                                >
-                                                                    <div
-                                                                        class="flex items-center gap-6"
-                                                                    >
-                                                                        <div
-                                                                            class="flex items-center gap-2 mr-2"
-                                                                        >
-                                                                            {#if day.equivalentState}
-                                                                                <div
-                                                                                    class="flex flex-col items-end"
-                                                                                >
-                                                                                    <div
-                                                                                        class="flex items-baseline gap-1.5"
-                                                                                    >
-                                                                                        <span
-                                                                                            class="text-xs font-black text-white"
-                                                                                        >
-                                                                                            {day.avgWeight.toFixed(
-                                                                                                1,
-                                                                                            )}
-                                                                                        </span>
-                                                                                        <span
-                                                                                            class="text-[7px] font-bold text-zinc-500 uppercase tracking-tighter"
-                                                                                            >SCORE</span
-                                                                                        >
-                                                                                    </div>
-                                                                                    <Badge
-                                                                                        class="text-[7px] h-3.5 px-1 font-black uppercase {day
-                                                                                            .equivalentState
-                                                                                            .impact ===
-                                                                                        'Positive'
-                                                                                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                                                                            : 'bg-red-500/10 text-red-400 border-red-500/20'}"
-                                                                                        variant="outline"
-                                                                                    >
-                                                                                        {day
-                                                                                            .equivalentState
-                                                                                            .name}
-                                                                                    </Badge>
-                                                                                </div>
-                                                                            {/if}
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="icon"
-                                                                                class="h-7 w-7 hover:bg-white/10"
-                                                                                onclick={(
-                                                                                    e,
-                                                                                ) => {
-                                                                                    e.stopPropagation();
-                                                                                    openInsight(
-                                                                                        day,
-                                                                                    );
-                                                                                }}
-                                                                            >
-                                                                                <Eye
-                                                                                    class="w-3.5 h-3.5 text-zinc-500 hover:text-white"
-                                                                                />
-                                                                            </Button>
-                                                                        </div>
-                                                                        <div
-                                                                            class="w-6 h-6 rounded-full bg-zinc-800/50 flex items-center justify-center transition-transform {isDayExpanded
-                                                                                ? 'rotate-180'
-                                                                                : ''}"
-                                                                        >
-                                                                            <ChevronDown
-                                                                                class="w-3 h-3 text-zinc-500"
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </button>
-
-                                                            {#if isDayExpanded}
-                                                                <div
-                                                                    class="px-4 pb-4 animate-in fade-in slide-in-from-top-2"
-                                                                >
-                                                                    <div
-                                                                        class="rounded-lg border border-zinc-800/50 overflow-hidden bg-zinc-950/40 mt-1"
-                                                                    >
-                                                                        <table
-                                                                            class="w-full text-left"
-                                                                        >
-                                                                            <thead
-                                                                                class="bg-zinc-900/50 h-7 border-b border-zinc-800/50"
-                                                                            >
-                                                                                <tr
-                                                                                >
-                                                                                    <th
-                                                                                        class="px-3 text-[8px] font-black text-zinc-500 uppercase"
-                                                                                        >{$t(
-                                                                                            "general.asset",
-                                                                                        )}</th
-                                                                                    >
-                                                                                    <th
-                                                                                        class="px-3 text-[8px] font-black text-zinc-500 uppercase"
-                                                                                        >{$t(
-                                                                                            "psychology.analysis.emotionalCalc",
-                                                                                        )}</th
-                                                                                    >
-                                                                                    <th
-                                                                                        class="px-3 text-[8px] font-black text-zinc-500 uppercase text-right"
-                                                                                        >{$t(
-                                                                                            "psychology.analysis.totalWeight",
-                                                                                        )}</th
-                                                                                    >
-                                                                                </tr>
-                                                                            </thead>
-                                                                            <tbody
-                                                                            >
-                                                                                {#each day.trades as trade}
-                                                                                    <tr
-                                                                                        class="h-8 border-b border-zinc-800/30 last:border-0 hover:bg-white/5 transition-colors"
-                                                                                    >
-                                                                                        <td
-                                                                                            class="px-3 text-[10px] font-bold text-white uppercase"
-                                                                                            >{trade.asset_symbol}</td
-                                                                                        >
-                                                                                        <td
-                                                                                            class="px-3 py-1.5"
-                                                                                        >
-                                                                                            {#if trade.entry_emotional_state_id}
-                                                                                                {@const st =
-                                                                                                    emotionalStates.find(
-                                                                                                        (
-                                                                                                            s,
-                                                                                                        ) =>
-                                                                                                            s.id ===
-                                                                                                            trade.entry_emotional_state_id,
-                                                                                                    )}
-                                                                                                <div
-                                                                                                    class="flex items-center gap-2"
-                                                                                                >
-                                                                                                    <span
-                                                                                                        class="text-[9px] font-bold text-zinc-300 uppercase"
-                                                                                                        >{st?.name}</span
-                                                                                                    >
-                                                                                                    <span
-                                                                                                        class="text-[8px] text-zinc-500 font-medium lowercase italic"
-                                                                                                    >
-                                                                                                        ({st?.weight}
-                                                                                                        {$t(
-                                                                                                            "general.weight",
-                                                                                                        )}
-                                                                                                        x
-                                                                                                        {(
-                                                                                                            trade.intensity ||
-                                                                                                            5
-                                                                                                        ).toFixed(
-                                                                                                            1,
-                                                                                                        )}
-                                                                                                        {$t(
-                                                                                                            "general.intensity_short",
-                                                                                                        )}
-                                                                                                    </span>
-                                                                                                </div>
-                                                                                            {/if}
-                                                                                        </td>
-                                                                                        <td
-                                                                                            class="px-3 text-[10px] font-black text-right text-zinc-100"
-                                                                                        >
-                                                                                            {#if trade.entry_emotional_state_id}
-                                                                                                {@const st =
-                                                                                                    emotionalStates.find(
-                                                                                                        (
-                                                                                                            s,
-                                                                                                        ) =>
-                                                                                                            s.id ===
-                                                                                                            trade.entry_emotional_state_id,
-                                                                                                    )}
-                                                                                                {(
-                                                                                                    (st?.weight ||
-                                                                                                        5) *
-                                                                                                    (trade.intensity ||
-                                                                                                        5)
-                                                                                                ).toFixed(
-                                                                                                    1,
-                                                                                                )}
-                                                                                            {/if}
-                                                                                        </td>
-                                                                                    </tr>
-                                                                                {/each}
-                                                                            </tbody>
-                                                                        </table>
-                                                                    </div>
-                                                                </div>
-                                                            {/if}
-                                                        </div>
-                                                    {/each}
-                                                </div>
-                                            {/if}
-                                        </div>
-                                    {/each}
-                                </div>
-                            {/if}
+                            {$t("psychology.kpi.bestMindset")}
+                        </span>
+                        <Brain class="h-3 w-3 text-emerald-500" />
+                    </div>
+                    <div class="py-1 px-3 pb-2">
+                        <div
+                            class="text-base font-mono font-bold text-emerald-500 uppercase tracking-tight leading-none"
+                        >
+                            {bestMindset?.name || "-"}
                         </div>
-                    {/each}
+                        <p
+                            class="text-[10px] text-muted-foreground mt-1 underline decoration-emerald-500/30 underline-offset-2 decoration-dotted"
+                        >
+                            {$t("psychology.kpi.consolidated")}:
+                            <span class="font-mono font-bold"
+                                >{formatCurrency(
+                                    bestMindset?.totalResult || 0,
+                                )}</span
+                            >
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Pior Mindset -->
+                <div
+                    class="group relative overflow-hidden rounded-xl border border-border/50 bg-muted/30 transition-all hover:border-red-500/30 border-l-4 border-l-red-500"
+                >
+                    <div class="flex items-start justify-between py-1.5 px-3">
+                        <span
+                            class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
+                        >
+                            {$t("psychology.kpi.worstMindset")}
+                        </span>
+                        <AlertTriangle class="h-3 w-3 text-red-500" />
+                    </div>
+                    <div class="py-1 px-3 pb-2">
+                        <div
+                            class="text-base font-mono font-bold text-red-500 uppercase tracking-tight leading-none"
+                        >
+                            {worstMindset?.name || "-"}
+                        </div>
+                        <p
+                            class="text-[10px] text-muted-foreground mt-1 underline decoration-red-500/30 underline-offset-2 decoration-dotted"
+                        >
+                            {$t("psychology.kpi.accumulatedLoss")}:
+                            <span class="font-mono font-bold"
+                                >{formatCurrency(
+                                    worstMindset?.totalResult || 0,
+                                )}</span
+                            >
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Custo do Tilt -->
+                <div
+                    class="group relative overflow-hidden rounded-xl border border-border/50 bg-muted/30 transition-all hover:border-orange-500/30 border-l-4 border-l-orange-500"
+                >
+                    <div class="flex items-start justify-between py-1.5 px-3">
+                        <span
+                            class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
+                        >
+                            {$t("psychology.kpi.tiltCost")}
+                        </span>
+                        <TrendingDown class="h-3 w-3 text-orange-500" />
+                    </div>
+                    <div class="py-1 px-3 pb-2">
+                        <div
+                            class="text-base font-mono font-bold text-orange-500 tracking-tight leading-none"
+                        >
+                            {formatCurrency(tiltResult)}
+                        </div>
+                        <p
+                            class="text-[10px] text-muted-foreground mt-1 whitespace-nowrap opacity-70"
+                        >
+                            {$t("psychology.kpi.tiltDescription", {
+                                values: { count: tiltTrades.length },
+                            })}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Registros -->
+                <div
+                    class="group relative overflow-hidden rounded-xl border border-border/50 bg-muted/30 transition-all hover:border-blue-500/30 border-l-4 border-l-blue-500"
+                >
+                    <div class="flex items-start justify-between py-1.5 px-3">
+                        <span
+                            class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
+                        >
+                            {$t("psychology.kpi.records")}
+                        </span>
+                        <CheckCircle2 class="h-3 w-3 text-blue-500" />
+                    </div>
+                    <div class="py-1 px-3 pb-2">
+                        <div
+                            class="text-base font-mono font-bold text-blue-500 tracking-tight leading-none"
+                        >
+                            {filteredJournal.length}
+                        </div>
+                        <p
+                            class="text-[10px] text-muted-foreground mt-1 opacity-70"
+                        >
+                            {$t("psychology.kpi.recordsDescription")}
+                        </p>
+                    </div>
                 </div>
             {/if}
         </div>
 
-        <!-- Right: Journal List -->
-        <div class="lg:col-span-4 space-y-4">
-            <h3
-                class="text-sm font-black uppercase tracking-widest text-zinc-400"
-            >
-                {$t("psychology.journal.title")}
-            </h3>
-            <div
-                class="rounded-xl border border-zinc-800 bg-zinc-900/20 overflow-hidden"
-            >
-                <div class="max-h-[70vh] overflow-y-auto">
-                    <table class="w-full text-left">
-                        <thead
-                            class="bg-zinc-900/80 border-b border-zinc-800 sticky top-0 backdrop-blur-md"
+        <!-- Charts Section (3 Columns - Restored) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {#if isLoading}
+                {#each Array(3) as _}
+                    <Card.Root
+                        class="bg-card/50 backdrop-blur-md border-border/50 h-[300px]"
+                    >
+                        <Card.Content class="p-6">
+                            <Skeleton class="w-full h-full" />
+                        </Card.Content>
+                    </Card.Root>
+                {/each}
+            {:else}
+                <Card.Root class="bg-card/50 backdrop-blur-md border-border/50">
+                    <Card.Header class="pb-1">
+                        <Card.Title
+                            class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70"
+                            >{$t("psychology.charts.pnlByEmotion")}</Card.Title
                         >
-                            <tr class="h-8">
-                                <th
-                                    class="px-3 text-[9px] font-black text-zinc-500 uppercase"
-                                    >{$t("general.date")}</th
+                    </Card.Header>
+                    <Card.Content class="h-[250px] p-2">
+                        <EChart options={resultByEmotionChartOption} />
+                    </Card.Content>
+                </Card.Root>
+
+                <Card.Root class="bg-card/50 backdrop-blur-md border-border/50">
+                    <Card.Header class="pb-1">
+                        <Card.Title
+                            class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70"
+                            >{$t("psychology.charts.winRate")}</Card.Title
+                        >
+                    </Card.Header>
+                    <Card.Content class="h-[250px] p-2">
+                        <EChart options={winRateChartOption} />
+                    </Card.Content>
+                </Card.Root>
+
+                <Card.Root class="bg-card/50 backdrop-blur-md border-border/50">
+                    <Card.Header class="pb-1">
+                        <Card.Title
+                            class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70"
+                            >{$t("psychology.charts.correlation")}</Card.Title
+                        >
+                    </Card.Header>
+                    <Card.Content class="h-[250px] p-2">
+                        <EChart options={correlationChartOption} />
+                    </Card.Content>
+                </Card.Root>
+            {/if}
+        </div>
+
+        <!-- Detailed Analysis & Filters -->
+        <div
+            class="flex flex-col sm:flex-row gap-4 justify-between items-end bg-card/40 backdrop-blur-sm p-4 rounded-xl border border-border/50"
+        >
+            <div class="space-y-1">
+                <h3
+                    class="text-sm font-black uppercase tracking-widest text-muted-foreground"
+                >
+                    {$t("psychology.analysis.title")}
+                </h3>
+                <p
+                    class="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-tighter"
+                >
+                    {$t("psychology.analysis.hierarchy")}
+                </p>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <DateFilter
+                    bind:value={timeFilter}
+                    bind:startDate
+                    bind:endDate
+                />
+                <Select.Root type="single" bind:value={itemsLimit}>
+                    <Select.Trigger
+                        class="w-[120px] h-9 bg-background/50 border-border/50 text-[10px] font-bold uppercase"
+                    >
+                        {itemsLimit === "all"
+                            ? $t("general.all")
+                            : `${itemsLimit} items`}
+                    </Select.Trigger>
+                    <Select.Content class="bg-popover border-border">
+                        <Select.Item
+                            value="10"
+                            class="text-[10px] font-bold uppercase"
+                            >10 Itens</Select.Item
+                        >
+                        <Select.Item
+                            value="25"
+                            class="text-[10px] font-bold uppercase"
+                            >25 Itens</Select.Item
+                        >
+                        <Select.Item
+                            value="50"
+                            class="text-[10px] font-bold uppercase"
+                            >50 Itens</Select.Item
+                        >
+                        <Select.Item
+                            value="all"
+                            class="text-[10px] font-bold uppercase"
+                            >TUDO</Select.Item
+                        >
+                    </Select.Content>
+                </Select.Root>
+            </div>
+        </div>
+
+        <!-- Main Split Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-20">
+            <!-- Left: Hierarchical Analysis -->
+            <div class="lg:col-span-8 space-y-4">
+                {#if hierarchicalPsychologyData.length === 0}
+                    <div
+                        class="h-40 flex items-center justify-center text-muted-foreground border-2 border-dashed rounded-xl border-border/50 uppercase text-[10px] font-black"
+                    >
+                        {$t("general.noData")}
+                    </div>
+                {:else}
+                    <div class="space-y-4">
+                        {#each hierarchicalPsychologyData as month}
+                            {@const isMonthExpanded = expandedMonths.has(
+                                month.key,
+                            )}
+                            <div
+                                class="rounded-xl border border-border/50 overflow-hidden bg-card/20 backdrop-blur-sm"
+                            >
+                                <!-- Month Header -->
+                                <button
+                                    class="w-full flex items-center justify-between p-3 rounded-xl bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors sticky top-0 z-10 backdrop-blur-md"
+                                    onclick={() => toggleMonth(month.key)}
                                 >
-                                <th
-                                    class="px-3 text-[9px] font-black text-zinc-500 uppercase w-32"
-                                    >{$t(
-                                        "psychology.journal.entryStateShort",
-                                    )}</th
-                                >
-                                <th
-                                    class="px-3 text-[9px] font-black text-zinc-500 uppercase w-32"
-                                    >{$t(
-                                        "psychology.journal.exitStateShort",
-                                    )}</th
-                                >
-                                <th
-                                    class="px-3 text-[9px] font-black text-zinc-500 uppercase text-right"
-                                    >{$t(
-                                        "psychology.journal.intensityShort",
-                                    )}</th
-                                >
-                                <th
-                                    class="px-3 text-[9px] font-black text-zinc-500 uppercase text-right"
-                                    >{$t("psychology.journal.score")}</th
-                                >
-                                <th
-                                    class="px-3 text-[9px] font-black text-zinc-500 uppercase text-right"
-                                    >{$t("general.actions")}</th
-                                >
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {#each filteredJournal
-                                .slice()
-                                .sort( (a, b) => b.date.localeCompare(a.date), ) as entry}
-                                {@const em = emotionalStates.find(
-                                    (s) => s.id === entry.emotional_state_id,
-                                )}
-                                {@const itemScore = em?.weight ?? 5}
-                                {@const itemIntensity = entry.intensity || 5}
-                                <tr
-                                    class="h-10 border-b border-zinc-800/30 hover:bg-white/5 transition-colors group"
-                                >
-                                    <td class="px-3">
-                                        <div class="flex flex-col">
-                                            <span
-                                                class="text-[10px] font-black text-white uppercase"
-                                            >
-                                                {new Date(
-                                                    entry.date + "T12:00:00",
-                                                ).toLocaleDateString(
-                                                    $locale || "pt-BR",
-                                                    {
-                                                        day: "2-digit",
-                                                        month: "2-digit",
-                                                    },
-                                                )}
-                                            </span>
-                                            <span
-                                                class="text-[8px] text-zinc-500 font-medium"
-                                            >
-                                                {new Date(
-                                                    entry.date + "T12:00:00",
-                                                ).toLocaleDateString(
-                                                    $locale || "pt-BR",
-                                                    { weekday: "short" },
-                                                )}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td class="px-3">
-                                        {#if em}
-                                            <div
-                                                class="flex items-center gap-1.5"
-                                            >
-                                                <span
-                                                    class="text-[9px] font-black uppercase {em.impact ===
-                                                    'Positive'
-                                                        ? 'text-emerald-400'
-                                                        : 'text-red-400'}"
-                                                    >{em.name}</span
-                                                >
-                                                <span
-                                                    class="text-[8px] text-zinc-500 font-medium"
-                                                    >({em.weight || 5})</span
-                                                >
-                                            </div>
-                                        {:else}
-                                            <span
-                                                class="text-[8px] text-zinc-600 italic font-bold"
-                                                >- -</span
-                                            >
-                                        {/if}
-                                    </td>
-                                    <td class="px-3">
-                                        <span
-                                            class="text-[8px] text-zinc-800/20 font-bold"
-                                            >N/A</span
+                                    <div class="flex items-center gap-4">
+                                        <div
+                                            class="p-2 rounded-lg bg-primary/20"
                                         >
-                                    </td>
-                                    <td
-                                        class="px-3 text-[10px] font-medium text-right text-zinc-400"
-                                    >
-                                        {itemIntensity.toFixed(1)}
-                                    </td>
-                                    <td
-                                        class="px-3 text-[10px] font-black text-right text-white"
-                                    >
-                                        {itemScore.toFixed(1)}
-                                    </td>
-                                    <td class="px-3 text-right">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            class="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            onclick={() =>
-                                                requestDeleteJournal(entry.id)}
-                                        >
-                                            <Trash2
-                                                class="w-3 h-3 text-red-400"
+                                            <Calendar
+                                                class="w-4 h-4 text-primary"
                                             />
-                                        </Button>
-                                    </td>
+                                        </div>
+                                        <div class="text-left">
+                                            <h4
+                                                class="text-sm font-black text-foreground uppercase tracking-tight"
+                                            >
+                                                {month.label}
+                                            </h4>
+                                            <div
+                                                class="flex items-center gap-2 mt-0.5"
+                                            >
+                                                <Badge
+                                                    variant="outline"
+                                                    class="text-[9px] px-1.5 h-4 bg-muted border-border font-bold uppercase"
+                                                >
+                                                    {month.weeks.length}
+                                                    {$t("general.weeks_upper")}
+                                                </Badge>
+                                                <div
+                                                    class="flex gap-1.5 opacity-60"
+                                                >
+                                                    {#each Object.entries(month.totalPnlByCurrency) as [curr, total]}
+                                                        <span
+                                                            class="text-[9px] font-bold {(total as number) >=
+                                                            0
+                                                                ? 'text-emerald-500'
+                                                                : 'text-red-500'}"
+                                                        >
+                                                            {formatCurrency(
+                                                                total as number,
+                                                                curr,
+                                                            )}
+                                                        </span>
+                                                    {/each}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-6">
+                                        <div class="flex items-center gap-2">
+                                            <div
+                                                class="flex flex-col items-end mr-2"
+                                            >
+                                                <div
+                                                    class="flex items-baseline gap-1.5"
+                                                >
+                                                    <span
+                                                        class="text-xs font-black text-foreground"
+                                                    >
+                                                        {month.avgWeight.toFixed(
+                                                            1,
+                                                        )}
+                                                    </span>
+                                                    <span
+                                                        class="text-[7px] font-bold text-muted-foreground uppercase tracking-tighter"
+                                                        >SCORE</span
+                                                    >
+                                                </div>
+                                                <Badge
+                                                    class="text-[7px] h-3.5 px-1 font-black uppercase {month
+                                                        .equivalentState
+                                                        .impact === 'Positive'
+                                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                                        : 'bg-red-500/10 text-red-400 border-red-500/20'}"
+                                                    variant="outline"
+                                                >
+                                                    {month.equivalentState.name}
+                                                </Badge>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                class="h-7 w-7 hover:bg-accent/10"
+                                                onclick={(e) => {
+                                                    e.stopPropagation();
+                                                    openInsight(month);
+                                                }}
+                                            >
+                                                <Eye
+                                                    class="w-3.5 h-3.5 text-muted-foreground hover:text-foreground"
+                                                />
+                                            </Button>
+                                        </div>
+                                        <ChevronDown
+                                            class="w-4 h-4 text-muted-foreground transition-transform duration-300 {isMonthExpanded
+                                                ? 'rotate-180'
+                                                : ''}"
+                                        />
+                                    </div>
+                                </button>
+
+                                {#if isMonthExpanded}
+                                    <div
+                                        class="pl-4 pb-4 space-y-3 border-l-2 border-border/30 ml-6 animate-in fade-in slide-in-from-top-2"
+                                    >
+                                        <Separator class="bg-border/20 mb-3" />
+                                        {#each month.weeks as week}
+                                            {@const isWeekExpanded =
+                                                expandedWeeks.has(week.key)}
+                                            <div
+                                                class="rounded-lg border border-border/40 bg-muted/20 overflow-hidden"
+                                            >
+                                                <button
+                                                    class="w-full flex items-center justify-between p-3 hover:bg-muted/40 transition-colors"
+                                                    onclick={() =>
+                                                        toggleWeek(week.key)}
+                                                >
+                                                    <div
+                                                        class="flex items-center gap-3"
+                                                    >
+                                                        <TrendingUp
+                                                            class="w-3.5 h-3.5 text-emerald-400"
+                                                        />
+                                                        <div class="text-left">
+                                                            <h5
+                                                                class="text-xs font-black text-foreground/90 uppercase tracking-tight"
+                                                            >
+                                                                {week.label}
+                                                            </h5>
+                                                            <div
+                                                                class="flex gap-1.5 opacity-60 mt-0.5"
+                                                            >
+                                                                {#each Object.entries(week.totalPnlByCurrency) as [curr, total]}
+                                                                    <span
+                                                                        class="text-[9px] font-bold {(total as number) >=
+                                                                        0
+                                                                            ? 'text-emerald-500'
+                                                                            : 'text-red-500'}"
+                                                                    >
+                                                                        {formatCurrency(
+                                                                            total as number,
+                                                                            curr,
+                                                                        )}
+                                                                    </span>
+                                                                {/each}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div
+                                                        class="flex items-center gap-4"
+                                                    >
+                                                        <div
+                                                            class="flex items-center gap-2"
+                                                        >
+                                                            <div
+                                                                class="flex flex-col items-end mr-1"
+                                                            >
+                                                                <div
+                                                                    class="flex items-baseline gap-1"
+                                                                >
+                                                                    <span
+                                                                        class="text-[10px] font-black text-foreground"
+                                                                    >
+                                                                        {week.avgWeight.toFixed(
+                                                                            1,
+                                                                        )}
+                                                                    </span>
+                                                                    <span
+                                                                        class="text-[6px] font-bold text-muted-foreground uppercase tracking-tighter"
+                                                                        >SCORE</span
+                                                                    >
+                                                                </div>
+                                                                <Badge
+                                                                    class="text-[6px] h-3 px-1 font-black uppercase {week
+                                                                        .equivalentState
+                                                                        .impact ===
+                                                                    'Positive'
+                                                                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                                                        : 'bg-red-500/10 text-red-500 border-red-500/20'}"
+                                                                    variant="outline"
+                                                                >
+                                                                    {week
+                                                                        .equivalentState
+                                                                        .name}
+                                                                </Badge>
+                                                            </div>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                class="h-6 w-6 hover:bg-accent/10"
+                                                                onclick={(
+                                                                    e,
+                                                                ) => {
+                                                                    e.stopPropagation();
+                                                                    openInsight(
+                                                                        week,
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <Eye
+                                                                    class="w-3 h-3 text-muted-foreground hover:text-foreground"
+                                                                />
+                                                            </Button>
+                                                        </div>
+                                                        <ChevronDown
+                                                            class="w-3.5 h-3.5 text-muted-foreground transition-transform {isWeekExpanded
+                                                                ? 'rotate-180'
+                                                                : ''}"
+                                                        />
+                                                    </div>
+                                                </button>
+
+                                                {#if isWeekExpanded}
+                                                    <div
+                                                        class="pl-4 pb-2 space-y-2 border-l-2 border-border/20 ml-6 animate-in fade-in slide-in-from-top-1"
+                                                    >
+                                                        {#each week.days as day}
+                                                            {@const isDayExpanded =
+                                                                expandedDays.has(
+                                                                    day.date,
+                                                                )}
+                                                            <div
+                                                                class="group/day relative bg-muted/20 backdrop-blur-sm rounded-xl border border-border/50 hover:border-border/60 transition-all duration-300 shadow-sm overflow-hidden"
+                                                            >
+                                                                <button
+                                                                    class="w-full flex items-center justify-between p-2 sm:p-3 hover:bg-muted/40 transition-colors text-left"
+                                                                    onclick={() =>
+                                                                        toggleDay(
+                                                                            day.date,
+                                                                        )}
+                                                                >
+                                                                    <!-- LHS: Date Badge & Summary -->
+                                                                    <div
+                                                                        class="flex items-center gap-4"
+                                                                    >
+                                                                        <div
+                                                                            class="flex flex-col items-center justify-center bg-muted/80 rounded-lg h-9 w-9 border border-border/50 shadow-inner"
+                                                                        >
+                                                                            <span
+                                                                                class="text-[10px] font-black leading-none text-muted-foreground/80"
+                                                                                >{new Date(
+                                                                                    day.date +
+                                                                                        "T12:00:00",
+                                                                                )
+                                                                                    .toLocaleString(
+                                                                                        $locale ||
+                                                                                            "pt-BR",
+                                                                                        {
+                                                                                            weekday:
+                                                                                                "short",
+                                                                                        },
+                                                                                    )
+                                                                                    .toUpperCase()}</span
+                                                                            >
+                                                                            <span
+                                                                                class="text-sm font-black leading-none mt-0.5 text-foreground"
+                                                                                >{new Date(
+                                                                                    day.date +
+                                                                                        "T12:00:00",
+                                                                                ).getDate()}</span
+                                                                            >
+                                                                        </div>
+                                                                        <div
+                                                                            class="flex flex-col items-start px-1"
+                                                                        >
+                                                                            <span
+                                                                                class="text-xs font-bold text-foreground"
+                                                                                >{$t(
+                                                                                    "general.dayClosure",
+                                                                                )}</span
+                                                                            >
+                                                                            <div
+                                                                                class="flex items-center gap-2"
+                                                                            >
+                                                                                <span
+                                                                                    class="text-[9px] font-medium text-muted-foreground uppercase tracking-widest whitespace-nowrap"
+                                                                                    >{day
+                                                                                        .trades
+                                                                                        .length}
+                                                                                    trades</span
+                                                                                >
+                                                                                <span
+                                                                                    class="w-1 h-1 rounded-full bg-border"
+
+                                                                                ></span>
+                                                                                <div
+                                                                                    class="flex gap-1.5 opacity-60"
+                                                                                >
+                                                                                    {#each Object.entries(day.totalPnlByCurrency) as [curr, total]}
+                                                                                        <span
+                                                                                            class="text-[9px] font-bold {(total as number) >=
+                                                                                            0
+                                                                                                ? 'text-emerald-500'
+                                                                                                : 'text-red-500'}"
+                                                                                        >
+                                                                                            {formatCurrency(
+                                                                                                total as number,
+                                                                                                curr,
+                                                                                            )}
+                                                                                        </span>
+                                                                                    {/each}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <!-- RHS: PnL & Actions -->
+                                                                    <div
+                                                                        class="flex items-center gap-6"
+                                                                    >
+                                                                        <div
+                                                                            class="flex items-center gap-6"
+                                                                        >
+                                                                            <div
+                                                                                class="flex items-center gap-2 mr-2"
+                                                                            >
+                                                                                {#if day.equivalentState}
+                                                                                    <div
+                                                                                        class="flex flex-col items-end"
+                                                                                    >
+                                                                                        <div
+                                                                                            class="flex items-baseline gap-1.5"
+                                                                                        >
+                                                                                            <span
+                                                                                                class="text-xs font-black text-foreground"
+                                                                                            >
+                                                                                                {day.avgWeight.toFixed(
+                                                                                                    1,
+                                                                                                )}
+                                                                                            </span>
+                                                                                            <span
+                                                                                                class="text-[7px] font-bold text-muted-foreground uppercase tracking-tighter"
+                                                                                                >SCORE</span
+                                                                                            >
+                                                                                        </div>
+                                                                                        <Badge
+                                                                                            class="text-[7px] h-3.5 px-1 font-black uppercase {day
+                                                                                                .equivalentState
+                                                                                                .impact ===
+                                                                                            'Positive'
+                                                                                                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                                                                                : 'bg-red-500/10 text-red-500 border-red-500/20'}"
+                                                                                            variant="outline"
+                                                                                        >
+                                                                                            {day
+                                                                                                .equivalentState
+                                                                                                .name}
+                                                                                        </Badge>
+                                                                                    </div>
+                                                                                {/if}
+                                                                                <Button
+                                                                                    variant="ghost"
+                                                                                    size="icon"
+                                                                                    class="h-7 w-7 hover:bg-white/10"
+                                                                                    onclick={(
+                                                                                        e,
+                                                                                    ) => {
+                                                                                        e.stopPropagation();
+                                                                                        openInsight(
+                                                                                            day,
+                                                                                        );
+                                                                                    }}
+                                                                                >
+                                                                                    <Eye
+                                                                                        class="w-3.5 h-3.5 text-muted-foreground"
+                                                                                    />
+                                                                                </Button>
+                                                                            </div>
+                                                                            <div
+                                                                                class="w-6 h-6 rounded-full bg-muted/50 flex items-center justify-center transition-transform {isDayExpanded
+                                                                                    ? 'rotate-180'
+                                                                                    : ''}"
+                                                                            >
+                                                                                <ChevronDown
+                                                                                    class="w-3 h-3 text-muted-foreground"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </button>
+
+                                                                {#if isDayExpanded}
+                                                                    <div
+                                                                        class="px-4 pb-4 animate-in fade-in slide-in-from-top-2"
+                                                                    >
+                                                                        <div
+                                                                            class="rounded-lg border border-border/40 overflow-hidden bg-background/40 mt-1"
+                                                                        >
+                                                                            <table
+                                                                                class="w-full text-left"
+                                                                            >
+                                                                                <thead
+                                                                                    class="bg-muted/50 h-7 border-b border-border/20"
+                                                                                >
+                                                                                    <tr
+                                                                                    >
+                                                                                        <th
+                                                                                            class="px-3 text-[8px] font-black text-muted-foreground uppercase"
+                                                                                            >{$t(
+                                                                                                "general.asset",
+                                                                                            )}</th
+                                                                                        >
+                                                                                        <th
+                                                                                            class="px-3 text-[8px] font-black text-muted-foreground uppercase"
+                                                                                            >{$t(
+                                                                                                "psychology.analysis.emotionalCalc",
+                                                                                            )}</th
+                                                                                        >
+                                                                                        <th
+                                                                                            class="px-3 text-[8px] font-black text-muted-foreground uppercase text-right"
+                                                                                            >{$t(
+                                                                                                "psychology.analysis.totalWeight",
+                                                                                            )}</th
+                                                                                        >
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody
+                                                                                >
+                                                                                    {#each day.trades as trade}
+                                                                                        <tr
+                                                                                            class="h-8 border-b border-border/10 last:border-0 hover:bg-accent/5 transition-colors"
+                                                                                        >
+                                                                                            <td
+                                                                                                class="px-3 text-[10px] font-bold text-foreground uppercase"
+                                                                                                >{trade.asset_symbol}</td
+                                                                                            >
+                                                                                            <td
+                                                                                                class="px-3 py-1.5"
+                                                                                            >
+                                                                                                {#if trade.entry_emotional_state_id}
+                                                                                                    {@const st =
+                                                                                                        emotionalStates.find(
+                                                                                                            (
+                                                                                                                s,
+                                                                                                            ) =>
+                                                                                                                s.id ===
+                                                                                                                trade.entry_emotional_state_id,
+                                                                                                        )}
+                                                                                                    <div
+                                                                                                        class="flex items-center gap-2"
+                                                                                                    >
+                                                                                                        <span
+                                                                                                            class="text-[9px] font-bold text-muted-foreground uppercase"
+                                                                                                            >{st?.name}</span
+                                                                                                        >
+                                                                                                        <span
+                                                                                                            class="text-[8px] text-muted-foreground/60 font-medium lowercase italic"
+                                                                                                        >
+                                                                                                            ({st?.weight}
+                                                                                                            {$t(
+                                                                                                                "general.weight",
+                                                                                                            )}
+                                                                                                            x
+                                                                                                            {(
+                                                                                                                trade.intensity ||
+                                                                                                                5
+                                                                                                            ).toFixed(
+                                                                                                                1,
+                                                                                                            )}
+                                                                                                            {$t(
+                                                                                                                "general.intensity_short",
+                                                                                                            )}
+                                                                                                        </span>
+                                                                                                    </div>
+                                                                                                {/if}
+                                                                                            </td>
+                                                                                            <td
+                                                                                                class="px-3 text-[10px] font-black text-right text-foreground"
+                                                                                            >
+                                                                                                {#if trade.entry_emotional_state_id}
+                                                                                                    {@const st =
+                                                                                                        emotionalStates.find(
+                                                                                                            (
+                                                                                                                s,
+                                                                                                            ) =>
+                                                                                                                s.id ===
+                                                                                                                trade.entry_emotional_state_id,
+                                                                                                        )}
+                                                                                                    {(
+                                                                                                        (st?.weight ||
+                                                                                                            5) *
+                                                                                                        (trade.intensity ||
+                                                                                                            5)
+                                                                                                    ).toFixed(
+                                                                                                        1,
+                                                                                                    )}
+                                                                                                {/if}
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                    {/each}
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    </div>
+                                                                {/if}
+                                                            </div>
+                                                        {/each}
+                                                    </div>
+                                                {/if}
+                                            </div>
+                                        {/each}
+                                    </div>
+                                {/if}
+                            </div>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+
+            <!-- Right: Journal List -->
+            <div class="lg:col-span-4 space-y-4">
+                <h3
+                    class="text-sm font-black uppercase tracking-widest text-muted-foreground/60"
+                >
+                    {$t("psychology.journal.title")}
+                </h3>
+                <div
+                    class="rounded-xl border border-border/40 bg-card/20 backdrop-blur-sm overflow-hidden"
+                >
+                    <div class="max-h-[70vh] overflow-y-auto">
+                        <table class="w-full text-left">
+                            <thead
+                                class="bg-muted/80 border-b border-border/40 sticky top-0 backdrop-blur-md"
+                            >
+                                <tr class="h-8">
+                                    <th
+                                        class="px-3 text-[9px] font-black text-muted-foreground uppercase"
+                                        >{$t("general.date")}</th
+                                    >
+                                    <th
+                                        class="px-3 text-[9px] font-black text-muted-foreground uppercase w-32"
+                                        >{$t(
+                                            "psychology.journal.entryStateShort",
+                                        )}</th
+                                    >
+                                    <th
+                                        class="px-3 text-[9px] font-black text-muted-foreground uppercase w-32"
+                                        >{$t(
+                                            "psychology.journal.exitStateShort",
+                                        )}</th
+                                    >
+                                    <th
+                                        class="px-3 text-[9px] font-black text-muted-foreground uppercase text-right"
+                                        >{$t(
+                                            "psychology.journal.intensityShort",
+                                        )}</th
+                                    >
+                                    <th
+                                        class="px-3 text-[9px] font-black text-muted-foreground uppercase text-right"
+                                        >{$t("psychology.journal.score")}</th
+                                    >
+                                    <th
+                                        class="px-3 text-[9px] font-black text-muted-foreground uppercase text-right"
+                                        >{$t("general.actions")}</th
+                                    >
                                 </tr>
-                            {/each}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {#each filteredJournal
+                                    .slice()
+                                    .sort( (a, b) => b.date.localeCompare(a.date), ) as entry}
+                                    {@const em = emotionalStates.find(
+                                        (s) =>
+                                            s.id === entry.emotional_state_id,
+                                    )}
+                                    {@const itemScore = em?.weight ?? 5}
+                                    {@const itemIntensity =
+                                        entry.intensity || 5}
+                                    <tr
+                                        class="h-10 border-b border-border/10 hover:bg-accent/5 transition-colors group"
+                                    >
+                                        <td class="px-3">
+                                            <div class="flex flex-col">
+                                                <span
+                                                    class="text-[10px] font-black text-foreground uppercase"
+                                                >
+                                                    {new Date(
+                                                        entry.date +
+                                                            "T12:00:00",
+                                                    ).toLocaleDateString(
+                                                        $locale || "pt-BR",
+                                                        {
+                                                            day: "2-digit",
+                                                            month: "2-digit",
+                                                        },
+                                                    )}
+                                                </span>
+                                                <span
+                                                    class="text-[8px] text-muted-foreground/50 font-medium"
+                                                >
+                                                    {new Date(
+                                                        entry.date +
+                                                            "T12:00:00",
+                                                    ).toLocaleDateString(
+                                                        $locale || "pt-BR",
+                                                        { weekday: "short" },
+                                                    )}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="px-3">
+                                            {#if em}
+                                                <div
+                                                    class="flex items-center gap-1.5"
+                                                >
+                                                    <span
+                                                        class="text-[9px] font-black uppercase {em.impact ===
+                                                        'Positive'
+                                                            ? 'text-emerald-400'
+                                                            : 'text-red-400'}"
+                                                        >{em.name}</span
+                                                    >
+                                                    <span
+                                                        class="text-[8px] text-muted-foreground font-medium"
+                                                        >({em.weight ||
+                                                            5})</span
+                                                    >
+                                                </div>
+                                            {:else}
+                                                <span
+                                                    class="text-[8px] text-muted-foreground/30 italic font-bold"
+                                                    >- -</span
+                                                >
+                                            {/if}
+                                        </td>
+                                        <td class="px-3">
+                                            <span
+                                                class="text-[8px] text-muted-foreground/20 font-bold"
+                                                >N/A</span
+                                            >
+                                        </td>
+                                        <td
+                                            class="px-3 text-[10px] font-medium text-right text-muted-foreground/60"
+                                        >
+                                            {itemIntensity.toFixed(1)}
+                                        </td>
+                                        <td
+                                            class="px-3 text-[10px] font-black text-right text-foreground"
+                                        >
+                                            {itemScore.toFixed(1)}
+                                        </td>
+                                        <td class="px-3 text-right">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                class="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onclick={() =>
+                                                    requestDeleteJournal(
+                                                        entry.id,
+                                                    )}
+                                            >
+                                                <Trash2
+                                                    class="w-3 h-3 text-red-400"
+                                                />
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                {/each}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1772,10 +1807,10 @@
 
 <Dialog.Root bind:open={showInsightModal}>
     <Dialog.Content
-        class="max-w-2xl bg-zinc-950 border-zinc-800 text-white p-0 overflow-hidden"
+        class="max-w-2xl bg-popover/90 border-border text-foreground p-0 overflow-hidden backdrop-blur-md"
     >
         {#if insightData}
-            <div class="p-6 border-b border-zinc-800 bg-zinc-900/50">
+            <div class="p-6 border-b border-border/40 bg-muted/30">
                 <div class="flex items-center justify-between">
                     <div>
                         <h2
@@ -1784,26 +1819,26 @@
                             {$t("psychology.insight.title")}
                         </h2>
                         <p
-                            class="text-xs font-bold text-zinc-500 uppercase mt-1"
+                            class="text-xs font-bold text-muted-foreground/60 uppercase mt-1"
                         >
                             {insightData.label}
                         </p>
                     </div>
                     <div class="text-right">
                         <div class="flex items-baseline justify-end gap-1.5">
-                            <span class="text-2xl font-black text-white"
+                            <span class="text-2xl font-black text-foreground"
                                 >{insightData.avgWeight.toFixed(1)}</span
                             >
                             <span
-                                class="text-[10px] font-bold text-zinc-500 uppercase"
+                                class="text-[10px] font-bold text-muted-foreground uppercase"
                                 >SCORE</span
                             >
                         </div>
                         <Badge
                             class="text-[9px] font-black uppercase {insightData
                                 .equivalentState.impact === 'Positive'
-                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                : 'bg-red-500/10 text-red-400 border-red-500/20'}"
+                                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                : 'bg-red-500/10 text-red-500 border-red-500/20'}"
                             variant="outline"
                         >
                             {insightData.equivalentState.name}
@@ -1812,28 +1847,28 @@
                 </div>
             </div>
 
-            <div class="p-4 max-h-[60vh] overflow-y-auto">
+            <div class="p-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
                 <table class="w-full text-left">
-                    <thead class="bg-zinc-900/50 sticky top-0 backdrop-blur-md">
-                        <tr class="h-8 border-b border-zinc-800">
+                    <thead class="bg-card/80 sticky top-0 backdrop-blur-md">
+                        <tr class="h-8 border-b border-border/40">
                             <th
-                                class="px-3 text-[9px] font-black text-zinc-500 uppercase"
+                                class="px-3 text-[9px] font-black text-muted-foreground uppercase"
                                 >{$t("general.origin")}</th
                             >
                             <th
-                                class="px-3 text-[9px] font-black text-zinc-500 uppercase w-32"
+                                class="px-3 text-[9px] font-black text-muted-foreground uppercase w-32"
                                 >{$t("psychology.journal.entryStateShort")}</th
                             >
                             <th
-                                class="px-3 text-[9px] font-black text-zinc-500 uppercase w-32"
+                                class="px-3 text-[9px] font-black text-muted-foreground uppercase w-32"
                                 >{$t("psychology.journal.exitStateShort")}</th
                             >
                             <th
-                                class="px-3 text-[9px] font-black text-zinc-500 uppercase text-right"
+                                class="px-3 text-[9px] font-black text-muted-foreground uppercase text-right"
                                 >{$t("psychology.journal.intensityShort")}</th
                             >
                             <th
-                                class="px-3 text-[9px] font-black text-zinc-500 uppercase text-right"
+                                class="px-3 text-[9px] font-black text-muted-foreground uppercase text-right"
                                 >{$t("psychology.insight.opScore")}</th
                             >
                         </tr>
@@ -1870,12 +1905,12 @@
                                         : 5}
 
                                 <tr
-                                    class="h-10 border-b border-zinc-800/30 hover:bg-white/5 transition-colors"
+                                    class="h-10 border-b border-border/10 hover:bg-accent/5 transition-colors"
                                 >
                                     <td class="px-3">
                                         <div class="flex flex-col">
                                             <span
-                                                class="text-[10px] font-bold text-white uppercase"
+                                                class="text-[10px] font-bold text-foreground uppercase"
                                             >
                                                 {item.asset_symbol ||
                                                     $t(
@@ -1883,7 +1918,7 @@
                                                     ).toUpperCase()}
                                             </span>
                                             <span
-                                                class="text-[8px] text-zinc-500 font-medium"
+                                                class="text-[8px] text-muted-foreground/60 font-medium"
                                             >
                                                 {new Date(
                                                     item.date,
@@ -1910,14 +1945,14 @@
                                                     >{entrySt.name}</span
                                                 >
                                                 <span
-                                                    class="text-[8px] text-zinc-500 font-medium"
+                                                    class="text-[8px] text-muted-foreground font-medium"
                                                     >({entrySt.weight ||
                                                         5})</span
                                                 >
                                             </div>
                                         {:else}
                                             <span
-                                                class="text-[8px] text-zinc-600 italic font-bold"
+                                                class="text-[8px] text-muted-foreground/30 italic font-bold"
                                                 >- -</span
                                             >
                                         {/if}
@@ -1935,30 +1970,30 @@
                                                     >{exitSt.name}</span
                                                 >
                                                 <span
-                                                    class="text-[8px] text-zinc-500 font-medium"
+                                                    class="text-[8px] text-muted-foreground font-medium"
                                                     >({exitSt.weight ||
                                                         5})</span
                                                 >
                                             </div>
                                         {:else if isTrade}
                                             <span
-                                                class="text-[8px] text-zinc-600 italic font-bold"
+                                                class="text-[8px] text-muted-foreground/30 italic font-bold"
                                                 >- -</span
                                             >
                                         {:else}
                                             <span
-                                                class="text-[8px] text-zinc-800/20 font-bold"
+                                                class="text-[8px] text-muted-foreground/20 font-bold"
                                                 >N/A</span
                                             >
                                         {/if}
                                     </td>
                                     <td
-                                        class="px-3 text-[10px] font-medium text-right text-zinc-400"
+                                        class="px-3 text-[10px] font-medium text-right text-muted-foreground/60"
                                     >
                                         {itemIntensity.toFixed(1)}
                                     </td>
                                     <td
-                                        class="px-3 text-[10px] font-black text-right text-white"
+                                        class="px-3 text-[10px] font-black text-right text-foreground"
                                     >
                                         {itemScore.toFixed(1)}
                                     </td>
@@ -1969,33 +2004,33 @@
                 </table>
             </div>
 
-            <div class="p-6 bg-zinc-900/30 border-t border-zinc-800">
+            <div class="p-6 bg-card/40 border-t border-border/40">
                 <div class="grid grid-cols-2 gap-8">
                     <div>
                         <h4
-                            class="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2"
+                            class="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest mb-2"
                         >
                             {$t("psychology.insight.formulaTitle")}
                         </h4>
                         <div class="flex flex-col gap-1.5">
                             <div class="flex flex-col">
                                 <span
-                                    class="text-[8px] font-black text-zinc-600 uppercase mb-0.5"
+                                    class="text-[8px] font-black text-muted-foreground/40 uppercase mb-0.5"
                                     >Nota da Operação</span
                                 >
                                 <code
-                                    class="text-[9px] text-zinc-400 font-bold"
+                                    class="text-[9px] text-muted-foreground/70 font-bold"
                                 >
                                     (Peso Entrada + Peso Saída) / 2
                                 </code>
                             </div>
                             <div class="flex flex-col">
                                 <span
-                                    class="text-[8px] font-black text-zinc-600 uppercase mb-0.5"
+                                    class="text-[8px] font-black text-muted-foreground/40 uppercase mb-0.5"
                                     >Score Final</span
                                 >
                                 <code
-                                    class="text-[9px] text-zinc-400 font-bold"
+                                    class="text-[9px] text-muted-foreground/40 font-bold"
                                 >
                                     Σ (Notas das Operações) / Total de Itens
                                 </code>
@@ -2006,10 +2041,11 @@
                         <div
                             class="flex justify-between items-center text-[10px]"
                         >
-                            <span class="text-zinc-500 font-bold uppercase"
+                            <span
+                                class="text-muted-foreground/50 font-bold uppercase"
                                 >Soma dos Scores</span
                             >
-                            <span class="text-white font-black">
+                            <span class="text-foreground font-black">
                                 {insightData.items
                                     .reduce((acc, item) => {
                                         const isTr = !!item.asset_symbol;
@@ -2049,20 +2085,21 @@
                         <div
                             class="flex justify-between items-center text-[10px]"
                         >
-                            <span class="text-zinc-500 font-bold uppercase"
+                            <span
+                                class="text-muted-foreground/50 font-bold uppercase"
                                 >Quantidade de Itens</span
                             >
-                            <span class="text-white font-black">
+                            <span class="text-foreground font-black">
                                 {insightData.items.length}
                             </span>
                         </div>
-                        <Separator class="bg-zinc-800" />
+                        <Separator class="bg-border/40" />
                         <div class="flex justify-between items-center">
                             <span
                                 class="text-[11px] font-black text-primary uppercase"
                                 >Média Final</span
                             >
-                            <span class="text-lg font-black text-white"
+                            <span class="text-lg font-black text-foreground"
                                 >{insightData.avgWeight.toFixed(1)}</span
                             >
                         </div>
@@ -2077,10 +2114,10 @@
 
 <Dialog.Root bind:open={showDayModal}>
     <Dialog.Content
-        class="max-w-2xl bg-zinc-950 border-zinc-800 text-white p-0 overflow-hidden"
+        class="max-w-2xl bg-popover/90 border-border text-foreground p-0 overflow-hidden backdrop-blur-md"
     >
         {#if selectedDayData}
-            <div class="p-6 border-b border-zinc-800 bg-zinc-900/50">
+            <div class="p-6 border-b border-border/40 bg-muted/30">
                 <div class="flex items-center justify-between">
                     <div>
                         <h2
@@ -2089,7 +2126,7 @@
                             Detalhes Psicológicos
                         </h2>
                         <p
-                            class="text-xs font-bold text-zinc-500 uppercase mt-1"
+                            class="text-xs font-bold text-muted-foreground/60 uppercase mt-1"
                         >
                             {new Date(
                                 selectedDayData.date + "T12:00:00",
@@ -2105,7 +2142,7 @@
                             <!-- Day Breakdown -->
                             <div class="space-y-4">
                                 <h4
-                                    class="text-xs font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2"
+                                    class="text-xs font-black text-muted-foreground/60 uppercase tracking-widest flex items-center gap-2"
                                 >
                                     <TrendingUp class="w-3 h-3" />
                                     Operações do Dia
@@ -2119,9 +2156,9 @@
                                     {/if}
                                 </h4>
 
-                                {#each selectedDayData.trades.filter((t) => !selectedCurrency || settingsStore.accounts.find((a) => a.id === t.account_id)?.currency === selectedCurrency) as trade}
+                                {#each selectedDayData.trades.filter((t: any) => !selectedCurrency || settingsStore.accounts.find((a) => a.id === t.account_id)?.currency === selectedCurrency) as trade}
                                     <div
-                                        class="p-4 rounded-xl border border-zinc-800/50 bg-zinc-900/10 hover:bg-zinc-900/30 transition-colors"
+                                        class="p-4 rounded-xl border border-border/40 bg-muted/20 hover:bg-accent/10 transition-colors"
                                     >
                                         <div
                                             class="flex items-center justify-between mb-3"
@@ -2134,7 +2171,7 @@
                                                     >{trade.asset_symbol}</Badge
                                                 >
                                                 <span
-                                                    class="text-[10px] font-bold text-zinc-500"
+                                                    class="text-[10px] font-bold text-muted-foreground/50"
                                                 >
                                                     {new Date(
                                                         trade.date,
@@ -2166,7 +2203,7 @@
                                         >
                                             <div class="flex flex-col gap-1">
                                                 <span
-                                                    class="text-[9px] font-black text-zinc-500 uppercase tracking-tighter"
+                                                    class="text-[9px] font-black text-muted-foreground/60 uppercase tracking-tighter"
                                                     >Entrada</span
                                                 >
                                                 {#if trade.entry_emotional_state_id}
@@ -2191,14 +2228,14 @@
                                                     class="flex flex-col gap-1"
                                                 >
                                                     <span
-                                                        class="text-[9px] font-black text-zinc-500 uppercase tracking-tighter"
+                                                        class="text-[9px] font-black text-muted-foreground/60 uppercase tracking-tighter"
                                                         >Intensidade</span
                                                     >
                                                     <div
                                                         class="flex items-center gap-1 w-20"
                                                     >
                                                         <div
-                                                            class="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden"
+                                                            class="flex-1 h-1 bg-muted rounded-full overflow-hidden"
                                                         >
                                                             <div
                                                                 class="h-full bg-primary"
@@ -2212,10 +2249,10 @@
                                         </div>
                                         {#if trade.notes}
                                             <div
-                                                class="mt-3 p-2 rounded bg-zinc-950/50 border border-zinc-800/30"
+                                                class="mt-3 p-2 rounded bg-muted/40 border border-border/20"
                                             >
                                                 <p
-                                                    class="text-[10px] text-zinc-400 italic font-medium leading-relaxed"
+                                                    class="text-[10px] text-muted-foreground/60 italic font-medium leading-relaxed"
                                                 >
                                                     "{trade.notes}"
                                                 </p>
@@ -2235,10 +2272,10 @@
                 <!-- Aggregate Stats -->
                 <div class="grid grid-cols-2 gap-4">
                     <div
-                        class="p-4 rounded-xl border border-zinc-800 bg-zinc-900/20"
+                        class="p-4 rounded-xl border border-border/40 bg-muted/20"
                     >
                         <p
-                            class="text-[10px] font-black text-zinc-500 uppercase mb-2"
+                            class="text-[10px] font-black text-muted-foreground/60 uppercase mb-2"
                         >
                             Estado Dominante
                         </p>
@@ -2253,7 +2290,7 @@
                                     {selectedDayData.equivalentState.name}
                                 </Badge>
                                 <span
-                                    class="text-[10px] font-bold text-zinc-500"
+                                    class="text-[10px] font-bold text-muted-foreground/50"
                                     >Peso: {selectedDayData.avgWeight.toFixed(
                                         1,
                                     )}</span
@@ -2262,14 +2299,14 @@
                         {/if}
                     </div>
                     <div
-                        class="p-4 rounded-xl border border-zinc-800 bg-zinc-900/20"
+                        class="p-4 rounded-xl border border-border/40 bg-muted/20"
                     >
                         <p
-                            class="text-[10px] font-black text-zinc-500 uppercase mb-2"
+                            class="text-[10px] font-black text-muted-foreground/60 uppercase mb-2"
                         >
                             Total de Operações
                         </p>
-                        <p class="text-xl font-black text-white">
+                        <p class="text-xl font-black text-foreground">
                             {selectedDayData.trades.length}
                         </p>
                     </div>
@@ -2278,14 +2315,14 @@
                 <!-- Trades List with Detailed States -->
                 <div class="space-y-3">
                     <h3
-                        class="text-[11px] font-black uppercase tracking-widest text-zinc-500"
+                        class="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60"
                     >
                         Breakdown de Operações
                     </h3>
                     <div class="space-y-2">
                         {#each selectedDayData.trades as trade}
                             <div
-                                class="p-4 rounded-xl border border-zinc-800/50 bg-zinc-900/10 hover:bg-zinc-900/30 transition-colors"
+                                class="p-4 rounded-xl border border-border/40 bg-muted/20 hover:bg-accent/10 transition-colors"
                             >
                                 <div
                                     class="flex items-center justify-between mb-3"
@@ -2296,7 +2333,7 @@
                                             >{trade.asset_symbol}</Badge
                                         >
                                         <span
-                                            class="text-[10px] font-bold text-zinc-500"
+                                            class="text-[10px] font-bold text-muted-foreground/50"
                                         >
                                             {new Date(
                                                 trade.date,
@@ -2325,7 +2362,7 @@
                                 <div class="flex items-center justify-between">
                                     <div class="flex flex-col gap-1">
                                         <span
-                                            class="text-[9px] font-black text-zinc-500 uppercase tracking-tighter"
+                                            class="text-[9px] font-black text-muted-foreground/60 uppercase tracking-tighter"
                                             >Entrada</span
                                         >
                                         {#if trade.entry_emotional_state_id}
@@ -2347,14 +2384,14 @@
                                     {#if trade.intensity}
                                         <div class="flex flex-col gap-1">
                                             <span
-                                                class="text-[9px] font-black text-zinc-500 uppercase tracking-tighter"
+                                                class="text-[9px] font-black text-muted-foreground/60 uppercase tracking-tighter"
                                                 >Intensidade</span
                                             >
                                             <div
                                                 class="flex items-center gap-1 w-20"
                                             >
                                                 <div
-                                                    class="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden"
+                                                    class="flex-1 h-1 bg-muted rounded-full overflow-hidden"
                                                 >
                                                     <div
                                                         class="h-full bg-primary"
@@ -2368,10 +2405,10 @@
                                 </div>
                                 {#if trade.notes}
                                     <div
-                                        class="mt-3 p-2 rounded bg-zinc-950/50 border border-zinc-800/30"
+                                        class="mt-3 p-2 rounded bg-muted/40 border border-border/20"
                                     >
                                         <p
-                                            class="text-[10px] text-zinc-400 italic font-medium leading-relaxed"
+                                            class="text-[10px] text-muted-foreground/60 italic font-medium leading-relaxed"
                                         >
                                             "{trade.notes}"
                                         </p>
@@ -2384,11 +2421,11 @@
             </div>
 
             <div
-                class="p-4 border-t border-zinc-800 bg-zinc-900/50 flex justify-end"
+                class="p-4 border-t border-border/40 bg-muted/30 flex justify-end"
             >
                 <Button
                     variant="outline"
-                    class="h-9 border-zinc-700 bg-zinc-800 hover:bg-zinc-700 font-bold uppercase text-[10px]"
+                    class="h-9 border-border/40 bg-muted/40 hover:bg-accent/10 font-bold uppercase text-[10px]"
                     onclick={() => (showDayModal = false)}
                 >
                     Fechar Detalhes

@@ -650,6 +650,7 @@ pub async fn calculate_monthly_tax(
             calculation_date: chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
             status: "Pending".to_string(),
             trade_ids: bucket_trades.clone(),
+            is_complementary: false,
         });
     }
 
@@ -989,7 +990,29 @@ pub async fn save_appraisal(
 
     let created = created_opt.ok_or_else(|| "Failed to create new appraisal".to_string())?;
 
-    // --- NEW: ACCUMULATION MERGE (Mark previous as 'Paid' if merged) ---
+    // --- NEW: ACCUMULATION MERGE / COMPLEMENTARY DETECTION ---
+    // If a PAID appraisal already exists for this same period/type, this NEW one is complementary.
+    let comp_query = "SELECT count() FROM tax_appraisal WHERE `period_month` = $month AND `period_year` = $year AND trade_type = $type AND status = 'Paid'";
+    let mut comp_res = db.0.query(comp_query)
+        .bind(("month", created.period_month))
+        .bind(("year", created.period_year))
+        .bind(("type", created.trade_type.clone()))
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    let paid_count: i64 = comp_res.take::<Option<i64>>(0).map_err(|e| e.to_string())?.unwrap_or(0);
+    
+    if paid_count > 0 {
+        if let Some(id_str) = created.id.as_ref() {
+            let clean_id = id_str.split(':').last().unwrap_or(id_str).to_string();
+            println!("[IRPF] Marking NEW appraisal as COMPLEMENTARY because a Paid one exists");
+            let update_comp = "UPDATE type::thing('tax_appraisal', $id) SET is_complementary = true";
+            let _ = db.0.query(update_comp)
+                .bind(("id", clean_id))
+                .await;
+        }
+    }
+
     if created.tax_accumulated > 0.0 {
         let mark_query = "UPDATE tax_appraisal SET status = 'Paid', calculation_date = $now WHERE trade_type = $type AND status = 'Pending' AND total_payable < 10.0 AND (`period_year` < $year OR (`period_year` = $year AND `period_month` < $month))";
         db.0.query(mark_query)
@@ -1236,6 +1259,7 @@ pub async fn generate_darf(
         darf_number: None,
         account_id: None,
         transaction_id: None,
+        is_complementary: appraisal.is_complementary,
     };
 
     let created: Option<TaxDarf> = db.0.create("tax_darf").content(darf).await.map_err(|e| {

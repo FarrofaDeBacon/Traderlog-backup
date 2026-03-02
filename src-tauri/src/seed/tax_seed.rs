@@ -303,6 +303,7 @@ pub async fn seed_initial_tax_records(db: &Surreal<Db>) -> Result<(), String> {
                 "Pending".into()
             },
             trade_ids: vec![],
+            is_complementary: false,
         };
 
         let mut data = serde_json::to_value(&appraisal).unwrap();
@@ -348,6 +349,7 @@ pub async fn seed_initial_tax_records(db: &Surreal<Db>) -> Result<(), String> {
                 darf_number: Some(format!("{:010}", 1234567890 + m as i64)),
                 account_id: Some("account:demo_b3_futuros".into()),
                 transaction_id: None,
+                is_complementary: false,
             };
 
             let mut darf_data = serde_json::to_value(&darf).unwrap();

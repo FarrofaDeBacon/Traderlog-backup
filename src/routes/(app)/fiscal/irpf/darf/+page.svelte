@@ -216,14 +216,14 @@
 >
     <!-- Header & Actions -->
     <div
-        class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6"
+        class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/30 pb-6"
     >
         <div class="flex items-center gap-4">
             <Button variant="ghost" size="icon" href="/fiscal/irpf">
                 <ArrowLeft class="w-5 h-5" />
             </Button>
             <div>
-                <h2 class="text-2xl font-bold text-white tracking-tight">
+                <h2 class="text-2xl font-bold text-foreground tracking-tight">
                     {$t("fiscal.darf.title")}
                 </h2>
                 <p class="text-muted-foreground">
@@ -243,7 +243,7 @@
                 }}
             >
                 <Select.Trigger
-                    class="w-[140px] bg-black/20 border-white/10 text-white"
+                    class="w-[140px] bg-muted/20 border-border/30 text-foreground"
                 >
                     {irpfStore.selectedYear}
                 </Select.Trigger>
@@ -266,7 +266,7 @@
     {#if pendingDarfs.length > 0}
         <div>
             <h3
-                class="text-lg font-semibold text-white mb-4 flex items-center gap-1.5"
+                class="text-lg font-semibold text-foreground mb-4 flex items-center gap-1.5"
             >
                 <AlertTriangle class="w-5 h-5 text-amber-500" />
                 {$t("fiscal.darf.active")}
@@ -274,7 +274,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
                 {#each pendingDarfs as item}
                     <Card.Root
-                        class="bg-black/40 border-l-4 border-l-amber-500 border-y border-r border-white/10 glass relative overflow-hidden group hover:border-r-amber-500/30 transition-all hover:shadow-md"
+                        class="bg-muted/30 border-l-4 border-l-amber-500 border-y border-r border-border/30 glass relative overflow-hidden group hover:border-r-amber-500/30 transition-all hover:shadow-md"
                     >
                         <div
                             class="absolute top-0 right-0 p-1.5 flex gap-1 z-10"
@@ -317,7 +317,7 @@
                                     >{$t("fiscal.darf.labels.valueToPay")}</span
                                 >
                                 <div
-                                    class="text-base font-black text-white tabular-nums tracking-tight leading-none mt-0.5"
+                                    class="text-base font-black text-foreground tabular-nums tracking-tight leading-none mt-0.5"
                                 >
                                     {formatCurrency(item.total_value)}
                                 </div>
@@ -331,7 +331,7 @@
                                             "fiscal.darf.labels.dueDate",
                                         )}</span
                                     >
-                                    <span class="text-white font-medium"
+                                    <span class="text-foreground font-medium"
                                         >{formatDate(item.due_date)}</span
                                     >
                                 </div>
@@ -342,7 +342,7 @@
                                             "fiscal.darf.labels.principal",
                                         )}</span
                                     >
-                                    <span class="text-white font-medium"
+                                    <span class="text-foreground font-medium"
                                         >{formatCurrency(
                                             item.principal_value,
                                         )}</span
@@ -352,7 +352,7 @@
                         </Card.Content>
 
                         <Card.Footer
-                            class="bg-black/20 border-t border-white/5 p-1.5 flex justify-end gap-1.5"
+                            class="bg-muted/20 border-t border-border/10 p-1.5 flex justify-end gap-1.5"
                         >
                             <Button
                                 variant="outline"
@@ -391,7 +391,7 @@
     <!-- History/Paid DARFs (List) -->
     <div class="mt-8">
         <h3
-            class="text-lg font-semibold text-white mb-4 flex items-center gap-1.5"
+            class="text-lg font-semibold text-foreground mb-4 flex items-center gap-1.5"
         >
             <CheckCircle class="w-5 h-5 text-green-500" />
             {$t("fiscal.darf.history", { values: { year: selectedYear } })}
@@ -403,7 +403,7 @@
             </div>
         {:else if historyDarfs.length === 0}
             <div
-                class="p-8 text-center border border-dashed border-white/10 rounded-lg text-muted-foreground"
+                class="p-8 text-center border border-dashed border-border text-muted-foreground"
             >
                 {$t("fiscal.darf.emptyHistory", {
                     values: { year: selectedYear },
@@ -411,11 +411,11 @@
             </div>
         {:else}
             <div
-                class="bg-black/40 border border-white/10 rounded-lg overflow-hidden glass"
+                class="bg-muted/30 border border-border/30 rounded-lg overflow-hidden glass"
             >
                 <table class="w-full text-sm text-left">
                     <thead
-                        class="bg-black/20 text-xs uppercase text-muted-foreground border-b border-white/5"
+                        class="bg-muted/20 text-xs uppercase text-muted-foreground border-b border-border/20"
                     >
                         <tr>
                             <th class="px-6 py-3"
@@ -441,12 +441,13 @@
                             >
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-white/5">
+                    <tbody class="divide-y divide-border/10">
                         {#each historyDarfs as item}
                             <tr
-                                class="hover:bg-white/5 transition-colors group"
+                                class="hover:bg-accent/5 transition-colors group"
                             >
-                                <td class="px-6 py-4 font-medium text-white"
+                                <td
+                                    class="px-6 py-4 font-medium text-foreground"
                                     >{item.period}</td
                                 >
                                 <td class="px-6 py-4">{item.revenue_code}</td>
@@ -535,7 +536,7 @@
                                 bind:value={paymentData.accountId}
                             >
                                 <Select.Trigger
-                                    class="w-full bg-black/20 border-white/10 text-white"
+                                    class="w-full bg-muted/20 border-border/30 text-foreground"
                                 >
                                     {settingsStore.accounts.find(
                                         (a) => a.id === paymentData.accountId,
@@ -543,14 +544,14 @@
                                         $t("fiscal.darf.selectAccount")}
                                 </Select.Trigger>
                                 <Select.Content
-                                    class="bg-zinc-950 border-zinc-800"
+                                    class="bg-popover/80 backdrop-blur-md border-border"
                                 >
                                     <Select.Group>
                                         {#each settingsStore.accounts as acc}
                                             <Select.Item
                                                 value={acc.id}
                                                 label="{acc.nickname} ({acc.currency})"
-                                                class="text-white hover:bg-zinc-800 focus:bg-zinc-800"
+                                                class="text-foreground hover:bg-accent focus:bg-accent"
                                             >
                                                 {acc.nickname} ({acc.currency})
                                             </Select.Item>
@@ -577,7 +578,7 @@
                                 step="0.01"
                                 bind:value={paymentData.fine}
                                 oninput={updatePaymentTotal}
-                                class="bg-black/20 border-white/10 text-white"
+                                class="bg-muted/20 border-border/30 text-foreground"
                             />
                         </div>
                         <div class="space-y-2">
@@ -587,7 +588,7 @@
                                 step="0.01"
                                 bind:value={paymentData.interest}
                                 oninput={updatePaymentTotal}
-                                class="bg-black/20 border-white/10 text-white"
+                                class="bg-muted/20 border-border/30 text-foreground"
                             />
                         </div>
                     </div>
@@ -596,11 +597,11 @@
                         <Input
                             type="date"
                             bind:value={paymentData.date}
-                            class="bg-black/20 border-white/10 text-white"
+                            class="bg-muted/20 border-border/30 text-foreground"
                         />
                     </div>
                     <div
-                        class="space-y-1 pt-4 border-t border-white/10 flex justify-between items-end"
+                        class="space-y-1 pt-4 border-t border-border/30 flex justify-between items-end"
                     >
                         <Label class="text-base"
                             >{$t("fiscal.darf.labels.totalPaid")}</Label
