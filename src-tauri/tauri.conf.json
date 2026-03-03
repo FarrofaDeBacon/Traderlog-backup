@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "tauri-apptraderlogpro",
-  "version": "0.1.0",
-  "identifier": "com.farrofa-debacon.tauri-apptraderlogpro",
+  "productName": "TraderLogPro",
+  "version": "0.1.1-beta",
+  "identifier": "com.traderlog.pro",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:3005",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "TraderLog Pro",
+        "title": "TraderLog Pro (BETA)",
         "width": 800,
         "height": 600
       }

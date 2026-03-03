@@ -31,8 +31,8 @@
         if (c.includes("OSCILLATOR") || c.includes("OSCILADOR"))
             return {
                 icon: Activity,
-                color: "text-purple-500",
-                bg: "bg-purple-500/10",
+                color: "text-indigo-500",
+                bg: "bg-indigo-500/10",
             };
         if (c.includes("TREND") || c.includes("TENDENCIA"))
             return {

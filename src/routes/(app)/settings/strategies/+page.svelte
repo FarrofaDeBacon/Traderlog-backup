@@ -492,7 +492,7 @@
                         <div class="flex flex-wrap gap-1 min-h-[24px]">
                             {#each formData.asset_types as item, i}
                                 <span
-                                    class="bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1"
+                                    class="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1"
                                 >
                                     {item}
                                     <button

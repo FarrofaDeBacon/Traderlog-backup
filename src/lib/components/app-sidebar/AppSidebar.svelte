@@ -31,9 +31,9 @@
 
     // Workspace Items (Principal)
     let workspaceItems = $derived([
-        { label: $t("sidebar.finance"), href: "/finance", icon: Wallet },
-        { label: $t("sidebar.strategies"), href: "/strategies", icon: Target },
         { label: $t("sidebar.trades"), href: "/trades", icon: TrendingUp },
+        { label: $t("sidebar.strategies"), href: "/strategies", icon: Target },
+        { label: $t("sidebar.finance"), href: "/finance", icon: Wallet },
     ]);
 
     // Análise Items
@@ -48,11 +48,6 @@
             label: $t("sidebar.irpf"),
             href: "/fiscal/irpf",
             icon: FileText,
-        },
-        {
-            label: $t("sidebar.darfs"),
-            href: "/fiscal/irpf/darf",
-            icon: DollarSign,
         },
     ]);
 
@@ -93,7 +88,12 @@
                     class="text-lg font-bold tracking-tight text-primary flex items-center gap-2"
                 >
                     <TrendingUp class="h-6 w-6" />
-                    TraderLog
+                    <span
+                        >TraderLog <span
+                            class="text-[9px] font-black uppercase text-primary px-1 rounded border border-primary/20 bg-primary/5 align-top"
+                            >Beta</span
+                        ></span
+                    >
                 </h2>
             </div>
             <Separator />
@@ -195,7 +195,13 @@
         >
             <TrendingUp class="h-6 w-6 shrink-0" />
             {#if !sidebarState.isCollapsed}
-                <span class="truncate">TraderLog Pro</span>
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <span class="truncate">TraderLog Pro</span>
+                    <span
+                        class="text-[9px] font-black uppercase text-primary px-1 rounded border border-primary/20 bg-primary/5"
+                        >Beta</span
+                    >
+                </div>
             {/if}
         </a>
         <div class="flex items-center gap-2">

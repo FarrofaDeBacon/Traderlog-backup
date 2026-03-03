@@ -1,0 +1,104 @@
+﻿ 189 | |             start_rtd_monitor_cmd,
+ 190 | |             commands::get_user_profile,
+ 191 | |             commands::save_user_profile,
+...    |
+ 299 | |             commands::diagnostic_closure_dump,
+ 300 | |         ])
+     | |_________- in this macro invocation
+     |
+     = help: within `impl std::future::Future<Output = Result<(), std::string::String>>`, the trait 
+`Send` is not implemented for `Rc<UnsafeCell<ReseedingRng<rand_chacha::chacha::ChaCha12Core, OsRng>>>`
+note: future is not `Send` as this value is used across an await
+    --> src\seed\stress_seed.rs:76:21
+     |
+  18 |     let mut rng = rand::thread_rng();
+     |         ------- has type `ThreadRng` which is not `Send`
+...
+  76 |     db.query(query).await.map_err(|e| e.to_string())?;
+     |                     ^^^^^ await occurs here, with `mut rng` maybe used later
+note: required by a bound in `ResultFutureTag::future`
+    --> C:\Users\Farrofa DeBacon\scoop\persist\rustup\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f
+\tauri-2.9.5\src\ipc\command.rs:314:42
+     |
+ 310 |     pub async fn future<T, E, F>(self, value: F) -> Result<InvokeResponseBody, InvokeError>
+     |                  ------ required by a bound in this associated function
+...
+ 314 |       F: Future<Output = Result<T, E>> + Send,
+     |                                          ^^^^ required by this bound in `ResultFutureTag::future`
+     = note: this error originates in the macro `commands::__cmd__seed_stress_data` which comes from the 
+expansion of the macro `tauri::generate_handler` (in Nightly builds, run with -Z macro-backtrace for more 
+info)
+
+warning: unused variable: `modalities`
+   --> src\commands\irpf.rs:246:9
+    |
+246 |     let modalities: Vec<Modality> = mod_res.take(0).map_err(|e| e.to_string())?;
+    |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_modalities`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `create_sql`
+  --> src\seed\timeframes_seed.rs:29:13
+   |
+29 |         let create_sql = format!("CREATE timeframe:{} CONTENT $data", id);
+   |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_create_sql`
+
+warning: unused variable: `record_id`
+  --> src\seed\asset_types_seed.rs:37:13
+   |
+37 |         let record_id = format!("asset_type:{}", id);
+   |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_record_id`
+
+warning: unused variable: `record_id`
+  --> src\seed\assets_seed.rs:76:13
+   |
+76 |         let record_id = format!("asset:{}", id);
+   |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_record_id`
+
+warning: unused variable: `clean_id`
+  --> src\seed\demo_accounts_seed.rs:70:13
+   |
+70 |         let clean_id = id_suffix;
+   |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_clean_id`
+
+warning: unused variable: `r_name`
+   --> src\seed\tax_seed.rs:262:9
+    |
+262 |         r_name,
+    |         ^^^^^^ help: if this is intentional, prefix it with an underscore: `_r_name`
+
+warning: variable does not need to be mutable
+  --> src\logic.rs:36:9
+   |
+36 |     let mut calculation_basis;
+   |         ----^^^^^^^^^^^^^^^^^
+   |         |
+   |         help: remove this `mut`
+
+warning: value assigned to `withholding_credit_used` is never read
+  --> src\logic.rs:85:39
+   |
+85 |     let mut withholding_credit_used = 0.0;
+   |                                       ^^^
+   |
+   = help: maybe it is overwritten before being read?
+   = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `tax_after_irrf` is never read
+  --> src\logic.rs:86:30
+   |
+86 |     let mut tax_after_irrf = 0.0;
+   |                              ^^^
+   |
+   = help: maybe it is overwritten before being read?
+
+warning: value assigned to `withholding_credit_remaining` is never read
+  --> src\logic.rs:87:44
+   |
+87 |     let mut withholding_credit_remaining = 0.0;
+   |                                            ^^^
+   |
+   = help: maybe it is overwritten before being read?
+
+warning: `tauri-apptraderlogpro` (lib) generated 18 warnings
+error: could not compile `tauri-apptraderlogpro` (lib) due to 2 previous errors; 18 warnings emitted

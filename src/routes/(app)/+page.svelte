@@ -146,8 +146,8 @@
         discSum += t.followed_plan ? 100 : 0;
 
         // R-Factor calculation (Reward/Risk)
-        if (t.risk_amount && t.risk_amount > 0) {
-          rFactorSum += t.result / t.risk_amount;
+        if ((t as any).risk_amount && (t as any).risk_amount > 0) {
+          rFactorSum += t.result / (t as any).risk_amount;
           rFactorCount++;
         }
 
@@ -156,7 +156,7 @@
 
       return {
         net: current,
-        winRate: (wins / trades.length) * 100,
+        winRate: (wins / (trades.length || 1)) * 100,
         profitFactor: totalL === 0 ? (totalW > 0 ? 99 : 0) : totalW / totalL,
         payoff:
           wins > 0 && trades.length - wins > 0
@@ -165,7 +165,7 @@
         equity,
         monthResult: monthRes,
         dayResult: dayRes,
-        discipline: discSum / trades.length,
+        discipline: discSum / (trades.length || 1),
         drawdown: maxDD,
         tradesToday,
         avgRFactor: rFactorCount > 0 ? rFactorSum / rFactorCount : 0,
@@ -190,12 +190,12 @@
 
   const growthProgress = $derived.by(() => {
     if (!activePhase) return 0;
-    const rule = activePhase.progression_rules.find(
+    const rule = activePhase.progression_rules?.find(
       (r: any) => r.condition === "profit_target",
     );
     if (!rule) return 0;
     const target = rule.value;
-    return Math.min(Math.max((stats.net / target) * 100, 0), 100);
+    return Math.min(Math.max((stats.net / (target || 1)) * 100, 0), 100);
   });
 
   function handleDayClick(day: Date) {
@@ -346,7 +346,7 @@
 
       <!-- ELITE KPI LINE: 6 Professional Horizontal Cards -->
       <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        {#each [{ label: $t("dashboard.kpis.netResult"), val: formatCurrency(stats.net), icon: TrendingUp, color: "text-emerald-500", borderColor: "border-l-emerald-500" }, { label: $t("dashboard.kpis.winRate"), val: `${stats.winRate.toFixed(1)}%`, icon: Trophy, color: "text-blue-500", borderColor: "border-l-blue-500" }, { label: $t("dashboard.kpis.profitFactor"), val: stats.profitFactor.toFixed(2), icon: Activity, color: "text-amber-500", borderColor: "border-l-amber-500" }, { label: $t("dashboard.kpis.discipline"), val: `${stats.discipline.toFixed(0)}%`, icon: Zap, color: "text-purple-500", borderColor: "border-l-purple-500" }, { label: $t("dashboard.kpis.payoff"), val: stats.payoff.toFixed(2), icon: ArrowUpRight, color: "text-indigo-400", borderColor: "border-l-indigo-400" }, { label: $t("dashboard.kpis.maxDrawdown"), val: `${(stats.drawdown || 0).toFixed(1)}%`, icon: Activity, color: "text-rose-500", borderColor: "border-l-rose-500" }] as kpi}
+        {#each [{ label: $t("dashboard.kpis.netResult"), val: formatCurrency(stats.net), icon: TrendingUp, color: "text-emerald-500", borderColor: "border-l-emerald-500" }, { label: $t("dashboard.kpis.winRate"), val: `${stats.winRate.toFixed(1)}%`, icon: Trophy, color: "text-blue-500", borderColor: "border-l-blue-500" }, { label: $t("dashboard.kpis.profitFactor"), val: stats.profitFactor.toFixed(2), icon: Activity, color: "text-amber-500", borderColor: "border-l-amber-500" }, { label: $t("dashboard.kpis.discipline"), val: `${stats.discipline.toFixed(0)}%`, icon: Zap, color: "text-indigo-500", borderColor: "border-l-indigo-500" }, { label: $t("dashboard.kpis.payoff"), val: stats.payoff.toFixed(2), icon: ArrowUpRight, color: "text-cyan-400", borderColor: "border-l-cyan-400" }, { label: $t("dashboard.kpis.maxDrawdown"), val: `${(stats.drawdown || 0).toFixed(1)}%`, icon: Activity, color: "text-rose-500", borderColor: "border-l-rose-500" }] as kpi}
           <Card class="card-glass border-l-2 {kpi.borderColor}">
             <CardContent class="py-0.5 px-2.5">
               <div class="flex items-center justify-between space-y-0">
@@ -422,13 +422,13 @@
                       class="text-[9px] font-bold text-muted-foreground/60 uppercase"
                       >{$t("dashboard.survivor.operationalStatus")}</span
                     >
-                    {#if stats.dayResult <= -(activePhase?.max_daily_loss || 0) && activePhase?.max_daily_loss > 0}
+                    {#if stats.dayResult <= -(activePhase?.max_daily_loss || 0) && (activePhase?.max_daily_loss ?? 0) > 0}
                       <Badge
                         variant="outline"
                         class="bg-rose-500/10 text-rose-500 border-rose-500/20 text-[9px] font-black uppercase tracking-tighter"
                         >{$t("dashboard.survivor.statusBlocked")}</Badge
                       >
-                    {:else if stats.dayResult <= -(activePhase?.max_daily_loss || 0) * 0.7 && activePhase?.max_daily_loss > 0}
+                    {:else if stats.dayResult <= -(activePhase?.max_daily_loss || 0) * 0.7 && (activePhase?.max_daily_loss ?? 0) > 0}
                       <Badge
                         variant="outline"
                         class="bg-orange-500/10 text-orange-500 border-orange-500/20 text-[9px] font-black uppercase tracking-tighter"

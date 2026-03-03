@@ -52,8 +52,16 @@
 
             <!-- Text Branding -->
             <div class="text-center space-y-1">
-                <h1 class="text-4xl font-black tracking-tighter text-white">
-                    Trader<span class="text-primary italic">Log</span> Pro
+                <h1
+                    class="text-4xl font-black tracking-tighter text-white flex items-center gap-2"
+                >
+                    <span
+                        >Trader<span class="text-primary italic">Log</span> Pro</span
+                    >
+                    <span
+                        class="text-[10px] font-black uppercase tracking-wider text-primary px-1.5 py-0.5 rounded border border-primary/30 bg-primary/10"
+                        >Beta</span
+                    >
                 </h1>
                 <div class="flex items-center justify-center gap-2">
                     <div class="h-[1px] w-8 bg-zinc-800"></div>

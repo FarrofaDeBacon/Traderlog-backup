@@ -3,6 +3,9 @@ mod db;
 mod hardware;
 mod models;
 mod seed;
+mod logic;
+#[cfg(test)]
+mod logic_tests;
 
 use crate::db::DbState;
 use std::fs;
@@ -154,7 +157,7 @@ pub fn run() {
             println!("[SETUP] Starting app setup...");
 
             let handle = app.handle().clone();
-            // start_rtd_monitor(handle.clone(), None); // Keep RTD disabled for now
+            start_rtd_monitor(handle.clone(), None); 
 
             // Initialize Database
             let db_handle = handle.clone();
@@ -251,6 +254,7 @@ pub fn run() {
             commands::delete_demo_account_data,
             commands::delete_all_demo_trades,
             commands::seed_demo_data,
+            commands::seed_stress_data,
             commands::complete_onboarding,
             commands::seed_custom_data,
             commands::get_onboarding_meta,
@@ -293,6 +297,7 @@ pub fn run() {
             commands::diagnostic_dump_users,
             commands::diagnostic_dump_trades,
             commands::diagnostic_closure_dump,
+            commands::open_detached_trade_window,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

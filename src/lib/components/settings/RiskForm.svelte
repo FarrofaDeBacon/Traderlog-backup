@@ -117,41 +117,35 @@
         // Only update if initialData changes significantly or logic requires it.
         // For simple forms, often only init is enough, but keeping existing pattern.
         if (initialData) {
+            let fd = { ...initialData };
             formData = {
-                name: initialData.name,
-                max_daily_loss: initialData.max_daily_loss,
-                daily_target: initialData.daily_target,
-                max_risk_per_trade_percent:
-                    initialData.max_risk_per_trade_percent,
-                max_trades_per_day: initialData.max_trades_per_day,
-                min_risk_reward: initialData.min_risk_reward,
-                lock_on_loss: initialData.lock_on_loss,
-                account_type_applicability:
-                    initialData.account_type_applicability,
-                growth_plan_enabled: initialData.growth_plan_enabled ?? false,
-                current_phase_index: initialData.current_phase_index ?? 0,
-                growth_phases: initialData.growth_phases
-                    ? [...initialData.growth_phases]
-                    : [],
+                id: fd.id,
+                name: fd.name,
+                max_daily_loss: fd.max_daily_loss,
+                daily_target: fd.daily_target,
+                max_risk_per_trade_percent: fd.max_risk_per_trade_percent,
+                max_trades_per_day: fd.max_trades_per_day,
+                min_risk_reward: fd.min_risk_reward,
+                lock_on_loss: fd.lock_on_loss,
+                account_type_applicability: fd.account_type_applicability,
+                growth_plan_enabled: fd.growth_plan_enabled ?? false,
+                current_phase_index: fd.current_phase_index ?? 0,
+                growth_phases: fd.growth_phases ? [...fd.growth_phases] : [],
                 psychological_coupling_enabled:
-                    initialData.psychological_coupling_enabled ?? false,
+                    fd.psychological_coupling_enabled ?? false,
                 outlier_regression_enabled:
-                    initialData.outlier_regression_enabled ?? false,
-                sniper_mode_enabled: initialData.sniper_mode_enabled ?? false,
-                sniper_mode_selectivity:
-                    initialData.sniper_mode_selectivity ?? 3,
+                    fd.outlier_regression_enabled ?? false,
+                sniper_mode_enabled: fd.sniper_mode_enabled ?? false,
+                sniper_mode_selectivity: fd.sniper_mode_selectivity ?? 3,
                 psychological_lookback_count:
-                    initialData.psychological_lookback_count ?? 10,
-                outlier_lookback_count:
-                    initialData.outlier_lookback_count ?? 20,
-                psychological_threshold:
-                    initialData.psychological_threshold ?? -2,
-                lot_reduction_multiplier:
-                    initialData.lot_reduction_multiplier ?? 0.5,
+                    fd.psychological_lookback_count ?? 10,
+                outlier_lookback_count: fd.outlier_lookback_count ?? 20,
+                psychological_threshold: fd.psychological_threshold ?? -2,
+                lot_reduction_multiplier: fd.lot_reduction_multiplier ?? 0.5,
                 psychological_search_strategy:
-                    initialData.psychological_search_strategy ?? "Strict",
-                account_ids: initialData.account_ids ?? [],
-                active: initialData.active ?? false,
+                    fd.psychological_search_strategy ?? "Strict",
+                account_ids: fd.account_ids ?? [],
+                active: fd.active ?? false,
             };
             selectedPreset = "custom";
         }
@@ -512,13 +506,13 @@
         <Tabs.Content value="risk-engine" class="space-y-4 pt-4">
             <!-- Psychological Coupling -->
             <div
-                class="space-y-4 p-4 rounded-lg border border-purple-500/20 bg-purple-500/5"
+                class="space-y-4 p-4 rounded-lg border border-indigo-500/20 bg-indigo-500/5"
             >
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        <Brain class="w-5 h-5 text-purple-400" />
+                        <Brain class="w-5 h-5 text-indigo-400" />
                         <div class="space-y-0.5">
-                            <h4 class="font-bold text-purple-400">
+                            <h4 class="font-bold text-indigo-400">
                                 {$t("settings.risk.engine.psychological.title")}
                             </h4>
                             <p

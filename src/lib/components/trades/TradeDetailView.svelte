@@ -18,8 +18,10 @@
         ArrowRightLeft,
         DollarSign,
     } from "lucide-svelte";
+    import ImageCarousel from "$lib/components/ui/ImageCarousel.svelte";
 
     const { trade } = $props<{ trade: any }>();
+    let selectedImageIndex = $state<number | null>(null);
 
     const asset = $derived(
         settingsStore.assets.find((a) => a.symbol === trade.asset_symbol),
@@ -353,9 +355,10 @@
 
                 {#if trade.images && trade.images.length > 0}
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        {#each trade.images as img}
-                            <div
-                                class="aspect-video bg-muted/50 rounded overflow-hidden border border-border/10 group relative"
+                        {#each trade.images as img, i}
+                            <button
+                                class="aspect-video bg-muted/50 rounded overflow-hidden border border-border/10 group relative cursor-pointer"
+                                onclick={() => (selectedImageIndex = i)}
                             >
                                 <img
                                     src={img}
@@ -367,7 +370,7 @@
                                 >
                                     <Camera class="w-5 h-5 text-foreground" />
                                 </div>
-                            </div>
+                            </button>
                         {/each}
                     </div>
                 {:else}
@@ -382,6 +385,8 @@
         </Card.Root>
     </div>
 </div>
+
+<ImageCarousel images={trade.images} bind:index={selectedImageIndex} />
 
 <style>
     .custom-scrollbar::-webkit-scrollbar {

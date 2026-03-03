@@ -431,8 +431,8 @@
             <div class="space-y-4">
                 <!-- Rich Header -->
                 <div class="flex items-center gap-2">
-                    <div class="p-1.5 rounded bg-purple-500/10">
-                        <Palette class="w-4 h-4 text-purple-500" />
+                    <div class="p-1.5 rounded bg-indigo-500/10">
+                        <Palette class="w-4 h-4 text-indigo-500" />
                     </div>
                     <h4 class="text-lg font-semibold tracking-tight uppercase">
                         {$t("settings.profile.preferences.title")}

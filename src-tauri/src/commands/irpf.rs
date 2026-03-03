@@ -1,4 +1,5 @@
 use crate::db::DbState;
+use crate::logic::RuleBucket;
 use crate::models::irpf::{TaxAppraisal, TaxDarf, TaxLoss};
 use crate::models::Trade;
 use chrono::{Datelike, NaiveDate};
@@ -268,14 +269,6 @@ pub async fn calculate_monthly_tax(
     }
 
     // 2. Processing Buckets
-    struct RuleBucket {
-        rule: TaxRule,
-        modality_id: String,
-        gross_profit: f64,
-        gross_loss: f64,
-        sales_total: f64,
-        trade_ids: Vec<String>,
-    }
 
     // NOTE: Tax Profile resolution logic is inlined in the trade processing loop below.
 
@@ -470,95 +463,23 @@ pub async fn calculate_monthly_tax(
     let mut appraisals = Vec::new();
 
     for (rule_id, bucket) in buckets {
-        let rule = &bucket.rule;
-        let gross_profit = bucket.gross_profit;
-        let gross_loss = bucket.gross_loss;
-        let bucket_trades = bucket.trade_ids;
+        let loss_category = bucket.rule.trade_type.clone();
 
-        // 3.1 Net Result
-        let net_profit = gross_profit - gross_loss;
-
-        // 3.2 Exemption Logic
-        let threshold = rule.exemption_threshold;
-        let is_exempt = threshold > 0.0 && bucket.sales_total < threshold && net_profit > 0.0;
-
-        // 3.3 Compensation Logic
-        let loss_category = rule.trade_type.clone(); // Use robust field
-
-        let mut compensated_loss = 0.0;
-        let mut calculation_basis;
-
-        let basis_profit = if rule.basis == "GrossProfit" {
-            // Unlikely in B3 but allowed by rule config
-            gross_profit
-        } else {
-            net_profit
-        };
-
-        if is_exempt || !rule.cumulative_losses {
-            calculation_basis = if is_exempt { 0.0 } else { basis_profit };
-        } else {
-            if basis_profit > 0.0 {
-                // Try to compensate
-                let current_month_start = format!("{}-{:02}-01", year, month);
-                let available_loss: f64 = losses
-                    .iter()
-                    .filter(|l| {
-                        l.trade_type == loss_category && l.origin_date < current_month_start
-                    })
-                    .map(|l| l.balance)
-                    .sum();
-
-                if available_loss > 0.0 {
-                    if available_loss >= basis_profit {
-                        compensated_loss = basis_profit;
-                        calculation_basis = 0.0;
-                    } else {
-                        compensated_loss = available_loss;
-                        calculation_basis = basis_profit - available_loss;
-                    }
-                } else {
-                    calculation_basis = basis_profit;
-                }
-            } else {
-                calculation_basis = 0.0;
-            }
-        }
-
-        // 3.4 Tax Calculation
-        // tax_rate is stored as percentage (e.g. 15.0 = 15%), convert to decimal
-        let rate_decimal = rule.tax_rate / 100.0;
-        let tax_due = calculation_basis * rate_decimal;
-
-        // Withholding (Dedo-duro)
-        let withheld_rate_decimal = rule.withholding_rate / 100.0;
-        let total_irrf = if rule.withholding_basis == "Profit" {
-            // Withholding on Profit (typically Day Trade)
-            if net_profit > 0.0 {
-                net_profit * withheld_rate_decimal
-            } else {
-                0.0
-            }
-        } else {
-            // Withholding on Sales volume (typically Swing Trade Stocks)
-            if bucket.sales_total > 0.0 {
-                bucket.sales_total * withheld_rate_decimal
-            } else {
-                0.0
-            }
-        };
-
-        println!(
-            "[IRPF] Rule: {} | Rate: {}% | W.Rate: {}% | Base: {} | Due: {} | Withheld: {}",
-            rule.name, rule.tax_rate, rule.withholding_rate, calculation_basis, tax_due, total_irrf
-        );
+        // 3.3 Compensation Logic: Fetch available loss
+        let current_month_start = format!("{}-{:02}-01", year, month);
+        let available_loss: f64 = losses
+            .iter()
+            .filter(|l| {
+                l.trade_type == loss_category && l.origin_date < current_month_start
+            })
+            .map(|l| l.balance)
+            .sum();
 
         // 3.5 IRRF Credit Carryover Logic
-        // Fetch latest appraisal credit
-        let credit_query = "SELECT type::float(withholding_credit_remaining) as withholding_credit_remaining, `period_year`, `period_month` FROM tax_appraisal WHERE trade_type = $type AND (`period_year` < $year OR (`period_year` = $year AND `period_month` < $month)) ORDER BY `period_year` DESC, `period_month` DESC LIMIT 1";
+        let credit_query = "SELECT type::float(withholding_credit_remaining) as withholding_credit_remaining FROM tax_appraisal WHERE trade_type = $type AND (`period_year` < $year OR (`period_year` = $year AND `period_month` < $month)) ORDER BY `period_year` DESC, `period_month` DESC LIMIT 1";
         let mut credit_res =
             db.0.query(credit_query)
-                .bind(("type", rule.trade_type.clone()))
+                .bind(("type", loss_category.clone()))
                 .bind(("year", year))
                 .bind(("month", month))
                 .await
@@ -574,41 +495,11 @@ pub async fn calculate_monthly_tax(
             0.0
         };
 
-        let total_deduction_available = total_irrf + previous_credit;
-        let mut withholding_credit_used = 0.0;
-        let mut tax_after_irrf = 0.0;
-        let mut withholding_credit_remaining = 0.0;
-
-        if tax_due > 0.0 {
-            if total_deduction_available >= tax_due {
-                withholding_credit_used = tax_due;
-                tax_after_irrf = 0.0;
-                withholding_credit_remaining = total_deduction_available - tax_due;
-            } else {
-                withholding_credit_used = total_deduction_available;
-                tax_after_irrf = tax_due - total_deduction_available;
-                withholding_credit_remaining = 0.0;
-            }
-        } else {
-            // No tax due, all IRRF (this month + previous) is carried forward
-            withholding_credit_used = 0.0;
-            tax_after_irrf = 0.0;
-            withholding_credit_remaining = total_deduction_available;
-        }
-
-        let mut tax_payable = tax_after_irrf;
-        if tax_payable < 0.0 {
-            tax_payable = 0.0;
-        } // Safety
-
         // 3.5 Accumulation Logic (< R$ 10)
-        // Find latest pending appraisal for this category that was below 10
-        let accum_query = "SELECT *, type::string(id) as id, type::string(tax_rule_id) as tax_rule_id, type::float(total_payable) as total_payable, `period_year`, `period_month` FROM tax_appraisal WHERE trade_type = $type AND status = 'Pending' AND total_payable < 10.0 AND (`period_year` < $year OR (`period_year` = $year AND `period_month` < $month)) ORDER BY `period_year` DESC, `period_month` DESC LIMIT 1";
-        println!("DEBUG: Running accumulation query: {}", accum_query);
-
+        let accum_query = "SELECT type::float(total_payable) as total_payable FROM tax_appraisal WHERE trade_type = $type AND status = 'Pending' AND total_payable < 10.0 AND (`period_year` < $year OR (`period_year` = $year AND `period_month` < $month)) ORDER BY `period_year` DESC, `period_month` DESC LIMIT 1";
         let mut accum_res =
             db.0.query(accum_query)
-                .bind(("type", rule.trade_type.clone()))
+                .bind(("type", loss_category.clone()))
                 .bind(("year", year))
                 .bind(("month", month))
                 .await
@@ -623,35 +514,18 @@ pub async fn calculate_monthly_tax(
             0.0
         };
 
-        let total_payable = tax_payable + tax_accumulated;
-        let revenue_code = rule.revenue_code.clone();
-
-        appraisals.push(TaxAppraisal {
-            id: None, // Will be generated or matched in save
-            period_month: month,
-            period_year: year,
-            trade_type: rule.trade_type.clone(),
-            tax_rule_id: rule_id,
-            revenue_code: revenue_code.clone(),
-            gross_profit,
-            loss: gross_loss,
-            net_profit,
-            compensated_loss,
-            calculation_basis,
-            tax_rate: rule.tax_rate,
-            tax_due,
-            withheld_tax: total_irrf,
-            withholding_credit_used,
-            withholding_credit_remaining,
-            tax_payable,
+        let mut appraisal = crate::logic::calculate_appraisal(
+            &bucket,
+            month,
+            year,
+            available_loss,
+            previous_credit,
             tax_accumulated,
-            total_payable,
-            is_exempt,
-            calculation_date: chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-            status: "Pending".to_string(),
-            trade_ids: bucket_trades.clone(),
-            is_complementary: false,
-        });
+        );
+        appraisal.tax_rule_id = rule_id; 
+        appraisal.calculation_date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+        appraisals.push(appraisal);
     }
 
     println!("DEBUG: Generated {} appraisals (Profile)", appraisals.len());

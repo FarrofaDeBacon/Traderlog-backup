@@ -1,4 +1,4 @@
-import type { RiskProfile, GrowthPhase } from "$lib/stores/settings.svelte";
+import type { RiskProfile, GrowthPhase } from "$lib/types";
 
 export type EvaluationResult = {
     action: "promote" | "demote" | "stay";

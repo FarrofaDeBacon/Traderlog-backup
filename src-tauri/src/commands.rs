@@ -1527,6 +1527,11 @@ pub async fn seed_demo_data(db: State<'_, DbState>, modules: Vec<String>) -> Res
 }
 
 #[tauri::command]
+pub async fn seed_stress_data(db: State<'_, DbState>, count: usize) -> Result<(), String> {
+    crate::seed::stress_seed::seed_stress_records(&db.0, count).await
+}
+
+#[tauri::command]
 pub async fn complete_onboarding(db: State<'_, DbState>) -> Result<(), String> {
     println!("[COMMAND] Finalizando onboarding no banco de dados...");
 
@@ -1584,6 +1589,12 @@ pub fn get_machine_id_cmd() -> String {
 pub async fn backup_database(db: State<'_, DbState>, path: String) -> Result<String, String> {
     println!("[COMMAND] backup_database to: {}", path);
 
+    // Ensure correct context
+    db.0.use_ns("traderlog")
+        .use_db("main")
+        .await
+        .map_err(|e| format!("Database context error: {}", e))?;
+
     // Tables to export (in order)
     let tables = vec![
         "user_profile",
@@ -1625,8 +1636,14 @@ pub async fn backup_database(db: State<'_, DbState>, path: String) -> Result<Str
         match db.0.query(&sql).await {
             Ok(mut res) => match res.take::<Vec<serde_json::Value>>(0) {
                 Ok(rows) => {
+                    let row_count = rows.len();
                     backup["tables"][table] = serde_json::json!(rows);
-                    println!("[BACKUP] Table {}: {} rows", table, rows.len());
+                    println!("[BACKUP] Table {}: {} rows confirmed", table, row_count);
+                    if row_count > 0 {
+                        if let Some(first) = rows.first() {
+                             println!("[BACKUP]   Sample ID for {}: {:?}", table, first.get("id"));
+                        }
+                    }
                 }
                 Err(e) => {
                     println!("[BACKUP] Warning: failed to read {}: {}", table, e);
@@ -1653,6 +1670,12 @@ pub async fn backup_database(db: State<'_, DbState>, path: String) -> Result<Str
 #[tauri::command]
 pub async fn restore_database(db: State<'_, DbState>, path: String) -> Result<usize, String> {
     println!("[COMMAND] restore_database from: {}", path);
+
+    // Ensure correct context
+    db.0.use_ns("traderlog")
+        .use_db("main")
+        .await
+        .map_err(|e| format!("Database context error: {}", e))?;
 
     let content = tokio::fs::read_to_string(&path)
         .await
@@ -1681,7 +1704,11 @@ pub async fn restore_database(db: State<'_, DbState>, path: String) -> Result<us
                 .ok_or_else(|| format!("Row in '{}' is missing 'id' field", table))?;
 
             // Extract clean id (after colon if table:id format)
-            let clean_id = raw_id.split(':').last().unwrap_or(raw_id);
+            // Handle both "table:id" and "table:⟨id⟩"
+            let mut id_part = raw_id.split(':').last().unwrap_or(raw_id).to_string();
+            
+            // If it already has ⟨ ⟩, remove them so upsert_record doesn't double wrap
+            id_part = id_part.replace("⟨", "").replace("⟩", "");
 
             // Remove 'id' from data, since we pass it via type::thing
             let mut data = row.clone();
@@ -1689,10 +1716,12 @@ pub async fn restore_database(db: State<'_, DbState>, path: String) -> Result<us
                 obj.remove("id");
             }
 
-            if let Err(e) = upsert_record(&db.0, table, clean_id, data).await {
+            println!("[RESTORE] Restoring {}:{}", table, id_part);
+
+            if let Err(e) = upsert_record(&db.0, table, &id_part, data).await {
                 println!(
                     "[RESTORE] Warning: failed to restore {}:{} - {}",
-                    table, clean_id, e
+                    table, id_part, e
                 );
             } else {
                 total_restored += 1;
@@ -1705,4 +1734,34 @@ pub async fn restore_database(db: State<'_, DbState>, path: String) -> Result<us
         total_restored
     );
     Ok(total_restored)
+}
+
+#[tauri::command]
+pub async fn open_detached_trade_window(app_handle: tauri::AppHandle) -> Result<(), String> {
+    println!("[COMMAND] Spawning detached trade window...");
+    
+    // Check if window already exists to avoid duplicates
+    if let Some(window) = tauri::Manager::get_webview_window(&app_handle, "detached-trade") {
+        let _ = window.set_focus();
+        return Ok(());
+    }
+
+    let _window = tauri::WebviewWindowBuilder::new(
+        &app_handle,
+        "detached-trade",
+        tauri::WebviewUrl::App("detached-trade".into()),
+    )
+    .title("TraderLog Pro - Novo Trade (Independente)")
+    .inner_size(850.0, 750.0)
+    .resizable(true)
+    .always_on_top(false) // Better UX: don't force on top by default, but allow user to manage
+    .center()
+    .build()
+    .map_err(|e| {
+        println!("[ERROR] Failed to build detached window: {}", e);
+        e.to_string()
+    })?;
+
+    println!("[COMMAND] Detached trade window spawned.");
+    Ok(())
 }

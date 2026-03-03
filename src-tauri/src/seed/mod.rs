@@ -15,6 +15,7 @@ pub mod markets_seed;
 pub mod modalities_seed;
 pub mod risk_seed;
 pub mod strategies_seed;
+pub mod stress_seed;
 pub mod tags_seed;
 pub mod tax_seed;
 pub mod timeframes_seed;

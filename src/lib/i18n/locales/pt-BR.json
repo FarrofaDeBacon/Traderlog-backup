@@ -2181,32 +2181,32 @@
         "skipTrial": "Pular (Trial)"
       },
       "accounts": {
-        "add_more_prompt": "Add_more_prompt",
-        "description_intro": "Description_intro",
-        "market_title": "Market_title",
-        "personalize": "Personalize",
-        "skip": "Skip",
-        "standard_title": "Standard_title",
-        "title": "Title"
+        "add_more_prompt": "Deseja adicionar mais contas agora?",
+        "description_intro": "Configure suas contas bancárias ou de corretagem para começar.",
+        "market_title": "Mercado",
+        "personalize": "Personalizar",
+        "skip": "Pular",
+        "standard_title": "Configuração Padrão",
+        "title": "Minhas Contas"
       },
       "data": {
         "custom": {
-          "desc": "Desc",
-          "title": "Title"
+          "desc": "Selecione manualmente o que deseja importar.",
+          "title": "Personalizado"
         },
-        "description": "Description",
+        "description": "Escolha como deseja que seus dados iniciais sejam configurados.",
         "standard": {
-          "desc": "Desc",
-          "title": "Title"
+          "desc": "Configuração recomendada com ativos padrão da B3.",
+          "title": "Padrão"
         },
-        "title": "Title"
+        "title": "Configuração de Dados"
       },
       "style": {
-        "currency": "Currency",
-        "description": "Description",
+        "currency": "Moeda Principal",
+        "description": "Ajuste a aparência e o idioma do seu painel.",
         "language": "Idioma",
-        "theme": "Tema",
-        "title": "Title"
+        "theme": "Tema Visual",
+        "title": "Estilo e Preferências"
       }
     }
   },

@@ -7,7 +7,6 @@ Param(
 
 # 0. Self-Cleanup: Kill any other running instances of this script to avoid resource conflicts
 $currentPid = $PID
-$myScript = $MyInvocation.MyCommand.Path
 Get-Process powershell -ErrorAction SilentlyContinue | Where-Object { 
     $_.Id -ne $currentPid -and 
     (Get-CimInstance Win32_Process -Filter "ProcessId = $($_.Id)" -ErrorAction SilentlyContinue).CommandLine -like "*rtd_bridge.ps1*"
@@ -214,7 +213,27 @@ while ($true) {
     }
     catch {
         $msg = "[$(Get-Date -Format 'HH:mm:ss')] ERROR: $($_.Exception.Message)"
+        if ($_.Exception.Message -match "0x8001010A" -or $_.Exception.Message -match "0x800A01A8") {
+            $msg = "[$(Get-Date -Format 'HH:mm:ss')] CRITICAL: Excel Busy or Object Disconnected. Retrying..."
+        }
         $msg | Out-File -FilePath $debugLog -Append
+        
+        # If Excel process is gone, wait longer or signal retry
+        $excelProcs = Get-Process excel -ErrorAction SilentlyContinue
+        if (!$excelProcs) {
+            "[$(Get-Date -Format 'HH:mm:ss')] INFO: Excel not running. Waiting for process..." | Out-File -FilePath $debugLog -Append
+            Start-Sleep -Seconds 5
+        }
     }
+    
+    # Cleanup stale CSV if bridge hasn't updated in 10s (prevents ghost data)
+    if (Test-Path $csvPath) {
+        $lastWrite = (Get-Item $csvPath).LastWriteTime
+        if ((Get-Date) - $lastWrite -gt [TimeSpan]::FromSeconds(10)) {
+            Remove-Item $csvPath -Force -ErrorAction SilentlyContinue
+            "[$(Get-Date -Format 'HH:mm:ss')] DEBUG: Stale CSV removed." | Out-File -FilePath $debugLog -Append
+        }
+    }
+
     Start-Sleep -Seconds 1
 }

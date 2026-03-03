@@ -582,7 +582,7 @@
                                             class="px-2 py-1 rounded text-xs font-bold {item.trade_type ===
                                             'DayTrade'
                                                 ? 'bg-blue-500/10 text-blue-500'
-                                                : 'bg-purple-500/10 text-purple-500'}"
+                                                : 'bg-indigo-500/10 text-indigo-500'}"
                                         >
                                             {item.trade_type === "DayTrade"
                                                 ? "Day Trade"
@@ -841,7 +841,7 @@
                                     class="absolute top-0 left-0 w-1 h-full {item.trade_type ===
                                     'DayTrade'
                                         ? 'bg-blue-500'
-                                        : 'bg-purple-500'}"
+                                        : 'bg-indigo-500'}"
                                 ></div>
                                 <Card.Header>
                                     <Card.Title
@@ -851,7 +851,7 @@
                                             class="text-lg {item.trade_type ===
                                             'DayTrade'
                                                 ? 'text-blue-400'
-                                                : 'text-purple-400'}"
+                                                : 'text-indigo-400'}"
                                         >
                                             {item.trade_type === "DayTrade"
                                                 ? "Day Trade"

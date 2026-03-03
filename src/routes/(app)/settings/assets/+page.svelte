@@ -68,8 +68,8 @@
         if (c.includes("FOREX") || c.includes("FX"))
             return {
                 icon: Globe,
-                color: "text-purple-500",
-                bg: "bg-purple-500/10",
+                color: "text-indigo-500",
+                bg: "bg-indigo-500/10",
             };
         if (c.includes("FII"))
             return {

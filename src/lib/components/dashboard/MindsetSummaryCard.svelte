@@ -37,7 +37,7 @@
     };
 </script>
 
-<Card.Root class="border-l-2 border-l-purple-500 shadow-sm bg-card h-full">
+<Card.Root class="border-l-2 border-l-indigo-500 shadow-sm bg-card h-full">
     <Card.Header
         class="flex flex-row items-center justify-between space-y-0 py-1.5 px-3"
     >
@@ -45,7 +45,7 @@
             class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
             >Estado Psicológico</Card.Title
         >
-        <Brain class="h-3 w-3 text-purple-500" />
+        <Brain class="h-3 w-3 text-indigo-500" />
     </Card.Header>
     <Card.Content class="py-1.5 px-3 space-y-2.5">
         {#if currentState}
@@ -60,7 +60,9 @@
                     <ImpactIcon class="w-4 h-4" />
                 </div>
                 <div>
-                    <h4 class="text-[11px] font-black text-foreground leading-none">
+                    <h4
+                        class="text-[11px] font-black text-foreground leading-none"
+                    >
                         {currentState.name}
                     </h4>
                     <p

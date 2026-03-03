@@ -81,7 +81,7 @@
     </Card.Root>
 
     <!-- SELIC -->
-    <Card.Root class="border-l-2 border-l-purple-500 shadow-sm bg-card">
+    <Card.Root class="border-l-2 border-l-indigo-500 shadow-sm bg-card">
         <Card.Header
             class="flex flex-row items-center justify-between space-y-0 py-0.5 px-2"
         >
@@ -89,7 +89,7 @@
                 class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
                 >SELIC EA.</Card.Title
             >
-            <Landmark class="h-3 w-3 text-purple-500" />
+            <Landmark class="h-3 w-3 text-indigo-500" />
         </Card.Header>
         <Card.Content class="py-0.5 px-2">
             <div

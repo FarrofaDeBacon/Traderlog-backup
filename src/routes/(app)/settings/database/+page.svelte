@@ -308,7 +308,7 @@
     <Card.Root>
         <Card.Header>
             <div class="flex items-center gap-2">
-                <Database class="w-5 h-5 text-purple-500" />
+                <Database class="w-5 h-5 text-indigo-500" />
                 <Card.Title>{$t("settings.database.demo.title")}</Card.Title>
             </div>
             <Card.Description>
@@ -320,7 +320,7 @@
                 <Button
                     onclick={handleGenerateDemo}
                     disabled={isGenerating}
-                    class="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                    class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
                 >
                     {#if isGenerating}
                         <RefreshCw class="w-4 h-4 mr-2 animate-spin" />
@@ -335,7 +335,7 @@
                     onclick={triggerCleanAll}
                     disabled={isCleaning}
                     variant="outline"
-                    class="flex-1 border-purple-500/30 text-purple-500 hover:bg-purple-500/10"
+                    class="flex-1 border-indigo-500/30 text-indigo-500 hover:bg-indigo-500/10"
                 >
                     {#if isCleaning}
                         <RefreshCw class="w-4 h-4 mr-2 animate-spin" />

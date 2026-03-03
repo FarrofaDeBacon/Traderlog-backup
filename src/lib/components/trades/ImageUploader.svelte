@@ -3,6 +3,7 @@
     import { Button } from "$lib/components/ui/button";
     import { Camera, Trash2, Eye, Plus, FileImage } from "lucide-svelte";
     import { toast } from "svelte-sonner";
+    import ImageCarousel from "$lib/components/ui/ImageCarousel.svelte";
 
     let { images = $bindable([]) } = $props<{
         images: string[];
@@ -23,7 +24,9 @@
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             if (!file.type.startsWith("image/")) {
-                toast.error(`${file.name} ${$t("trades.wizard.sections.visual_evidence.invalid_image")}`);
+                toast.error(
+                    `${file.name} ${$t("trades.wizard.sections.visual_evidence.invalid_image")}`,
+                );
                 continue;
             }
 
@@ -35,13 +38,17 @@
                 });
                 newImages.push(imageData);
             } catch (e) {
-                toast.error(`${$t("trades.wizard.sections.visual_evidence.process_error")} ${file.name}`);
+                toast.error(
+                    `${$t("trades.wizard.sections.visual_evidence.process_error")} ${file.name}`,
+                );
             }
         }
 
         images = [...images, ...newImages];
         if (newImages.length > 0)
-            toast.success(`${newImages.length} ${$t("trades.wizard.sections.visual_evidence.images_added")}`);
+            toast.success(
+                `${newImages.length} ${$t("trades.wizard.sections.visual_evidence.images_added")}`,
+            );
     }
 
     function removeImage(index: number) {
@@ -55,6 +62,9 @@
             processFiles(event.dataTransfer.files);
         }
     }
+
+    // Carousel State
+    let selectedImageIndex = $state<number | null>(null);
 </script>
 
 <div class="space-y-6">
@@ -125,7 +135,7 @@
                             variant="ghost"
                             size="icon"
                             class="h-8 w-8 text-white hover:bg-white/20"
-                            onclick={() => window.open(img)}
+                            onclick={() => (selectedImageIndex = i)}
                         >
                             <Eye class="w-4 h-4" />
                         </Button>
@@ -142,10 +152,14 @@
                     <div
                         class="absolute bottom-2 left-2 px-2 py-0.5 bg-black/50 backdrop-blur-md rounded text-[9px] font-bold text-white/70 uppercase"
                     >
-                        {$t("trades.wizard.sections.visual_evidence.attachment")} #{i + 1}
+                        {$t(
+                            "trades.wizard.sections.visual_evidence.attachment",
+                        )} #{i + 1}
                     </div>
                 </div>
             {/each}
         </div>
     {/if}
 </div>
+
+<ImageCarousel {images} bind:index={selectedImageIndex} />

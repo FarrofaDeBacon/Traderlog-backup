@@ -16,15 +16,18 @@
   --card-foreground: oklch(0.25 0.05 260);
   --popover: oklch(1 0 0 / 85%);
   --popover-foreground: oklch(0.25 0.05 260);
-  --primary: oklch(0.6 0.18 250);
+  --primary: oklch(0.55 0.18 250);
+  /* Darkened from 0.6 for better contrast with white text */
   /* Premium Azure */
   --primary-foreground: oklch(0.98 0.01 250);
   --secondary: oklch(0.94 0.02 250);
   --secondary-foreground: oklch(0.25 0.05 260);
   --muted: oklch(0.94 0.02 250);
-  --muted-foreground: oklch(0.5 0.05 260);
+  --muted-foreground: oklch(0.4 0.05 260);
+  /* Darkened from 0.5 for better readability in light mode */
   --accent: oklch(0.94 0.02 250);
-  --accent-foreground: oklch(0.6 0.18 250);
+  --accent-foreground: oklch(0.4 0.15 250);
+  /* Darkened for better readability as text */
   --destructive: oklch(0.55 0.22 25);
   --border: oklch(0.9 0.02 250 / 50%);
   --input: oklch(0.9 0.02 250);

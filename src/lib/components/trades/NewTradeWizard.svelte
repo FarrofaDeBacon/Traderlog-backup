@@ -36,6 +36,8 @@
         RefreshCw,
         Plus,
         Coins,
+        ExternalLink,
+        Maximize2,
     } from "lucide-svelte";
 
     let {
@@ -43,12 +45,24 @@
         editTradeId = undefined,
         close = () => {},
         onsave = () => {},
+        detached = false,
     } = $props<{
         trade?: any;
         editTradeId?: string;
         close: () => void;
         onsave?: () => void;
+        detached?: boolean;
     }>();
+
+    // Multi-window utility
+    const detach = async () => {
+        try {
+            await invoke("open_detached_trade_window");
+            close(); // Close the modal in the main window
+        } catch (e) {
+            console.error("Failed to detach window:", e);
+        }
+    };
 
     let currentStep = $state(1);
     let isSubmitting = $state(false);
@@ -677,6 +691,11 @@
         if (currentStep > 1) currentStep--;
     }
 
+    function sanitize(val: any): any {
+        if (typeof val === "string") return val.trim().slice(0, 1000); // Limit long strings
+        return val;
+    }
+
     async function handleSubmit() {
         // CRITICAL: Use editTradeId PROP (passed from parent at mount time via {#key}) as the
         // submission mode indicator. This is immune to Svelte $effect re-evaluation during async saves.
@@ -725,6 +744,33 @@
             return;
         }
 
+        // --- SECURITY & VALIDATION LAYER ---
+        const cleanAsset = sanitize(formData.asset).toUpperCase();
+        if (cleanAsset.length < 2 || cleanAsset.length > 20) {
+            toast.error($t("trades.wizard.messages.invalid_asset_symbol"));
+            return;
+        }
+
+        const qty = Number(formData.quantity);
+        if (isNaN(qty) || qty <= 0 || qty > 1000000000) {
+            toast.error($t("trades.wizard.messages.invalid_quantity"));
+            return;
+        }
+
+        const ePrice = Number(formData.entry_price);
+        if (isNaN(ePrice) || ePrice <= 0) {
+            toast.error($t("trades.wizard.messages.invalid_entry_price"));
+            return;
+        }
+
+        if (formData.status === "closed" || formData.exit_price !== null) {
+            const exPrice = Number(formData.exit_price);
+            if (isNaN(exPrice) || exPrice <= 0) {
+                toast.error($t("trades.wizard.messages.invalid_exit_price"));
+                return;
+            }
+        }
+
         isSubmitting = true;
         try {
             const tradeData: any = {
@@ -732,7 +778,7 @@
                 date: (formData.entry_date as string)?.includes("T")
                     ? formData.entry_date + ":00Z"
                     : formData.entry_date + "T00:00:00Z",
-                asset_symbol: formData.asset,
+                asset_symbol: cleanAsset,
                 asset_type_id: selectedAssetTypeId,
                 strategy_id: formData.strategy_id,
                 account_id: formData.account_id,
@@ -855,6 +901,20 @@
                     {$t("trades.wizard.subtitle")}
                 </p>
             </div>
+
+            <div class="flex items-center gap-2">
+                {#if !detached}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        class="h-8 w-8 text-muted-foreground hover:text-primary"
+                        onclick={detach}
+                        title="Abrir em janela independente"
+                    >
+                        <ExternalLink class="w-4 h-4" />
+                    </Button>
+                {/if}
+            </div>
         </div>
 
         <div class="relative flex justify-between max-w-2xl mx-auto">
@@ -904,7 +964,7 @@
                                 class="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg space-y-2 mb-4 animate-in fade-in zoom-in duration-300"
                             >
                                 <div
-                                    class="flex items-center gap-2 text-blue-400"
+                                    class="flex items-center gap-2 text-blue-600 dark:text-blue-400"
                                 >
                                     <ShieldCheck class="w-4 h-4" />
                                     <span
@@ -913,7 +973,7 @@
                                     >
                                 </div>
                                 <p
-                                    class="text-[10px] text-blue-200/80 leading-tight"
+                                    class="text-[10px] text-blue-800 dark:text-blue-200/80 leading-tight"
                                 >
                                     {$t(
                                         "trades.wizard.messages.closure_exists_warning",
@@ -940,7 +1000,7 @@
                                 <ul class="space-y-1">
                                     {#each riskWarnings as warning}
                                         <li
-                                            class="text-[10px] text-amber-200/80 leading-tight"
+                                            class="text-[10px] text-amber-800 dark:text-amber-200/80 leading-tight"
                                         >
                                             • {$t(warning.key, warning.params)}
                                         </li>
@@ -951,7 +1011,7 @@
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        class="w-full h-7 text-[9px] border-amber-500/40 bg-amber-500/5 hover:bg-amber-500/20 text-amber-200 uppercase font-bold"
+                                        class="w-full h-7 text-[9px] border-amber-500/40 bg-amber-500/5 hover:bg-amber-500/20 text-amber-700 dark:text-amber-200 uppercase font-bold"
                                         onclick={applyLotAdjustment}
                                     >
                                         {$t(
@@ -977,6 +1037,7 @@
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
                             <div class="space-y-1.5">
                                 <Label
+                                    for="account-select"
                                     class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight"
                                     >{$t("trades.wizard.fields.account")}</Label
                                 >
@@ -985,6 +1046,7 @@
                                     bind:value={formData.account_id}
                                 >
                                     <Select.Trigger
+                                        id="account-select"
                                         class="h-8 bg-muted/20 border-border/40 focus:ring-1 focus:ring-primary/40 text-xs text-foreground"
                                     >
                                         {accountsList.find(
@@ -1005,6 +1067,7 @@
                             </div>
                             <div class="space-y-1.5">
                                 <Label
+                                    for="strategy-select"
                                     class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight"
                                     >{$t(
                                         "trades.wizard.fields.strategy",
@@ -1015,6 +1078,7 @@
                                     bind:value={formData.strategy_id}
                                 >
                                     <Select.Trigger
+                                        id="strategy-select"
                                         class="h-8 bg-muted/20 border-border/40 focus:ring-1 focus:ring-primary/40 text-xs text-foreground"
                                     >
                                         {strategiesList.find(
@@ -1036,6 +1100,7 @@
                             </div>
                             <div class="space-y-1.5">
                                 <Label
+                                    for="timeframe-select"
                                     class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight"
                                     >{$t(
                                         "trades.wizard.fields.timeframe",
@@ -1046,6 +1111,7 @@
                                     bind:value={formData.timeframe}
                                 >
                                     <Select.Trigger
+                                        id="timeframe-select"
                                         class="h-8 bg-muted/20 border-border/40 focus:ring-1 focus:ring-primary/40 text-xs text-foreground"
                                     >
                                         {formData.timeframe ||
@@ -1070,6 +1136,7 @@
                             </div>
                             <div class="space-y-1.5">
                                 <Label
+                                    for="volatility-select"
                                     class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight"
                                     >{$t(
                                         "trades.wizard.fields.volatility",
@@ -1080,6 +1147,7 @@
                                     bind:value={formData.volatility}
                                 >
                                     <Select.Trigger
+                                        id="volatility-select"
                                         class="h-8 bg-muted/20 border-border/40 focus:ring-1 focus:ring-primary/40 text-xs text-foreground"
                                     >
                                         {formData.volatility ||
@@ -1124,6 +1192,7 @@
                                     <!-- Asset Type Filter -->
                                     <div class="space-y-1">
                                         <Label
+                                            for="asset-type-select"
                                             class="text-[9px] uppercase font-bold text-muted-foreground tracking-tighter"
                                             >{$t(
                                                 "trades.wizard.fields.asset_type",
@@ -1141,6 +1210,7 @@
                                             }}
                                         >
                                             <Select.Trigger
+                                                id="asset-type-select"
                                                 class="h-8 bg-muted/40 border-border/20 text-[10px] w-full"
                                             >
                                                 {assetTypesList.find(
@@ -1170,6 +1240,7 @@
                                     <!-- Asset Selector -->
                                     <div class="space-y-1">
                                         <Label
+                                            for="asset-select-main"
                                             class="text-[9px] uppercase font-bold text-muted-foreground tracking-tighter"
                                             >{$t("trades.wizard.fields.asset")}
                                             <span class="text-red-500">*</span
@@ -1180,6 +1251,7 @@
                                             bind:value={formData.asset}
                                         >
                                             <Select.Trigger
+                                                id="asset-select-main"
                                                 class="h-10 bg-muted/40 border-border/20 text-xs font-bold w-full"
                                             >
                                                 <div
@@ -1260,7 +1332,7 @@
                                             class="rounded-md font-bold text-xs transition-all flex items-center justify-center {formData.direction ===
                                             'buy'
                                                 ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                                                : 'bg-muted/20 text-muted-foreground hover:bg-muted/30'}"
+                                                : 'bg-muted/40 text-muted-foreground hover:bg-muted/60'}"
                                             onclick={() =>
                                                 (formData.direction = "buy")}
                                         >
@@ -1271,7 +1343,7 @@
                                             class="rounded-md font-bold text-xs transition-all flex items-center justify-center {formData.direction ===
                                             'sell'
                                                 ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.3)]'
-                                                : 'bg-muted/20 text-muted-foreground hover:bg-muted/30'}"
+                                                : 'bg-muted/40 text-muted-foreground hover:bg-muted/60'}"
                                             onclick={() =>
                                                 (formData.direction = "sell")}
                                         >
@@ -1399,11 +1471,13 @@
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-3">
                             <div class="space-y-1.5">
                                 <Label
+                                    for="quantity-input"
                                     class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight"
                                     >{$t("trades.wizard.fields.quantity")}
                                     <span class="text-red-500">*</span></Label
                                 >
                                 <Input
+                                    id="quantity-input"
                                     type="number"
                                     step="any"
                                     bind:value={formData.quantity}
@@ -1454,6 +1528,7 @@
                             <!-- Modality -->
                             <div class="space-y-1.5 lg:col-span-2">
                                 <Label
+                                    for="modality-select"
                                     class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight"
                                     >{$t("trades.filters.modality")}</Label
                                 >
@@ -1462,6 +1537,7 @@
                                     bind:value={formData.modality_id}
                                 >
                                     <Select.Trigger
+                                        id="modality-select"
                                         class="h-10 bg-muted/40 border-border/40 text-xs text-foreground"
                                     >
                                         {settingsStore.modalities.find(
@@ -1483,15 +1559,17 @@
                             </div>
                             <div class="space-y-1.5">
                                 <Label
+                                    for="stop-loss-input"
                                     class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight"
                                     >{$t(
                                         "trades.wizard.fields.stop_loss",
                                     )}</Label
                                 >
                                 <Input
+                                    id="stop-loss-input"
                                     type="number"
                                     step="0.00001"
-                                    bind:value={formData.take_profit}
+                                    bind:value={formData.stop_loss}
                                     class="h-10 bg-muted/40 border-border/40 text-xs font-mono font-bold text-foreground"
                                     placeholder="0.00"
                                 />
@@ -1515,12 +1593,14 @@
                             </div>
                             <div class="space-y-1.5">
                                 <Label
+                                    for="take-profit-input"
                                     class="text-[10px] uppercase font-bold text-muted-foreground tracking-tight"
                                     >{$t(
                                         "trades.wizard.fields.take_profit",
                                     )}</Label
                                 >
                                 <Input
+                                    id="take-profit-input"
                                     type="number"
                                     step="0.00001"
                                     bind:value={formData.take_profit}
@@ -1850,12 +1930,15 @@
                         >
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="space-y-2">
-                                <Label class="text-xs"
+                                <Label
+                                    for="entry-rationale-text"
+                                    class="text-xs"
                                     >{$t(
                                         "trades.wizard.fields.entry_rationale",
                                     )}</Label
                                 >
                                 <Textarea
+                                    id="entry-rationale-text"
                                     bind:value={formData.entry_rationale}
                                     placeholder={$t(
                                         "trades.wizard.placeholders.rationale",
@@ -1864,12 +1947,15 @@
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label class="text-xs"
+                                <Label
+                                    for="confirmation-signals-text"
+                                    class="text-xs"
                                     >{$t(
                                         "trades.wizard.fields.confirmation_signals",
                                     )}</Label
                                 >
                                 <Textarea
+                                    id="confirmation-signals-text"
                                     bind:value={formData.confirmation_signals}
                                     placeholder={$t(
                                         "trades.wizard.placeholders.signals",
@@ -1880,12 +1966,13 @@
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="space-y-2">
-                                <Label class="text-xs"
+                                <Label for="market-context-text" class="text-xs"
                                     >{$t(
                                         "trades.wizard.fields.market_context",
                                     )}</Label
                                 >
                                 <Textarea
+                                    id="market-context-text"
                                     bind:value={formData.market_context}
                                     placeholder={$t(
                                         "trades.wizard.placeholders.context",
@@ -1894,12 +1981,13 @@
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label class="text-xs"
+                                <Label for="improvements-text" class="text-xs"
                                     >{$t(
                                         "trades.wizard.fields.improvements",
                                     )}</Label
                                 >
                                 <Textarea
+                                    id="improvements-text"
                                     bind:value={formData.mistakes_improvements}
                                     placeholder={$t(
                                         "trades.wizard.placeholders.improvements",
@@ -1913,6 +2001,7 @@
                             <div class="flex items-center justify-between">
                                 <div class="space-y-0.5">
                                     <Label
+                                        for="emotion-intensity-range"
                                         class="text-xs font-bold text-foreground uppercase tracking-tight flex items-center gap-2"
                                     >
                                         <Brain
@@ -1936,6 +2025,7 @@
                                 >
                             </div>
                             <input
+                                id="emotion-intensity-range"
                                 type="range"
                                 min="0"
                                 max="10"
