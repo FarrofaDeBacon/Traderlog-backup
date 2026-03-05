@@ -1134,9 +1134,7 @@
                             {@const isMonthExpanded = expandedMonths.has(
                                 month.key,
                             )}
-                            <div
-                                class="card-glass border border-border/50 overflow-hidden"
-                            >
+                            <div class="space-y-3">
                                 <!-- Month Header -->
                                 <button
                                     class="w-full flex items-center justify-between p-3 rounded-xl card-glass border-primary/20 hover:bg-primary/15 transition-all duration-300 sticky top-0 z-10 backdrop-blur-md"
@@ -1249,9 +1247,7 @@
                                         {#each month.weeks as week}
                                             {@const isWeekExpanded =
                                                 expandedWeeks.has(week.key)}
-                                            <div
-                                                class="card-glass border border-border/40 overflow-hidden"
-                                            >
+                                            <div class="space-y-3">
                                                 <button
                                                     class="w-full flex items-center justify-between p-3 rounded-xl border-none bg-transparent hover:bg-primary/10 transition-all duration-300"
                                                     onclick={() =>
@@ -1362,7 +1358,7 @@
                                                                     day.date,
                                                                 )}
                                                             <div
-                                                                class="card-glass border border-border/50 overflow-hidden"
+                                                                class="rounded-xl border border-border/50 card-glass overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300"
                                                             >
                                                                 <button
                                                                     class="w-full flex items-center justify-between p-2 sm:p-3 hover:bg-primary/10 transition-all duration-300 text-left border-none bg-transparent"
