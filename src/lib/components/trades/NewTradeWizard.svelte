@@ -176,6 +176,9 @@
     let lastSyncedDraftKey = $state<string | undefined>(undefined);
     let closureAlreadyExists = $state(false);
 
+    // Track original result for DARF increase warning (Fiscal Guard)
+    let originalResult = $state<number | null>(null);
+
     // Check if a daily closure already exists for data/account to warn the user
     $effect(() => {
         const dateStr = formData.entry_date;
@@ -255,6 +258,9 @@
                     }),
                 ),
             };
+
+            // Capture original result for Fiscal Guard comparison
+            originalResult = parseFloat(currentTrade.result as any) || 0;
         } else if (currentTrade) {
             // NEW: Support for DRAFT trades (from RTD detection pop-up)
             const draftKey = `${currentTrade.asset_symbol}-${currentTrade.entry_price}-${currentTrade.account_id}`;
@@ -326,6 +332,8 @@
                 images: [],
                 base_currency: "BRL",
             };
+
+            originalResult = null;
         }
     });
 
@@ -581,6 +589,8 @@
                         : sym.startsWith("WIN")
                           ? 0.2
                           : 1.0,
+                    default_fee_id: undefined,
+                    tax_profile_id: undefined,
                 };
             });
     });
@@ -892,6 +902,32 @@
             );
 
             if (submissionId) {
+                // FISCAL GUARD (d5398093): Warn if profit increase might require complementary DARF
+                const currentNetResult = calculationResult.net;
+                if (
+                    originalResult !== null &&
+                    activeRiskProfile?.id !== "demo"
+                ) {
+                    const month = formData.entry_date.substring(0, 7);
+                    const nowMonth = new Date().toISOString().substring(0, 7);
+
+                    // Significant increase (> R$ 10.0 or 20% relative to month total?)
+                    // Simple threshold: if new result > original + 10.0 (minimum DARF trigger)
+                    const profitIncrease = currentNetResult - originalResult;
+
+                    if (profitIncrease > 10.0 && month < nowMonth) {
+                        const confirmed = confirm(
+                            $t(
+                                "trades.wizard.messages.complementary_darf_warning",
+                            ),
+                        );
+                        if (!confirmed) {
+                            isSubmitting = false;
+                            return;
+                        }
+                    }
+                }
+
                 console.log(
                     "[NewTradeWizard] Calling updateTrade for ID:",
                     submissionId,

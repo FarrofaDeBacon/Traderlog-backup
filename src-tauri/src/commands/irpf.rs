@@ -61,7 +61,7 @@ pub async fn calculate_monthly_tax(
             (IF account_id != NONE THEN type::string(account_id) ELSE null END) as account_id,
             (IF asset_id != NONE THEN type::string(asset_id) ELSE null END) as asset_id,
             (IF modality_id != NONE THEN type::string(modality_id) ELSE null END) as modality_id,
-            type::string(asset_type_id) as trade_asset_type_id,
+            (IF asset_type_id != NONE THEN type::string(asset_type_id) ELSE null END) as trade_asset_type_id,
             type::float(result) as result,
             type::float(fee_total) as fee_total,
             type::float(quantity) as quantity,
@@ -479,7 +479,7 @@ pub async fn calculate_monthly_tax(
         // NOTE: ORDER BY is removed from the query to avoid SurrealDB 'Missing order idiom' parse
         // error when combining parenthesized WHERE conditions with ORDER BY on numeric fields.
         // We fetch all prior records and sort in Rust instead.
-        let credit_query = "SELECT type::float(withholding_credit_remaining) as withholding_credit_remaining, period_year, period_month, type::string(calculation_date) as calculation_date FROM tax_appraisal WHERE trade_type = $type";
+        let credit_query = "SELECT type::float(withholding_credit_remaining) as withholding_credit_remaining, period_year, period_month, (IF calculation_date != NONE THEN type::string(calculation_date) ELSE '' END) as calculation_date FROM tax_appraisal WHERE trade_type = $type";
         let mut credit_res =
             db.0.query(credit_query)
                 .bind(("type", loss_category.clone()))
@@ -513,7 +513,7 @@ pub async fn calculate_monthly_tax(
 
         // 3.5 Accumulation Logic (< R$ 10)
         // NOTE: Same pattern - ORDER BY removed to avoid SurrealDB parse error.
-        let accum_query = "SELECT type::float(total_payable) as total_payable, period_year, period_month, type::string(calculation_date) as calculation_date FROM tax_appraisal WHERE trade_type = $type AND status = 'Pending'";
+        let accum_query = "SELECT type::float(total_payable) as total_payable, period_year, period_month, (IF calculation_date != NONE THEN type::string(calculation_date) ELSE '' END) as calculation_date FROM tax_appraisal WHERE trade_type = $type AND status = 'Pending'";
         let mut accum_res =
             db.0.query(accum_query)
                 .bind(("type", loss_category.clone()))
@@ -559,7 +559,7 @@ pub async fn calculate_monthly_tax(
             .map(|v| v.get("total_payable").and_then(|t| t.as_f64()).unwrap_or(0.0))
             .sum();
 
-        let appraisal = crate::logic::calculate_appraisal(
+        let mut appraisal = crate::logic::calculate_appraisal(
             &bucket,
             month,
             year,
@@ -570,6 +570,7 @@ pub async fn calculate_monthly_tax(
         );
         appraisal.tax_rule_id = rule_id; 
         appraisal.calculation_date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        appraisal.is_complementary = already_paid > 0.0;
 
         appraisals.push(appraisal);
     }
@@ -614,7 +615,7 @@ pub async fn get_appraisals(
         type::float(tax_accumulated) as tax_accumulated, \
         type::float(total_payable) as total_payable, \
         is_exempt, \
-        type::string(calculation_date) as calculation_date, \
+        (IF calculation_date != NONE THEN type::string(calculation_date) ELSE '' END) as calculation_date, \
         status, \
         trade_ids \
         FROM tax_appraisal ";

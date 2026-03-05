@@ -1142,7 +1142,9 @@
                                     class="w-full flex items-center justify-between p-3 rounded-xl card-glass border-primary/20 hover:bg-primary/15 transition-colors sticky top-0 z-10 backdrop-blur-md"
                                     onclick={() => toggleMonth(month.key)}
                                 >
-                                    <div class="flex items-center gap-4">
+                                    <div
+                                        class="flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2"
+                                    >
                                         <div
                                             class="p-2 rounded-lg bg-primary/20"
                                         >
@@ -1256,7 +1258,7 @@
                                                         toggleWeek(week.key)}
                                                 >
                                                     <div
-                                                        class="flex items-center gap-3"
+                                                        class="flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2"
                                                     >
                                                         <TrendingUp
                                                             class="w-3.5 h-3.5 text-emerald-400"
@@ -1449,7 +1451,7 @@
                                                                         class="flex items-center gap-6"
                                                                     >
                                                                         <div
-                                                                            class="flex items-center gap-6"
+                                                                            class="flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2"
                                                                         >
                                                                             <div
                                                                                 class="flex items-center gap-2 mr-2"

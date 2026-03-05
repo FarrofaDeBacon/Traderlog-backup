@@ -548,52 +548,70 @@ pub async fn get_trades(db: State<'_, DbState>) -> Result<Vec<Trade>, String> {
 
 #[tauri::command]
 pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), String> {
-    println!(
-        "[COMMAND] save_trade (v2-logging) START for ID: {}",
-        trade.id
-    );
-    // Strip prefix and angle/back-tick wrappers to get the raw UUID
-    let clean_id = trade
-        .id
-        .split(':')
-        .last()
-        .unwrap_or(&trade.id)
+    // Robust ID extraction: handles table prefix, angle brackets, and backticks
+    let raw_id = &trade.id;
+    let clean_id = raw_id
+        .replace("trade:", "")
         .replace("⟨", "")
         .replace("⟩", "")
-        .replace("`", "");
+        .replace("`", "")
+        .trim()
+        .to_string();
+
     println!(
-        "[DEBUG] save_trade clean_id: '{}' (from '{}') on account_id: '{}'",
-        clean_id, trade.id, trade.account_id
+        "[COMMAND] save_trade START: clean_id='{}' (raw_id='{}') asset='{}' result='{}'",
+        clean_id, raw_id, trade.asset_symbol, trade.result
     );
 
+    // Diagnostic check for existence BEFORE upserting
+    let check_sql = format!("SELECT id FROM trade:⟨{}⟩ LIMIT 1", clean_id);
+    if let Ok(mut res) = db.0.query(&check_sql).await {
+        if let Ok(existing) = res.take::<Vec<serde_json::Value>>(0) {
+            if !existing.is_empty() {
+                println!("[DEBUG] save_trade: Record trade:⟨{}⟩ already exists. Performing UPDATE.", clean_id);
+            } else {
+                println!("[DEBUG] save_trade: Record trade:⟨{}⟩ NOT found. Performing INSERT.", clean_id);
+                // Log all IDs in the table to find potential mismatches
+                if let Ok(mut all_res) = db.0.query("SELECT type::string(id) as id FROM trade LIMIT 5").await {
+                   if let Ok(ids) = all_res.take::<Vec<serde_json::Value>>(0) {
+                       println!("[DEBUG] save_trade: Sample existing IDs in 'trade' table: {:?}", ids);
+                   }
+                }
+            }
+        }
+    }
+
     let mut data = serde_json::to_value(&trade).map_err(|e| e.to_string())?;
+    // Content should NOT include the ID as it is the primary key and immutable in SurrealDB
     if let Some(obj) = data.as_object_mut() {
         obj.remove("id");
     }
 
-    // First, standard upsert using string-interpolated Record ID (avoids wrapping issues)
+    // First, standard upsert using string-interpolated Record ID
     upsert_record(&db.0, "trade", &clean_id, data).await?;
 
-    // Then explicit UPDATE for relational fields using ⟨UUID⟩ angle-bracket Record ID
+    // Then explicit UPDATE for relational fields using ⟨UUID⟩ Record ID
     let full_trade_id = format!("trade:⟨{}⟩", clean_id);
     let sql = format!("
         UPDATE {} SET 
             account_id = type::thing(account_id),
             asset_type_id = type::thing(asset_type_id),
             strategy_id = type::thing(strategy_id),
-            entry_emotional_state_id = IF entry_emotional_state_id != NONE AND entry_emotional_state_id != '' THEN type::thing(entry_emotional_state_id) ELSE NONE END,
-            exit_emotional_state_id = IF exit_emotional_state_id != NONE AND exit_emotional_state_id != '' THEN type::thing(exit_emotional_state_id) ELSE NONE END,
-            modality_id = IF modality_id != NONE AND modality_id != '' THEN type::thing(modality_id) ELSE NONE END,
-            asset_id = IF asset_id != NONE AND asset_id != '' THEN type::thing(asset_id) ELSE NONE END
-        ;
-    ", full_trade_id);
+            modality_id = type::thing(modality_id),
+            entry_emotional_state_id = type::thing(entry_emotional_state_id),
+            exit_emotional_state_id = type::thing(exit_emotional_state_id)
+        WHERE id = {};
+    ", full_trade_id, full_trade_id);
+
     db.0.query(&sql).await.map_err(|e| e.to_string())?;
+
+    println!("[COMMAND] save_trade SUCCESS for trade:{}", clean_id);
 
     // --- AUTO-SYNC DAILY CLOSURE (EXTRATO) ---
     let date_only = if let Some(ref ed) = trade.exit_date {
-        ed.split('T').next().unwrap_or(ed).split(' ').next().unwrap_or(ed)
+        ed.split('T').next().unwrap_or(ed).split(' ').next().unwrap_or(ed).to_string()
     } else {
-        trade.date.split('T').next().unwrap_or(&trade.date).split(' ').next().unwrap_or(&trade.date)
+        trade.date.split('T').next().unwrap_or(&trade.date).split(' ').next().unwrap_or(&trade.date).to_string()
     };
 
     let acc_clean_current = trade
@@ -610,7 +628,7 @@ pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), Stri
     // 1. Find ALL closures that currently contain this trade ID
     // and ALSO find the "target" closure for the trade's current date/account
     let find_sync_sql = format!(
-        "SELECT *, type::string(id) as id, type::string(account_id) as account_id FROM cash_transaction WHERE system_linked = true"
+        "SELECT *, type::string(id) as id, type::string(account_id) as account_id FROM cash_transaction WHERE system_linked = true AND category = 'Trading'"
     );
 
     if let Ok(mut find_res) = db.0.query(&find_sync_sql).await {
@@ -648,7 +666,7 @@ pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), Stri
             // we should try specifically finding it even if it doesn't have the trade yet.
             if !target_closure_found {
                  let find_target_sql = format!(
-                    "SELECT *, type::string(id) as id, type::string(account_id) as account_id FROM cash_transaction WHERE system_linked = true AND string::startsWith(type::string(date), '{}')",
+                    "SELECT *, type::string(id) as id, type::string(account_id) as account_id FROM cash_transaction WHERE system_linked = true AND category = 'Trading' AND string::startsWith(type::string(date), '{}')",
                     date_only
                 );
                 if let Ok(mut target_res) = db.0.query(&find_target_sql).await {
@@ -786,7 +804,7 @@ pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), Stri
     // 2. Find associated daily closures (cash_transactions with this trade in trade_ids)
     // Search with multiple ID formats to handle legacy data
     let sql_ct =
-        "SELECT *, type::string(id) as id, type::string(account_id) as account_id FROM cash_transaction WHERE system_linked = true";
+        "SELECT *, type::string(id) as id, type::string(account_id) as account_id FROM cash_transaction WHERE system_linked = true AND category = 'Trading'";
     let mut cashflow_to_update: Vec<crate::models::CashTransaction> = Vec::new();
     if let Ok(mut ct_res) = db.0.query(sql_ct).await {
         if let Ok(all_cts) = ct_res.take::<Vec<crate::models::CashTransaction>>(0) {
@@ -986,7 +1004,7 @@ pub async fn diagnostic_closure_dump(db: State<'_, DbState>) -> Result<(), Strin
 
     // 1. Inspect Trades
     println!("\n[TRADES]");
-    let query = "SELECT type::string(id) as id, type::string(date) as date, (IF exit_date != NONE THEN type::string(exit_date) ELSE null END) as exit_date, type::float(result) as result, type::float(exit_price) as exit_price, type::string(account_id) as account_id FROM trade ORDER BY date DESC LIMIT 1";
+    let query = "SELECT type::string(id) as id, type::string(date) as date, (IF exit_date != NONE THEN type::string(exit_date) ELSE null END) as exit_date, type::float(result) as result, type::float(exit_price) as exit_price, (IF account_id != NONE THEN type::string(account_id) ELSE null END) as account_id FROM trade ORDER BY date DESC LIMIT 1";
     let mut res = db.0.query(query).await.map_err(|e| e.to_string())?;
     let all_fields_trades: Vec<serde_json::Value> = res.take(0).map_err(|e| e.to_string())?;
     if let Some(t) = all_fields_trades.first() {
@@ -1242,6 +1260,7 @@ pub async fn delete_modality(db: State<'_, DbState>, id: String) -> Result<(), S
     let clean_id = id.split(':').last().unwrap_or(&id);
     delete_record(&db.0, "modality", clean_id).await
 }
+
 
 // --- Tags ---
 

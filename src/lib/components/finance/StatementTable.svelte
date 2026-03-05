@@ -417,9 +417,9 @@
 
     function findTradeById(id: string) {
         if (!id) return null;
-        const normalizedId = id.split(":").pop() || id;
+        const normalizedId = tradesStore.normalizeId(id);
         return tradesStore.trades.find((t) => {
-            const tid = t.id.split(":").pop() || t.id;
+            const tid = tradesStore.normalizeId(t.id);
             return tid === normalizedId;
         });
     }
@@ -535,10 +535,12 @@
             <div class="space-y-3">
                 <!-- Month Header -->
                 <button
-                    class="w-full flex items-center justify-between p-3 rounded-xl card-glass border-primary/20 hover:bg-primary/15 transition-all duration-300 sticky top-0 z-10 backdrop-blur-md animate-in fade-in slide-in-from-bottom-2"
+                    class="w-full flex items-center justify-between p-3 rounded-xl card-glass border-primary/20 hover:bg-primary/15 transition-all duration-300 sticky top-0 z-10 backdrop-blur-md"
                     onclick={() => toggleMonth(monthKey)}
                 >
-                    <div class="flex items-center gap-3">
+                    <div
+                        class="flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2"
+                    >
                         <div class="p-2 rounded-lg bg-primary/20">
                             <Calendar class="w-4 h-4 text-primary" />
                         </div>

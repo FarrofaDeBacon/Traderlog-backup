@@ -48,29 +48,68 @@ class TradesStore {
         }
     }
 
+    /**
+     * Helper to normalize IDs for comparison (extracts clean ID from 'table:id' or '{String: "id"}' or {String: "id"})
+     */
+    normalizeId(id: any): string {
+        if (!id) return "";
+
+        // Handle if it's already an object (Tauri/Serde can return this)
+        if (typeof id === 'object') {
+            if (id.String) return this.normalizeId(id.String);
+            if (id.id) return this.normalizeId(id.id);
+        }
+
+        let str = id.toString();
+        // Handle Rust/SurrealDB stringified object-like representations if they leak
+        if (str.includes("String:")) {
+            str = str.split("String:").pop() || str;
+        }
+        // Remove brackets, quotes and whitespace
+        // Normalized for Svelte/JS comparison: keep only the hex/uuid part
+        str = str.replace(/[{}\"\'\s⟨⟩`]/g, "");
+
+        // Take the last part of a prefixed ID
+        return str.split(":").pop() || str;
+    }
+
     async updateTrade(id: string, trade: Partial<Trade>) {
         try {
-            // Normalize: accept both "trade:UUID" and plain "UUID" formats
-            const existingIdx = this.trades.findIndex(t =>
-                t.id === id ||
-                t.id === `trade:${id}` ||
-                t.id.split(':').pop() === id.split(':').pop()
-            );
+            const normalizedInputId = this.normalizeId(id);
+            console.log("[TradesStore] updateTrade: Normalized Input ID:", normalizedInputId, "Original:", id);
+
+            const existingIdx = this.trades.findIndex(t => {
+                const tid = this.normalizeId(t.id);
+                // Extra log for debugging
+                const isMatch = tid === normalizedInputId;
+                if (isMatch) {
+                    console.log(`[TradesStore] MATCH FOUND: '${tid}' === '${normalizedInputId}'`);
+                }
+                return isMatch;
+            });
+            console.log("[TradesStore] Existing index found:", existingIdx);
+
             if (existingIdx === -1) {
-                console.error("[TradesStore] updateTrade: Trade not found for id:", id, "Store has:", this.trades.map(t => t.id));
-                throw new Error(`Trade not found: ${id}`);
+                console.error("[TradesStore] Could not find trade to update. Input ID:", id, "Normalized:", normalizedInputId);
+                console.log("[TradesStore] Available trade IDs:", this.trades.map(t => this.normalizeId(t.id)));
+                throw new Error(`Trade with ID ${id} not found in store.`);
             }
 
             const existing = this.trades[existingIdx];
-            const updatedTrade = { ...existing, ...trade };
-            await invoke("save_trade", { trade: $state.snapshot(updatedTrade) });
+            // CRITICAL: Ensure the ID is preserved and correctly formatted for backend
+            // We use the full original ID (potentially with prefix) from the store
+            const updatedTrade = { ...existing, ...trade, id: existing.id };
+
+            console.log("[TradesStore] Calling save_trade with ID:", updatedTrade.id);
+            const result = await invoke("save_trade", { trade: $state.snapshot(updatedTrade) });
+            console.log("[TradesStore] save_trade result:", result);
 
             this.trades = this.trades.map((t, i) => i === existingIdx ? updatedTrade : t);
 
-            // Trigger financial refresh to update the statement (extrato)
+            // Trigger financial refresh
             await settingsStore.loadCashTransactions();
 
-            // Sync account balances because save_trade might have updated them
+            // Sync account balances
             invoke("get_accounts").then(res => {
                 if (res) settingsStore.accounts = res as Account[];
             }).catch(e => console.error("Failed to sync accounts after trade update", e));
@@ -84,16 +123,17 @@ class TradesStore {
 
     async removeTrade(id: string) {
         try {
+            const normalizedInputId = this.normalizeId(id);
+            console.log("[TradesStore] removeTrade: Normalized Input ID:", normalizedInputId);
+
             await invoke("delete_trade", { id });
 
-            // Optimistic local update: remove from UI immediately
-            const normalizedId = id.split(':').pop()?.replace(/[⟨⟩`]/g, '') || id;
+            // Optimistic local update
             this.trades = this.trades.filter(t => {
-                const tid = t.id.split(':').pop()?.replace(/[⟨⟩`]/g, '') || t.id;
-                return tid !== normalizedId;
+                const tid = this.normalizeId(t.id);
+                return tid !== normalizedInputId;
             });
 
-            // Also reload from DB to guarantee sync (awaited so UI reflects final state)
             await this.loadTrades();
             await settingsStore.loadCashTransactions();
 
@@ -113,48 +153,20 @@ class TradesStore {
         const normalizedTargetDate = getLocalDatePart(date);
         console.log(`[TradesStore] getDailyResultByAccount for date: ${date} (normalized: ${normalizedTargetDate})`);
 
-        // Helper to normalize IDs for comparison (extracts clean ID from 'table:id' or '{String: "id"}' or {String: "id"})
-        const normalizeId = (id: any) => {
-            if (!id) return "";
-
-            // Handle if it's already an object (Tauri/Serde can return this)
-            if (typeof id === 'object') {
-                if (id.String) return normalizeId(id.String);
-                if (id.id) return normalizeId(id.id);
-            }
-
-            let str = id.toString();
-            // Handle Rust/SurrealDB stringified object-like representations if they leak
-            if (str.includes("String:")) {
-                str = str.split("String:").pop() || str;
-            }
-            // Remove brackets, quotes and whitespace
-            str = str.replace(/[{}\"\'\s]/g, "");
-            // Take the last part of a prefixed ID
-            return str.split(":").pop();
-        };
-
         return accounts.map(acc => {
-            const accCleanId = normalizeId(acc.id);
+            const accCleanId = this.normalizeId(acc.id);
             const accountTrades = this.trades.filter(t => {
                 const isClosed = t.exit_price !== null && t.exit_price !== undefined;
                 if (!isClosed) return false;
 
                 const dateToUse = getLocalDatePart(t.exit_date || t.date);
 
-                const tAccId = normalizeId(t.account_id);
-                console.log(`[TradesStore] Filtering Trade ${t.id}: AccID(${t.account_id}) -> ${tAccId} vs Account(${acc.nickname}) -> ${accCleanId}. Date: ${dateToUse} vs ${normalizedTargetDate}`);
-
+                const tAccId = this.normalizeId(t.account_id);
                 const match = tAccId === accCleanId && dateToUse === normalizedTargetDate;
-
-                if (match) {
-                    console.log(`[TradesStore] MATCH FOUND! Trade ${t.id} for account ${acc.nickname}`);
-                }
 
                 return match;
             });
             const totalResult = accountTrades.reduce((sum, t) => sum + (Number(t.result) || 0), 0);
-            console.log(`[TradesStore] Account ${acc.nickname} result: ${totalResult} (${accountTrades.length} trades)`);
             return {
                 account_id: acc.id,
                 account_name: acc.nickname,

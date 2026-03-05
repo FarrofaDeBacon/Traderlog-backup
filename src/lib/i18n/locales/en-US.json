@@ -328,7 +328,9 @@
                 "result": "RESULT",
                 "transfer": "Transfer",
                 "withdraw": "Withdrawal"
-            }
+            },
+            "monthlyResult": "Resultado Mensal",
+            "result": "Resultado"
         },
         "title": "Finance Hub",
         "transactionDialog": {
@@ -1509,12 +1511,6 @@
             "title": "My Profile"
         },
         "risk": {
-            "alerts_title": "Risk Alerts",
-            "emotional_warning": "Emotional Deviation: Your current weight ({weight}) is below the threshold ({threshold}). We suggest reducing the lot by {percent}%.",
-            "outlier_warning": "Outlier Detection: We identified recent losses outside the normal statistical curve.",
-            "sniper_warning": "Sniper Limit: You have already performed {current} of {limit} allowed operations for today.",
-            "reduce_lot_button": "REDUCE LOT BY {percent}%",
-            "toast_lot_adjusted": "Lot adjusted successfully!",
             "accountTypes": {
                 "All": "All Accounts",
                 "Demo": "Demo Account",

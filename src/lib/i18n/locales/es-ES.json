@@ -328,7 +328,9 @@
                 "result": "RESULTADO",
                 "transfer": "Transferencia",
                 "withdraw": "Retiro"
-            }
+            },
+            "monthlyResult": "Resultado Mensal",
+            "result": "Resultado"
         },
         "title": "Hub Financiero",
         "transactionDialog": {
@@ -499,7 +501,8 @@
                 "toPay": "Tax Due",
                 "type": "Modality"
             },
-            "title": "IRPF Hub"
+            "title": "IRPF Hub",
+            "complementary": "Complementar"
         }
     },
     "general": {
@@ -1508,12 +1511,6 @@
             "title": "Mi Perfil"
         },
         "risk": {
-            "alerts_title": "Alertas de Riesgo",
-            "emotional_warning": "Desviación Emocional: Su peso actual ({weight}) está por debajo del umbral ({threshold}). Sugerimos reducir el lote en un {percent}%.",
-            "outlier_warning": "Detección de Outlier: Identificamos pérdidas recientes fuera de la curva estadística normal.",
-            "sniper_warning": "Límite Sniper: Ya ha realizado {current} de las {limit} operaciones permitidas para hoy.",
-            "reduce_lot_button": "REDUCIR LOTE EN {percent}%",
-            "toast_lot_adjusted": "¡Lote ajustado con éxito!",
             "accountTypes": {
                 "All": "Todas las Cuentas",
                 "Demo": "Cuenta Demo",
