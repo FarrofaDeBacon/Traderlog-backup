@@ -1848,7 +1848,8 @@
                     "T2": "Brazil Options",
                     "T3": "Brazil Futures",
                     "T4": "Real Estate Funds",
-                    "T5": "US Stocks",
+                    "T5": "US Stocks (NYSE)",
+                    "T5B": "US Stocks (NASDAQ)",
                     "T6": "Forex Pairs",
                     "T7": "Cryptocurrencies"
                 }

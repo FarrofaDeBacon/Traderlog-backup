@@ -1845,7 +1845,8 @@
                     "T2": "Options BR",
                     "T3": "Futures BR",
                     "T4": "FIIs",
-                    "T5": "Stocks US",
+                    "T5": "Stocks US (NYSE)",
+                    "T5B": "Stocks US (NASDAQ)",
                     "T6": "Paires Forex",
                     "T7": "Cryptomonnaies"
                 }
