@@ -709,25 +709,7 @@
         "title": "Análisis Psicológico"
     },
     "settings": {
-        "fiscal": {
-            "assignments": {
-                "title": "Asignaciones Fiscales",
-                "description": "Vincule perfiles fiscales a tipos de activos para automatizar los cálculos de impuestos.",
-                "goToAssetTypes": "Gestionar Tipos de Activos",
-                "table": {
-                    "market": "Mercado",
-                    "assetType": "Tipo de Activo",
-                    "fiscalProfile": "Perfil Fiscal",
-                    "unknownProfile": "Perfil Desconocido",
-                    "defaultExempt": "Exento (Predeterminado)",
-                    "empty": "No hay tipos de activos configurados."
-                },
-                "tip": {
-                    "title": "Sugerencia:",
-                    "text": "El cambio del perfil fiscal solo afecta a los nuevos cálculos y cierres de operaciones."
-                }
-            }
-        },
+
         "accounts": {
             "balance": "SALDO",
             "confirmDeduplicate": "¿Confirmar eliminación de duplicados?",
@@ -1164,18 +1146,21 @@
         },
         "fiscal": {
             "assignments": {
-                "description": "Description",
-                "goToAssetTypes": "Go To Asset Types",
+                "title": "Asignaciones Fiscales",
+                "description": "Vincule perfiles fiscales a tipos de activos para automatizar los cálculos de impuestos.",
+                "goToAssetTypes": "Gestionar Tipos de Activos",
                 "table": {
-                    "assetType": "Asset Type",
-                    "empty": "Empty",
-                    "market": "Market"
+                    "market": "Mercado",
+                    "assetType": "Tipo de Activo",
+                    "fiscalProfile": "Perfil Fiscal",
+                    "unknownProfile": "Perfil Desconocido",
+                    "defaultExempt": "Exento (Predeterminado)",
+                    "empty": "No hay tipos de activos configurados."
                 },
                 "tip": {
-                    "text": "Text",
-                    "title": "Title"
-                },
-                "title": "Title"
+                    "title": "Sugerencia:",
+                    "text": "El cambio del perfil fiscal solo afecta a los nuevos cálculos y cierres de operaciones."
+                }
             },
             "description": "Configure las tasas de impuestos (IRPF) para cada tipo de activo y modalidad.",
             "mappings": {

@@ -47,7 +47,7 @@
     import { calculateAverageTimeBetweenTrades, formatDuration } from "$lib/utils/gann";
 
     import { untrack } from "svelte";
-    import { format } from "date-fns";
+    import { format } from "date-fns/format";
 
     let searchQuery = $state("");
     let expandedMonths = $state<Set<string>>(new Set());

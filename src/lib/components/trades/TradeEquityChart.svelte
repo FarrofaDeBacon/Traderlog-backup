@@ -5,7 +5,7 @@
     import { settingsStore } from "$lib/stores/settings.svelte";
     import { tradesStore } from "$lib/stores/trades.svelte";
     import { formatCurrency, parseSafeDate } from "$lib/utils";
-    import { format } from "date-fns";
+    import { format } from "date-fns/format";
 
     let { trades = [] } = $props();
 

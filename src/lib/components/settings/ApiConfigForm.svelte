@@ -16,13 +16,14 @@
         onCancel: () => void;
     }>();
 
+    const data = $state.snapshot(initialData);
     let formData = $state<Omit<ApiConfig, "id">>({
-        provider: initialData?.provider ?? "custom",
-        api_key: initialData?.api_key ?? "",
-        enabled: initialData?.enabled ?? true,
-        daily_limit: initialData?.daily_limit ?? 1500,
-        requests_today: initialData?.requests_today ?? 0,
-        extra_config: initialData?.extra_config ?? "",
+        provider: data?.provider ?? "custom",
+        api_key: data?.api_key ?? "",
+        enabled: data?.enabled ?? true,
+        daily_limit: data?.daily_limit ?? 1500,
+        requests_today: data?.requests_today ?? 0,
+        extra_config: data?.extra_config ?? "",
     });
 
     let providers = $derived([

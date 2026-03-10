@@ -194,7 +194,10 @@
             .slice(0, pageSize);
     });
 
-    import { endOfWeek, format, isSameMonth, startOfWeek } from "date-fns";
+    import { endOfWeek } from "date-fns/endOfWeek";
+    import { format } from "date-fns/format";
+    import { isSameMonth } from "date-fns/isSameMonth";
+    import { startOfWeek } from "date-fns/startOfWeek";
 
     // Map groupedTransactions → HierarchicalList format (Month → Week → Day)
     const hierarchicalData = $derived.by(() => {

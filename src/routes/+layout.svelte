@@ -19,12 +19,12 @@
   let isDetached = $state(false);
 
   // Check if window is detached (secondary) on mount
-  if (typeof window !== "undefined") {
+  onMount(() => {
     isDetached = window.location.pathname.includes("detached-trade");
     if (isDetached) {
       isSplashFinished = true; // Skip splash for secondary windows
     }
-  }
+  });
 
   // Cross-window sync: reload trades when another window (detached) saves
   let _unlistenTradeSaved: (() => void) | null = null;

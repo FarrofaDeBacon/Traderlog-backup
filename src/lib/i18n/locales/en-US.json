@@ -712,25 +712,7 @@
         "title": "Psychological Analysis"
     },
     "settings": {
-        "fiscal": {
-            "assignments": {
-                "title": "Fiscal Assignments",
-                "description": "Link tax profiles to asset types to automate tax calculations.",
-                "goToAssetTypes": "Manage Asset Types",
-                "table": {
-                    "market": "Market",
-                    "assetType": "Asset Type",
-                    "fiscalProfile": "Tax Profile",
-                    "unknownProfile": "Unknown Profile",
-                    "defaultExempt": "Exempt (Default)",
-                    "empty": "No asset types configured."
-                },
-                "tip": {
-                    "title": "Tip:",
-                    "text": "Changing the fiscal profile only affects new calculations and trade closings."
-                }
-            }
-        },
+
         "accounts": {
             "balance": "BALANCE",
             "confirmDeduplicate": "Are you sure you want to remove duplicate settings?",
@@ -1167,18 +1149,21 @@
         },
         "fiscal": {
             "assignments": {
-                "description": "Description",
-                "goToAssetTypes": "Go To Asset Types",
+                "title": "Fiscal Assignments",
+                "description": "Link tax profiles to asset types to automate tax calculations.",
+                "goToAssetTypes": "Manage Asset Types",
                 "table": {
+                    "market": "Market",
                     "assetType": "Asset Type",
-                    "empty": "Empty",
-                    "market": "Market"
+                    "fiscalProfile": "Tax Profile",
+                    "unknownProfile": "Unknown Profile",
+                    "defaultExempt": "Exempt (Default)",
+                    "empty": "No asset types configured."
                 },
                 "tip": {
-                    "text": "Text",
-                    "title": "Title"
-                },
-                "title": "Title"
+                    "title": "Tip:",
+                    "text": "Changing the fiscal profile only affects new calculations and trade closings."
+                }
             },
             "description": "Configure tax rates (IRPF) for each asset type and modality.",
             "mappings": {

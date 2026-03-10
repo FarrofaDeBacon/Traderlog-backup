@@ -1,0 +1,522 @@
+﻿
+> tauri-apptraderlogpro@0.1.4 build C:\PROJETOS\TraderLogPro
+> vite build
+
+[36mvite v6.4.1 [32mbuilding SSR bundle for production...[36m[39m
+transforming...
+pnpm : 01:34:00 [vite-plugin-svelte] src/routes/+layout.svelte:24:8 This reference 
+only captures the initial value of `isDetached`. Did you mean to reference it inside 
+a closure instead?
+No linha:1 caractere:1
++ pnpm run build > build_output.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (01:34:00 [vite-...losure instead?:String 
+   ) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+https://svelte.dev/e/state_referenced_locally
+22:   if (typeof window !== "undefined") {
+23:     isDetached = window.location.pathname.includes("detached-trade");
+24:     if (isDetached) {
+                      ^
+25:       isSplashFinished = true; // Skip splash for secondary windows
+26:     }
+01:34:02 [vite-plugin-svelte] src/routes/signup/+page.svelte:358:24 Visible, 
+non-interactive elements with a click event must be accompanied by a keyboard event 
+handler. Consider whether an interactive element such as `<button type="button">` or 
+`<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+356:                 >
+357:                     <Card.Content class="pt-8 space-y-6">
+358:                         <div
+                                  ^
+359:                             class="bg-zinc-900/50 border border-zinc-800 
+rounded-2xl p-6 text-center group cursor-pointer hover:border-primary/30 
+transition-all"
+360:                             onclick={() => {
+01:34:02 [vite-plugin-svelte] src/routes/signup/+page.svelte:358:24 `<div>` with a 
+click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+356:                 >
+357:                     <Card.Content class="pt-8 space-y-6">
+358:                         <div
+                                  ^
+359:                             class="bg-zinc-900/50 border border-zinc-800 
+rounded-2xl p-6 text-center group cursor-pointer hover:border-primary/30 
+transition-all"
+360:                             onclick={() => {
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/ApiConfigForm.svelte:20:18 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+18: 
+19:     let formData = $state<Omit<ApiConfig, "id">>({
+20:         provider: initialData?.provider ?? "custom",
+                                 ^
+21:         api_key: initialData?.api_key ?? "",
+22:         enabled: initialData?.enabled ?? true,
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/ApiConfigForm.svelte:21:17 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+19:     let formData = $state<Omit<ApiConfig, "id">>({
+20:         provider: initialData?.provider ?? "custom",
+21:         api_key: initialData?.api_key ?? "",
+                                ^
+22:         enabled: initialData?.enabled ?? true,
+23:         daily_limit: initialData?.daily_limit ?? 1500,
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/ApiConfigForm.svelte:22:17 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+20:         provider: initialData?.provider ?? "custom",
+21:         api_key: initialData?.api_key ?? "",
+22:         enabled: initialData?.enabled ?? true,
+                                ^
+23:         daily_limit: initialData?.daily_limit ?? 1500,
+24:         requests_today: initialData?.requests_today ?? 0,
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/ApiConfigForm.svelte:23:21 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+21:         api_key: initialData?.api_key ?? "",
+22:         enabled: initialData?.enabled ?? true,
+23:         daily_limit: initialData?.daily_limit ?? 1500,
+                                    ^
+24:         requests_today: initialData?.requests_today ?? 0,
+25:         extra_config: initialData?.extra_config ?? "",
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/ApiConfigForm.svelte:24:24 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+22:         enabled: initialData?.enabled ?? true,
+23:         daily_limit: initialData?.daily_limit ?? 1500,
+24:         requests_today: initialData?.requests_today ?? 0,
+                                       ^
+25:         extra_config: initialData?.extra_config ?? "",
+26:     });
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/ApiConfigForm.svelte:25:22 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+23:         daily_limit: initialData?.daily_limit ?? 1500,
+24:         requests_today: initialData?.requests_today ?? 0,
+25:         extra_config: initialData?.extra_config ?? "",
+                                     ^
+26:     });
+27: 
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/ChartTypeForm.svelte:16:14 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+14: 
+15:     let formData = $state<Omit<ChartType, "id">>({
+16:         name: initialData?.name ?? "",
+                             ^
+17:         base_type: initialData?.base_type ?? "TimeBased",
+18:         parameter: initialData?.parameter ?? "",
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/ChartTypeForm.svelte:17:19 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+15:     let formData = $state<Omit<ChartType, "id">>({
+16:         name: initialData?.name ?? "",
+17:         base_type: initialData?.base_type ?? "TimeBased",
+                                  ^
+18:         parameter: initialData?.parameter ?? "",
+19:     });
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/ChartTypeForm.svelte:18:19 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+16:         name: initialData?.name ?? "",
+17:         base_type: initialData?.base_type ?? "TimeBased",
+18:         parameter: initialData?.parameter ?? "",
+                                  ^
+19:     });
+20: 
+01:34:02 [vite-plugin-svelte] 
+src/lib/components/settings/EmotionalStateForm.svelte:17:14 This reference only 
+captures the initial value of `initialData`. Did you mean to reference it inside a 
+derived instead?
+https://svelte.dev/e/state_referenced_locally
+15: 
+16:     let formData = $state<Omit<EmotionalState, "id">>({
+17:         name: initialData?.name ?? "",
+                             ^
+18:         impact: initialData?.impact ?? "Negative",
+19:         description: initialData?.description ?? "",
+01:34:02 [vite-plugin-svelte] 
+src/lib/components/settings/EmotionalStateForm.svelte:18:16 This reference only 
+captures the initial value of `initialData`. Did you mean to reference it inside a 
+derived instead?
+https://svelte.dev/e/state_referenced_locally
+16:     let formData = $state<Omit<EmotionalState, "id">>({
+17:         name: initialData?.name ?? "",
+18:         impact: initialData?.impact ?? "Negative",
+                               ^
+19:         description: initialData?.description ?? "",
+20:         potential_impact: initialData?.potential_impact ?? "",
+01:34:02 [vite-plugin-svelte] 
+src/lib/components/settings/EmotionalStateForm.svelte:19:21 This reference only 
+captures the initial value of `initialData`. Did you mean to reference it inside a 
+derived instead?
+https://svelte.dev/e/state_referenced_locally
+17:         name: initialData?.name ?? "",
+18:         impact: initialData?.impact ?? "Negative",
+19:         description: initialData?.description ?? "",
+                                    ^
+20:         potential_impact: initialData?.potential_impact ?? "",
+21:         weight: initialData?.weight ?? 5.0,
+01:34:02 [vite-plugin-svelte] 
+src/lib/components/settings/EmotionalStateForm.svelte:20:26 This reference only 
+captures the initial value of `initialData`. Did you mean to reference it inside a 
+derived instead?
+https://svelte.dev/e/state_referenced_locally
+18:         impact: initialData?.impact ?? "Negative",
+19:         description: initialData?.description ?? "",
+20:         potential_impact: initialData?.potential_impact ?? "",
+                                         ^
+21:         weight: initialData?.weight ?? 5.0,
+22:     });
+01:34:02 [vite-plugin-svelte] 
+src/lib/components/settings/EmotionalStateForm.svelte:21:16 This reference only 
+captures the initial value of `initialData`. Did you mean to reference it inside a 
+derived instead?
+https://svelte.dev/e/state_referenced_locally
+19:         description: initialData?.description ?? "",
+20:         potential_impact: initialData?.potential_impact ?? "",
+21:         weight: initialData?.weight ?? 5.0,
+                               ^
+22:     });
+23: 
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/IndicatorForm.svelte:18:14 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+16: 
+17:     let formData = $state<Omit<Indicator, "id">>({
+18:         name: initialData?.name ?? "",
+                             ^
+19:         category: initialData?.category ?? "Trend",
+20:         plot_type: initialData?.plot_type ?? "Overlay",
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/IndicatorForm.svelte:19:18 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+17:     let formData = $state<Omit<Indicator, "id">>({
+18:         name: initialData?.name ?? "",
+19:         category: initialData?.category ?? "Trend",
+                                 ^
+20:         plot_type: initialData?.plot_type ?? "Overlay",
+21:         default_color: initialData?.default_color ?? "#00ff00",
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/IndicatorForm.svelte:20:19 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+18:         name: initialData?.name ?? "",
+19:         category: initialData?.category ?? "Trend",
+20:         plot_type: initialData?.plot_type ?? "Overlay",
+                                  ^
+21:         default_color: initialData?.default_color ?? "#00ff00",
+22:         usage_description: initialData?.usage_description ?? "",
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/IndicatorForm.svelte:21:23 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+19:         category: initialData?.category ?? "Trend",
+20:         plot_type: initialData?.plot_type ?? "Overlay",
+21:         default_color: initialData?.default_color ?? "#00ff00",
+                                      ^
+22:         usage_description: initialData?.usage_description ?? "",
+23:         parameters: initialData?.parameters ? [...initialData.parameters] : [],
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/IndicatorForm.svelte:22:27 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+20:         plot_type: initialData?.plot_type ?? "Overlay",
+21:         default_color: initialData?.default_color ?? "#00ff00",
+22:         usage_description: initialData?.usage_description ?? "",
+                                          ^
+23:         parameters: initialData?.parameters ? [...initialData.parameters] : [],
+24:     });
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/IndicatorForm.svelte:23:20 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+21:         default_color: initialData?.default_color ?? "#00ff00",
+22:         usage_description: initialData?.usage_description ?? "",
+23:         parameters: initialData?.parameters ? [...initialData.parameters] : [],
+                                   ^
+24:     });
+25: 
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/IndicatorForm.svelte:23:50 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+21:         default_color: initialData?.default_color ?? "#00ff00",
+22:         usage_description: initialData?.usage_description ?? "",
+23:         parameters: initialData?.parameters ? [...initialData.parameters] : [],
+                                                                 ^
+24:     });
+25: 
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:66:14 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+64: 
+65:     let formData = $state<Omit<RiskProfile, "id">>({
+66:         name: initialData?.name ?? "",
+                             ^
+67:         max_daily_loss: initialData?.max_daily_loss ?? 0,
+68:         daily_target: initialData?.daily_target ?? 0,
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:67:24 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+65:     let formData = $state<Omit<RiskProfile, "id">>({
+66:         name: initialData?.name ?? "",
+67:         max_daily_loss: initialData?.max_daily_loss ?? 0,
+                                       ^
+68:         daily_target: initialData?.daily_target ?? 0,
+69:         max_risk_per_trade_percent:
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:68:22 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+66:         name: initialData?.name ?? "",
+67:         max_daily_loss: initialData?.max_daily_loss ?? 0,
+68:         daily_target: initialData?.daily_target ?? 0,
+                                     ^
+69:         max_risk_per_trade_percent:
+70:             initialData?.max_risk_per_trade_percent ?? 1.0,
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:70:12 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+68:         daily_target: initialData?.daily_target ?? 0,
+69:         max_risk_per_trade_percent:
+70:             initialData?.max_risk_per_trade_percent ?? 1.0,
+                           ^
+71:         max_trades_per_day: initialData?.max_trades_per_day ?? 5,
+72:         min_risk_reward: initialData?.min_risk_reward ?? 1.5,
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:71:28 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+69:         max_risk_per_trade_percent:
+70:             initialData?.max_risk_per_trade_percent ?? 1.0,
+71:         max_trades_per_day: initialData?.max_trades_per_day ?? 5,
+                                           ^
+72:         min_risk_reward: initialData?.min_risk_reward ?? 1.5,
+73:         lock_on_loss: initialData?.lock_on_loss ?? false,
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:72:25 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+70:             initialData?.max_risk_per_trade_percent ?? 1.0,
+71:         max_trades_per_day: initialData?.max_trades_per_day ?? 5,
+72:         min_risk_reward: initialData?.min_risk_reward ?? 1.5,
+                                        ^
+73:         lock_on_loss: initialData?.lock_on_loss ?? false,
+74:         account_type_applicability:
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:73:22 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+71:         max_trades_per_day: initialData?.max_trades_per_day ?? 5,
+72:         min_risk_reward: initialData?.min_risk_reward ?? 1.5,
+73:         lock_on_loss: initialData?.lock_on_loss ?? false,
+                                     ^
+74:         account_type_applicability:
+75:             initialData?.account_type_applicability ?? "All",
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:75:12 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+73:         lock_on_loss: initialData?.lock_on_loss ?? false,
+74:         account_type_applicability:
+75:             initialData?.account_type_applicability ?? "All",
+                           ^
+76:         growth_plan_enabled: initialData?.growth_plan_enabled ?? false,
+77:         current_phase_index: initialData?.current_phase_index ?? 0,
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:76:29 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+74:         account_type_applicability:
+75:             initialData?.account_type_applicability ?? "All",
+76:         growth_plan_enabled: initialData?.growth_plan_enabled ?? false,
+                                            ^
+77:         current_phase_index: initialData?.current_phase_index ?? 0,
+78:         growth_phases: initialData?.growth_phases ?? [],
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:77:29 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+75:             initialData?.account_type_applicability ?? "All",
+76:         growth_plan_enabled: initialData?.growth_plan_enabled ?? false,
+77:         current_phase_index: initialData?.current_phase_index ?? 0,
+                                            ^
+78:         growth_phases: initialData?.growth_phases ?? [],
+79:         psychological_coupling_enabled:
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:78:23 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+76:         growth_plan_enabled: initialData?.growth_plan_enabled ?? false,
+77:         current_phase_index: initialData?.current_phase_index ?? 0,
+78:         growth_phases: initialData?.growth_phases ?? [],
+                                      ^
+79:         psychological_coupling_enabled:
+80:             initialData?.psychological_coupling_enabled ?? false,
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:80:12 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+78:         growth_phases: initialData?.growth_phases ?? [],
+79:         psychological_coupling_enabled:
+80:             initialData?.psychological_coupling_enabled ?? false,
+                           ^
+81:         outlier_regression_enabled:
+82:             initialData?.outlier_regression_enabled ?? false,
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:82:12 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+80:             initialData?.psychological_coupling_enabled ?? false,
+81:         outlier_regression_enabled:
+82:             initialData?.outlier_regression_enabled ?? false,
+                           ^
+83:         sniper_mode_enabled: initialData?.sniper_mode_enabled ?? false,
+84:         sniper_mode_selectivity: initialData?.sniper_mode_selectivity ?? 3,
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:83:29 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+81:         outlier_regression_enabled:
+82:             initialData?.outlier_regression_enabled ?? false,
+83:         sniper_mode_enabled: initialData?.sniper_mode_enabled ?? false,
+                                            ^
+84:         sniper_mode_selectivity: initialData?.sniper_mode_selectivity ?? 3,
+85:         psychological_lookback_count:
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:84:33 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+82:             initialData?.outlier_regression_enabled ?? false,
+83:         sniper_mode_enabled: initialData?.sniper_mode_enabled ?? false,
+84:         sniper_mode_selectivity: initialData?.sniper_mode_selectivity ?? 3,
+                                                ^
+85:         psychological_lookback_count:
+86:             initialData?.psychological_lookback_count ?? 10,
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:86:12 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+84:         sniper_mode_selectivity: initialData?.sniper_mode_selectivity ?? 3,
+85:         psychological_lookback_count:
+86:             initialData?.psychological_lookback_count ?? 10,
+                           ^
+87:         outlier_lookback_count: initialData?.outlier_lookback_count ?? 20,
+88:         psychological_threshold: initialData?.psychological_threshold ?? -2,
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:87:32 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+85:         psychological_lookback_count:
+86:             initialData?.psychological_lookback_count ?? 10,
+87:         outlier_lookback_count: initialData?.outlier_lookback_count ?? 20,
+                                               ^
+88:         psychological_threshold: initialData?.psychological_threshold ?? -2,
+89:         lot_reduction_multiplier: initialData?.lot_reduction_multiplier ?? 0.5,
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:88:33 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+86:             initialData?.psychological_lookback_count ?? 10,
+87:         outlier_lookback_count: initialData?.outlier_lookback_count ?? 20,
+88:         psychological_threshold: initialData?.psychological_threshold ?? -2,
+                                                ^
+89:         lot_reduction_multiplier: initialData?.lot_reduction_multiplier ?? 0.5,
+90:         psychological_search_strategy:
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:89:34 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+87:         outlier_lookback_count: initialData?.outlier_lookback_count ?? 20,
+88:         psychological_threshold: initialData?.psychological_threshold ?? -2,
+89:         lot_reduction_multiplier: initialData?.lot_reduction_multiplier ?? 0.5,
+                                                 ^
+90:         psychological_search_strategy:
+91:             initialData?.psychological_search_strategy ?? "Strict",
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:91:12 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+89:         lot_reduction_multiplier: initialData?.lot_reduction_multiplier ?? 0.5,
+90:         psychological_search_strategy:
+91:             initialData?.psychological_search_strategy ?? "Strict",
+                           ^
+92:         account_ids: initialData?.account_ids ?? [],
+93:         active: initialData?.active ?? false,
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:92:21 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+90:         psychological_search_strategy:
+91:             initialData?.psychological_search_strategy ?? "Strict",
+92:         account_ids: initialData?.account_ids ?? [],
+                                    ^
+93:         active: initialData?.active ?? false,
+94:     });
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/RiskForm.svelte:93:16 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+91:             initialData?.psychological_search_strategy ?? "Strict",
+92:         account_ids: initialData?.account_ids ?? [],
+93:         active: initialData?.active ?? false,
+                               ^
+94:     });
+95: 
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/TagForm.svelte:15:14 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+13: 
+14:     let formData = $state<Omit<Tag, "id">>({
+15:         name: initialData?.name ?? "",
+                             ^
+16:         color: initialData?.color ?? "#00ffff",
+17:     });
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/TagForm.svelte:16:15 This 
+reference only captures the initial value of `initialData`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+14:     let formData = $state<Omit<Tag, "id">>({
+15:         name: initialData?.name ?? "",
+16:         color: initialData?.color ?? "#00ffff",
+                              ^
+17:     });
+18: 
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/TimeframeForm.svelte:15:14 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+13: 
+14:     let formData = $state<Omit<Timeframe, "id">>({
+15:         name: initialData?.name ?? "",
+                             ^
+16:         value: initialData?.value ?? "",
+17:     });
+01:34:02 [vite-plugin-svelte] src/lib/components/settings/TimeframeForm.svelte:16:15 
+This reference only captures the initial value of `initialData`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+14:     let formData = $state<Omit<Timeframe, "id">>({
+15:         name: initialData?.name ?? "",
+16:         value: initialData?.value ?? "",
+                              ^
+17:     });
+18: 

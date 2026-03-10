@@ -709,25 +709,7 @@
         "title": "Analyse Psychologique"
     },
     "settings": {
-        "fiscal": {
-            "assignments": {
-                "title": "Affectations Fiscales",
-                "description": "Liez les profils fiscaux aux types d'actifs pour automatiser les calculs d'impôts.",
-                "goToAssetTypes": "Gérer les Types d'Actifs",
-                "table": {
-                    "market": "Marché",
-                    "assetType": "Type d'Actif",
-                    "fiscalProfile": "Profil Fiscal",
-                    "unknownProfile": "Profil Inconnu",
-                    "defaultExempt": "Exonéré (Par défaut)",
-                    "empty": "Aucun type d'actif configuré."
-                },
-                "tip": {
-                    "title": "Conseil :",
-                    "text": "La modification du profil fiscal n'affecte que les nouveaux calculs et les clôtures de transactions."
-                }
-            }
-        },
+
         "accounts": {
             "balance": "SOLDE",
             "confirmDeduplicate": "Voulez-vous vraiment supprimer les configurations en double ?",
@@ -1164,18 +1146,21 @@
         },
         "fiscal": {
             "assignments": {
-                "description": "Description",
-                "goToAssetTypes": "Go To Asset Types",
+                "title": "Affectations Fiscales",
+                "description": "Liez les profils fiscaux aux types d'actifs pour automatiser les calculs d'impôts.",
+                "goToAssetTypes": "Gérer les Types d'Actifs",
                 "table": {
-                    "assetType": "Asset Type",
-                    "empty": "Empty",
-                    "market": "Market"
+                    "market": "Marché",
+                    "assetType": "Type d'Actif",
+                    "fiscalProfile": "Profil Fiscal",
+                    "unknownProfile": "Profil Inconnu",
+                    "defaultExempt": "Exonéré (Par défaut)",
+                    "empty": "Aucun type d'actif configuré."
                 },
                 "tip": {
-                    "text": "Text",
-                    "title": "Title"
-                },
-                "title": "Title"
+                    "title": "Conseil :",
+                    "text": "La modification du profil fiscal n'affecte que les nouveaux calculs et les clôtures de transactions."
+                }
             },
             "description": "Configurez les taux d'imposition (IRPF) pour chaque type d'actif et modalité.",
             "mappings": {

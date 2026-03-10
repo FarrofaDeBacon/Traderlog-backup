@@ -11,9 +11,10 @@
         onCancel: () => void;
     }>();
 
+    const data = $state.snapshot(initialData);
     let formData = $state<Omit<Tag, "id">>({
-        name: initialData?.name ?? "",
-        color: initialData?.color ?? "#00ffff",
+        name: data?.name ?? "",
+        color: data?.color ?? "#00ffff",
     });
 
     function save() {

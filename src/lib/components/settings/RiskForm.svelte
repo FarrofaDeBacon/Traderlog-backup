@@ -62,35 +62,36 @@
 
     let selectedPreset = $state<string>("custom");
 
+    const data = $state.snapshot(initialData);
     let formData = $state<Omit<RiskProfile, "id">>({
-        name: initialData?.name ?? "",
-        max_daily_loss: initialData?.max_daily_loss ?? 0,
-        daily_target: initialData?.daily_target ?? 0,
+        name: data?.name ?? "",
+        max_daily_loss: data?.max_daily_loss ?? 0,
+        daily_target: data?.daily_target ?? 0,
         max_risk_per_trade_percent:
-            initialData?.max_risk_per_trade_percent ?? 1.0,
-        max_trades_per_day: initialData?.max_trades_per_day ?? 5,
-        min_risk_reward: initialData?.min_risk_reward ?? 1.5,
-        lock_on_loss: initialData?.lock_on_loss ?? false,
+            data?.max_risk_per_trade_percent ?? 1.0,
+        max_trades_per_day: data?.max_trades_per_day ?? 5,
+        min_risk_reward: data?.min_risk_reward ?? 1.5,
+        lock_on_loss: data?.lock_on_loss ?? false,
         account_type_applicability:
-            initialData?.account_type_applicability ?? "All",
-        growth_plan_enabled: initialData?.growth_plan_enabled ?? false,
-        current_phase_index: initialData?.current_phase_index ?? 0,
-        growth_phases: initialData?.growth_phases ?? [],
+            data?.account_type_applicability ?? "All",
+        growth_plan_enabled: data?.growth_plan_enabled ?? false,
+        current_phase_index: data?.current_phase_index ?? 0,
+        growth_phases: data?.growth_phases ?? [],
         psychological_coupling_enabled:
-            initialData?.psychological_coupling_enabled ?? false,
+            data?.psychological_coupling_enabled ?? false,
         outlier_regression_enabled:
-            initialData?.outlier_regression_enabled ?? false,
-        sniper_mode_enabled: initialData?.sniper_mode_enabled ?? false,
-        sniper_mode_selectivity: initialData?.sniper_mode_selectivity ?? 3,
+            data?.outlier_regression_enabled ?? false,
+        sniper_mode_enabled: data?.sniper_mode_enabled ?? false,
+        sniper_mode_selectivity: data?.sniper_mode_selectivity ?? 3,
         psychological_lookback_count:
-            initialData?.psychological_lookback_count ?? 10,
-        outlier_lookback_count: initialData?.outlier_lookback_count ?? 20,
-        psychological_threshold: initialData?.psychological_threshold ?? -2,
-        lot_reduction_multiplier: initialData?.lot_reduction_multiplier ?? 0.5,
+            data?.psychological_lookback_count ?? 10,
+        outlier_lookback_count: data?.outlier_lookback_count ?? 20,
+        psychological_threshold: data?.psychological_threshold ?? -2,
+        lot_reduction_multiplier: data?.lot_reduction_multiplier ?? 0.5,
         psychological_search_strategy:
-            initialData?.psychological_search_strategy ?? "Strict",
-        account_ids: initialData?.account_ids ?? [],
-        active: initialData?.active ?? false,
+            data?.psychological_search_strategy ?? "Strict",
+        account_ids: data?.account_ids ?? [],
+        active: data?.active ?? false,
     });
 
     function applyPreset(key: string) {
@@ -119,7 +120,6 @@
         if (initialData) {
             let fd = { ...initialData };
             formData = {
-                id: fd.id,
                 name: fd.name,
                 max_daily_loss: fd.max_daily_loss,
                 daily_target: fd.daily_target,
@@ -448,7 +448,7 @@
                                         checked={formData.account_ids.includes(
                                             account.id,
                                         )}
-                                        onCheckedChange={(checked) => {
+                                        onCheckedChange={(checked: boolean) => {
                                             if (checked) {
                                                 formData.account_ids = [
                                                     ...formData.account_ids,

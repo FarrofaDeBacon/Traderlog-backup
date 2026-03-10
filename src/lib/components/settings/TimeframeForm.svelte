@@ -11,9 +11,10 @@
         onCancel: () => void;
     }>();
 
+    const data = $state.snapshot(initialData);
     let formData = $state<Omit<Timeframe, "id">>({
-        name: initialData?.name ?? "",
-        value: initialData?.value ?? "",
+        name: data?.name ?? "",
+        value: data?.value ?? "",
     });
 
     function save() {

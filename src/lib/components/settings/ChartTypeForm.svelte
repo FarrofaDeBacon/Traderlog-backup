@@ -12,10 +12,11 @@
         onCancel: () => void;
     }>();
 
+    const data = $state.snapshot(initialData);
     let formData = $state<Omit<ChartType, "id">>({
-        name: initialData?.name ?? "",
-        base_type: initialData?.base_type ?? "TimeBased",
-        parameter: initialData?.parameter ?? "",
+        name: data?.name ?? "",
+        base_type: data?.base_type ?? "TimeBased",
+        parameter: data?.parameter ?? "",
     });
 
     let typeOptions = $derived([

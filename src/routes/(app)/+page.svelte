@@ -32,7 +32,10 @@
     Plus,
     Timer,
   } from "lucide-svelte";
-  import { isSameDay, startOfMonth, format, parseISO } from "date-fns";
+  import { isSameDay } from "date-fns/isSameDay";
+  import { startOfMonth } from "date-fns/startOfMonth";
+  import { format } from "date-fns/format";
+  import { parseISO } from "date-fns/parseISO";
   import PerformanceCalendar from "$lib/components/dashboard/PerformanceCalendar.svelte";
   import { ptBR } from "date-fns/locale";
   import { cn, parseSafeDate } from "$lib/utils";
