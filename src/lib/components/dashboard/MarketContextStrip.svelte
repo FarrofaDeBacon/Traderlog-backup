@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t, locale } from "svelte-i18n";
     import { quantEngine } from "$lib/services/quantAnalysis.svelte";
     import * as Card from "$lib/components/ui/card";
     import { Badge } from "$lib/components/ui/badge";
@@ -20,7 +21,7 @@
     }
 
     function formatBRL(val: number) {
-        return new Intl.NumberFormat("pt-BR", {
+        return new Intl.NumberFormat($locale || "pt-BR", {
             style: "currency",
             currency: "BRL",
         }).format(val);
@@ -35,7 +36,7 @@
         >
             <Card.Title
                 class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
-                >Índice (WIN)</Card.Title
+                >{$t("dashboard.market_context.win")}</Card.Title
             >
             <Activity class="h-3 w-3 text-blue-500" />
         </Card.Header>
@@ -61,7 +62,7 @@
         >
             <Card.Title
                 class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
-                >Dólar (WDO)</Card.Title
+                >{$t("dashboard.market_context.wdo")}</Card.Title
             >
             <Activity class="h-3 w-3 text-emerald-500" />
         </Card.Header>
@@ -87,7 +88,7 @@
         >
             <Card.Title
                 class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
-                >SELIC EA.</Card.Title
+                >{$t("dashboard.market_context.selic")}</Card.Title
             >
             <Landmark class="h-3 w-3 text-indigo-500" />
         </Card.Header>
@@ -100,7 +101,7 @@
             <p
                 class="text-[9px] text-muted-foreground mt-1 uppercase font-medium"
             >
-                Meta Banco Central
+                {$t("dashboard.market_context.selic_desc")}
             </p>
         </Card.Content>
     </Card.Root>
@@ -112,7 +113,7 @@
         >
             <Card.Title
                 class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
-                >Taxa DI (CDI)</Card.Title
+                >{$t("dashboard.market_context.di")}</Card.Title
             >
             <TrendingUp class="h-3 w-3 text-amber-500" />
         </Card.Header>
@@ -125,7 +126,7 @@
             <p
                 class="text-[9px] text-muted-foreground mt-1 uppercase font-medium"
             >
-                Referencial Juros
+                {$t("dashboard.market_context.di_desc")}
             </p>
         </Card.Content>
     </Card.Root>
@@ -137,7 +138,7 @@
         >
             <Card.Title
                 class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
-                >PTAX (Oficial)</Card.Title
+                >{$t("dashboard.market_context.ptax")}</Card.Title
             >
             <Landmark class="h-3 w-3 text-muted-foreground" />
         </Card.Header>
@@ -150,8 +151,8 @@
             <p
                 class="text-[9px] text-muted-foreground mt-1 uppercase font-medium"
             >
-                Média Dólar BCB
+                {$t("dashboard.market_context.ptax_desc")}
             </p>
         </Card.Content>
     </Card.Root>
-</div>
+</div>div>

@@ -1,18 +1,23 @@
 <script lang="ts">
-    import { format } from "date-fns/format";
-    import { startOfMonth } from "date-fns/startOfMonth";
-    import { endOfMonth } from "date-fns/endOfMonth";
-    import { startOfWeek } from "date-fns/startOfWeek";
-    import { endOfWeek } from "date-fns/endOfWeek";
-    import { eachDayOfInterval } from "date-fns/eachDayOfInterval";
-    import { isSameMonth } from "date-fns/isSameMonth";
-    import { isSameDay } from "date-fns/isSameDay";
-    import { addMonths } from "date-fns/addMonths";
-    import { subMonths } from "date-fns/subMonths";
-    import { addWeeks } from "date-fns/addWeeks";
-    import { subWeeks } from "date-fns/subWeeks";
-    import { startOfDay } from "date-fns/startOfDay";
-    import { ptBR, enUS, es, fr } from "date-fns/locale";
+    import { 
+        format, 
+        startOfMonth, 
+        endOfMonth, 
+        startOfWeek, 
+        endOfWeek, 
+        eachDayOfInterval, 
+        isSameMonth, 
+        isSameDay, 
+        addMonths, 
+        subMonths, 
+        addWeeks, 
+        subWeeks, 
+        startOfDay 
+    } from "date-fns";
+    import { ptBR } from "date-fns/locale/pt-BR";
+    import { enUS } from "date-fns/locale/en-US";
+    import { es } from "date-fns/locale/es";
+    import { fr } from "date-fns/locale/fr";
     import {
         ChevronLeft,
         ChevronRight,
@@ -238,7 +243,7 @@
                                 )}
                             >
                                 {pnl > 0 ? "+" : ""}{pnl.toLocaleString(
-                                    "pt-BR",
+                                    $locale || "pt-BR",
                                     { style: "currency", currency: "BRL" },
                                 )}
                             </span>

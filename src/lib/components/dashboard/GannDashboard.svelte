@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { t } from "svelte-i18n";
+    import { t, locale } from "svelte-i18n";
     import { Card, CardContent } from "$lib/components/ui/card";
     import { Badge } from "$lib/components/ui/badge";
     import { Separator } from "$lib/components/ui/separator";
@@ -41,7 +41,7 @@
     const daysToNextCot = $derived(getCycleDayCount(new Date(), nextNaturalDate.date));
 
     function formatPrice(val: number) {
-        return new Intl.NumberFormat(undefined, {
+        return new Intl.NumberFormat($locale || "pt-BR", {
             style: "currency",
             currency: "BRL"
         }).format(val);
@@ -67,7 +67,7 @@
                     {$t("dashboard.gann.kpis.nextCot")}
                 </div>
                 <div class="text-sm font-bold flex items-baseline gap-1">
-                    {daysToNextCot} <span class="text-[10px] font-normal text-muted-foreground lowercase">dias</span>
+                    {daysToNextCot} <span class="text-[10px] font-normal text-muted-foreground lowercase">{$t("dashboard.gann.kpis.days")}</span>
                 </div>
                 <div class="text-[9px] text-emerald-500 font-medium">
                     {nextNaturalDate.label}
@@ -80,7 +80,7 @@
                     {$t("dashboard.gann.kpis.cycleDay")}
                 </div>
                 <div class="text-sm font-bold">
-                    {daysInCycle} <span class="text-[10px] font-normal text-muted-foreground italic">/ 365</span>
+                    {daysInCycle} <span class="text-[10px] font-normal text-muted-foreground italic">{$t("dashboard.gann.kpis.outOfDays")}</span>
                 </div>
                 <div class="text-[9px] text-muted-foreground">
                     {$t("dashboard.gann.kpis.masterCycle")}
@@ -94,9 +94,9 @@
                 </div>
                 <div class="text-sm font-bold">
                     {#if currentVibration.isNear}
-                        <span class="text-rose-500">HOT WINDOW</span>
+                        <span class="text-rose-500">{$t("dashboard.gann.kpis.hot_window")}</span>
                     {:else}
-                        <span class="text-muted-foreground">Neutral</span>
+                        <span class="text-muted-foreground">{$t("dashboard.gann.kpis.neutral")}</span>
                     {/if}
                 </div>
                 <div class="text-[9px] text-rose-400 font-medium">

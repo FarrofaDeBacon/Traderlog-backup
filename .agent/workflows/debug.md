@@ -43,7 +43,7 @@ When `/debug` is triggered:
 ## Output Format
 
 ```markdown
-## 🔍 Debug: [Issue]
+## ðŸ” Debug: [Issue]
 
 ### 1. Symptom
 [What's happening]
@@ -54,20 +54,20 @@ When `/debug` is triggered:
 - Line: [line number]
 
 ### 3. Hypotheses
-1. ❓ [Most likely cause]
-2. ❓ [Second possibility]
-3. ❓ [Less likely cause]
+1. â“ [Most likely cause]
+2. â“ [Second possibility]
+3. â“ [Less likely cause]
 
 ### 4. Investigation
 
 **Testing hypothesis 1:**
-[What I checked] → [Result]
+[What I checked] â†’ [Result]
 
 **Testing hypothesis 2:**
-[What I checked] → [Result]
+[What I checked] â†’ [Result]
 
 ### 5. Root Cause
-🎯 **[Explanation of why this happened]**
+ðŸŽ¯ **[Explanation of why this happened]**
 
 ### 6. Fix
 ```[language]
@@ -79,7 +79,7 @@ When `/debug` is triggered:
 ```
 
 ### 7. Prevention
-🛡️ [How to prevent this in the future]
+ðŸ›¡ï¸ [How to prevent this in the future]
 ```
 
 ---

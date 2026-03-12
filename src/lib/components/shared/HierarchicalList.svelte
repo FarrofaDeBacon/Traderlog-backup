@@ -2,6 +2,7 @@
     import { locale } from "svelte-i18n";
     import { ChevronDown, TrendingUp, Calendar } from "lucide-svelte";
     import * as Separator from "$lib/components/ui/separator";
+    import { untrack } from "svelte";
 
     // ---- Types -------------------------------------------------------
     type PnlEntry = { curr: string; val: number };
@@ -62,6 +63,13 @@
         omitDays = false,
         // Content to render directly inside the month when omitDays is true
         monthContent = undefined,
+    // When true, automatically expands the first available month (and week) on mount or data change if nothing is expanded yet
+    autoExpandDefault = false,
+        expandedMonths = $bindable(new Set<string>()),
+        expandedWeeks = $bindable(new Set<string>()),
+        expandedDays = $bindable(new Set<string>()),
+        // Behavior
+        mutualExclusion = true,
     }: {
         data: HierarchicalMonth[];
         monthRight?: import("svelte").Snippet<[HierarchicalMonth]>;
@@ -77,12 +85,40 @@
         onDayToggle?: (key: string, expanded: boolean) => void;
         flatMode?: boolean;
         omitDays?: boolean;
+        autoExpandDefault?: boolean;
+        expandedMonths?: Set<string>;
+        expandedWeeks?: Set<string>;
+        expandedDays?: Set<string>;
+        mutualExclusion?: boolean;
     } = $props();
 
-    // ---- Expansion state ---------------------------------------------
-    let expandedMonths = $state<Set<string>>(new Set());
-    let expandedWeeks = $state<Set<string>>(new Set());
-    let expandedDays = $state<Set<string>>(new Set());
+    // ---- Auto Expand Logic -------------------------------------------
+    let hasAutoExpanded = $state(false);
+
+    $effect(() => {
+        if (autoExpandDefault && data.length > 0 && !hasAutoExpanded) {
+            untrack(() => {
+                if (expandedMonths.size === 0) {
+                    const firstMonth = data[0];
+                    if (firstMonth) {
+                        expandedMonths = new Set([firstMonth.key]);
+                        // If not omitting days, also expand the first week of that month
+                        if (!omitDays && !flatMode && firstMonth.weeks && firstMonth.weeks.length > 0) {
+                            expandedWeeks = new Set([firstMonth.weeks[0].key]);
+                        }
+                    }
+                }
+                hasAutoExpanded = true;
+            });
+        }
+    });
+
+    // Reset auto-expand when data changes completely
+    $effect(() => {
+        if (data && data.length > 0) {
+           // We keep this empty just to trigger tracking on data, the logic is above
+        }
+    });
 
     // ---- Toggle helpers ----------------------------------------------
     function toggleMonth(key: string) {
@@ -90,6 +126,12 @@
         if (next.has(key)) {
             next.delete(key);
         } else {
+            if (mutualExclusion) {
+                next.clear();
+                // When switching month in mutual exclusion, we must reassign to trigger reactivity in Svelte 5
+                expandedWeeks = new Set();
+                expandedDays = new Set();
+            }
             next.add(key);
         }
         expandedMonths = next;
@@ -101,6 +143,10 @@
         if (next.has(key)) {
             next.delete(key);
         } else {
+            if (mutualExclusion) {
+                next.clear();
+                expandedDays = new Set();
+            }
             next.add(key);
         }
         expandedWeeks = next;
@@ -112,6 +158,9 @@
         if (next.has(key)) {
             next.delete(key);
         } else {
+            if (mutualExclusion) {
+                next.clear();
+            }
             next.add(key);
         }
         expandedDays = next;
@@ -312,7 +361,9 @@
                                         <div
                                             class="border-t border-border/50 animate-in fade-in slide-in-from-top-2 duration-300"
                                         >
-                                            {@render dayContent(day)}
+                                            {#if dayContent}
+                                                {@render dayContent(day)}
+                                            {/if}
                                         </div>
                                     {/if}
                                 </div>
@@ -505,9 +556,11 @@
                                                     <div
                                                         class="border-t border-border/50 animate-in fade-in slide-in-from-top-2 duration-300"
                                                     >
-                                                        {@render dayContent(
-                                                            day,
-                                                        )}
+                                                        {#if dayContent}
+                                                            {@render dayContent(
+                                                                day,
+                                                            )}
+                                                        {/if}
                                                     </div>
                                                 {/if}
                                             </div>

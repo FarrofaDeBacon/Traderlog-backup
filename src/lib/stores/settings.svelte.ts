@@ -243,7 +243,13 @@ class SettingsStore {
             if (currenciesRes) this.currencies = currenciesRes;
             if (marketsRes) this.markets = marketsRes;
             if (assetTypesRes) this.assetTypes = assetTypesRes;
-            if (assetsRes) this.assets = assetsRes;
+            if (assetsRes) {
+                this.assets = assetsRes.map(a => ({
+                    ...a,
+                    tax_profile_id: a.tax_profile_id ?? undefined,
+                    root_id: a.root_id ?? undefined
+                }));
+            }
             if (emotionalStatesRes) this.emotionalStates = emotionalStatesRes;
             if (strategiesRes) this.strategies = strategiesRes;
             if (transactionsRes) this.cashTransactions = transactionsRes;
@@ -614,7 +620,12 @@ class SettingsStore {
 
     // Assets
     async addAsset(item: Omit<Asset, "id">, autoSave: boolean = true) {
-        this.assets.push({ ...item, id: crypto.randomUUID() });
+        this.assets.push({ 
+            ...item, 
+            id: crypto.randomUUID(),
+            is_root: item.is_root ?? false,
+            root_id: item.root_id ?? undefined 
+        });
         if (autoSave) await this.saveAssets();
     }
     updateAsset(id: string, item: Partial<Asset>) {
@@ -668,12 +679,22 @@ class SettingsStore {
         else if (sym.startsWith("WIN") || sym.startsWith("IND")) pv = 0.20;
         else if (sym.startsWith("BIT")) pv = 0.1;
 
+        // Auto-link to root if possible
+        let rootId: string | null = null;
+        if (sym.length >= 3) {
+            const prefix = sym.substring(0, 3);
+            const root = this.assets.find(a => a.is_root && a.symbol === prefix);
+            if (root) rootId = root.id;
+        }
+
         this.addAsset({
             symbol: sym,
             name: `${name} (Auto)`,
             asset_type_id: typeId,
             point_value: pv,
-            default_fee_id: ""
+            default_fee_id: "",
+            is_root: false,
+            root_id: rootId ?? undefined
         });
     }
 

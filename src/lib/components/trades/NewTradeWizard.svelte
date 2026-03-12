@@ -1,8 +1,9 @@
+```typescript
 <script lang="ts">
-    import { t, locale } from "svelte-i18n";
+    import { t, locale, _ } from "svelte-i18n";
     import { invoke } from "@tauri-apps/api/core";
     import { emit } from "@tauri-apps/api/event";
-    import { toast } from "svelte-sonner";
+    import { toast } from 'svelte-sonner';
     import { onMount, untrack } from "svelte";
     import { settingsStore } from "$lib/stores/settings.svelte";
     import { tradesStore } from "$lib/stores/trades.svelte";
@@ -177,7 +178,19 @@
     let closureAlreadyExists = $state(false);
 
     // Track original result for DARF increase warning (Fiscal Guard)
-    let originalResult = $state<number | null>(null);
+    let originalResult = $state(0);
+    let originalData = $state<any>(null);
+    let showDarfWarning = $state(false);
+
+    $effect(() => {
+        // Only check if we are editing an existing trade that was already closed
+        if (editTradeId && originalData?.exit_price !== null) {
+            const currentNet = calculationResult.netCurrency;
+            const diff = currentNet - originalResult;
+            // Using 100 as a threshold for "significant" increase
+            showDarfWarning = diff >= 100;
+        }
+    });
 
     // Check if a daily closure already exists for data/account to warn the user
     $effect(() => {
@@ -261,6 +274,24 @@
 
             // Capture original result for Fiscal Guard comparison
             originalResult = parseFloat(currentTrade.result as any) || 0;
+            originalData = JSON.parse(JSON.stringify(currentTrade)); // Capture full original data
+
+            // AUTO-PARTIAL DETECTION (NEW): If we are editing an open trade and 
+            // the detection triggered this, auto-add a partial entry.
+            if (currentTrade._isAutoPartial) {
+                console.log("[NewTradeWizard] Automatic partial detected. Appending to exits...");
+                const autoPrice = parseFloat(currentTrade._autoPrice as any) || currentTrade.entry_price;
+                const autoType = currentTrade._autoType === 'partial_entry' ? 'entry' : 'exit';
+                
+                formData.partial_exits.push({
+                    date: currentTrade.date ? currentTrade.date.replace(" ", "T").slice(0, 16) : getNowWithOffset(),
+                    price: autoPrice,
+                    quantity: 1, 
+                    type: autoType,
+                    notes: autoType === 'entry' ? "Aumento de Posição via RTD" : "Parcial via RTD"
+                });
+                currentStep = 2; // Move to the partials manager step immediately
+            }
         } else if (currentTrade) {
             // NEW: Support for DRAFT trades (from RTD detection pop-up)
             const draftKey = `${currentTrade.asset_symbol}-${currentTrade.entry_price}-${currentTrade.account_id}`;
@@ -333,7 +364,8 @@
                 base_currency: "BRL",
             };
 
-            originalResult = null;
+            originalResult = 0;
+            originalData = null;
         }
     });
 
@@ -573,8 +605,19 @@
             .filter((sym) => !assetSymbolsSet.has(sym))
             .map((sym) => {
                 let guessedTypeId = "rtd";
-                if (/^(WIN|WDO|WSP|DI1|BGI|CCM|IND|DOL)/i.test(sym)) {
+                let pointValue = 1.0;
+
+                // Better detection for Brazilian Mini-Futures (WIN/WDO)
+                const upperSym = sym.toUpperCase();
+                if (upperSym.startsWith("WDO")) {
                     guessedTypeId = futType || indType || "rtd";
+                    pointValue = 10.0;
+                } else if (upperSym.startsWith("WIN") || upperSym.startsWith("IND")) {
+                    guessedTypeId = futType || indType || "rtd";
+                    pointValue = 0.2;
+                } else if (upperSym.startsWith("DOL")) {
+                    guessedTypeId = futType || indType || "rtd";
+                    pointValue = 10.0;
                 } else if (/^[A-Z]{4}\d/i.test(sym)) {
                     guessedTypeId = stockType || "rtd";
                 }
@@ -584,11 +627,7 @@
                     symbol: sym,
                     name: `Ativo Profit RTD (${sym})`,
                     asset_type_id: guessedTypeId,
-                    point_value: sym.startsWith("WDO")
-                        ? 10
-                        : sym.startsWith("WIN")
-                          ? 0.2
-                          : 1.0,
+                    point_value: pointValue,
                     default_fee_id: undefined,
                     tax_profile_id: undefined,
                 };
@@ -614,130 +653,181 @@
         const assetTypes = assetTypesList;
         const assetType = assetTypes.find(
             (at) => at.id === asset?.asset_type_id,
-        );
+        ) || assetTypes.find(at => at.id === "rtd") || assetTypes[0];
         const account = selectedAccount;
         const currencySymbol = account
             ? settingsStore.getCurrencySymbol(account.currency)
             : "R$";
 
-        // Use untrack for ANY high-frequency data from rtdStore if accessed here
-        // (Currently it only uses formData and snapshots, which is good)
+        const pointValue = (() => {
+            if (asset?.point_value) return asset.point_value;
+            const upperSym = (formData.asset || "").toUpperCase();
+            if (upperSym.startsWith("WIN") || upperSym.startsWith("IND")) return 0.2;
+            if (upperSym.startsWith("WDO")) return 10.0;
+            if (upperSym.startsWith("DOL")) return 50.0;
+            return 1.0;
+        })();
 
-        const pointValue = asset?.point_value || 1.0;
-        const multiplier = formData.direction === "buy" ? 1 : -1;
+        const multiplier = (formData.direction || "").toLowerCase() === "buy" ? 1 : -1;
+        const isPoints = assetType?.result_type === "points";
 
-        let grossTotal = 0;
-        let runningQty = formData.quantity;
-        let avgPrice = formData.entry_price;
+        // MOVING AVERAGE logic:
+        // 1. Additions update the current average price.
+        // 2. Partials realize P&L based on the average price at that moment.
+        let currentAvgPrice = formData.entry_price || 0;
+        let currentQty = formData.quantity || 0;
+        let totalEntryQty = formData.quantity || 0;
+        let totalExitQty = 0;
+        let grossCurrencyTotal = 0;
         let memoryItems: any[] = [];
 
-        // 1. Calculate Partials
-        formData.partial_exits.forEach((p: any) => {
+        // Sort parciais by date to ensure chronological processing
+        const sortedPartials = [...formData.partial_exits].sort((a, b) => {
+            return new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime();
+        });
+
+        let calculatedFees = 0;
+
+        // 1. Process All Realizations (Partials)
+        sortedPartials.forEach((p: any) => {
             const qty = p.quantity || 0;
             const price = p.price || 0;
             const isEntry = p.type === "entry";
 
             if (isEntry) {
-                // Adjust Average Price
-                const newQty = runningQty + qty;
-                avgPrice = (avgPrice * runningQty + price * qty) / newQty;
-                runningQty = newQty;
+                const newQty = currentQty + qty;
+                if (newQty > 0) {
+                    currentAvgPrice = ((currentAvgPrice * currentQty) + (price * qty)) / newQty;
+                }
+                currentQty = newQty;
+                totalEntryQty += qty;
                 memoryItems.push({
                     label: `${$t("trades.wizard.summary.addition")} (+${qty} ${assetType?.unit_label || "ctr"}) @ ${price}`,
-                    result: 0,
+                    resultCurrency: 0,
+                    resultPoints: 0,
                     type: "addition",
+                    unit: "currency"
                 });
             } else {
-                const diff = price - avgPrice;
-                const result = diff * qty * pointValue * multiplier;
-                grossTotal += result;
-                runningQty -= qty;
+                // Realize profit based on CURRENT average price
+                const diff = price - currentAvgPrice;
+                const resultCurrency = diff * qty * pointValue * multiplier;
+                grossCurrencyTotal += resultCurrency;
+                currentQty -= qty;
+                totalExitQty += qty;
+
                 memoryItems.push({
-                    label: `${$t("trades.wizard.summary.partial_exit")} (-${qty} ${assetType?.unit_label || "ctr"})`,
-                    result,
+                    label: `${$t("trades.wizard.summary.partial_exit")} (-${qty} ${assetType?.unit_label || "ctr"}) @ ${price}`,
+                    resultCurrency: resultCurrency,
+                    resultPoints: resultCurrency / pointValue,
                     type: "exit",
+                    unit: isPoints ? "points" : "currency"
                 });
             }
         });
 
-        // 2. Calculate Final Exit if we have an exit price (regardless of status)
-        const remainingQty = runningQty; // Use runningQty for remaining
+        // 2. Final Exit Calculation
+        const remainingQty = totalEntryQty - totalExitQty;
         const finalExitPrice =
             formData.exit_price !== null ? Number(formData.exit_price) : null;
 
         if (finalExitPrice !== null && remainingQty > 0) {
-            const diff = finalExitPrice - avgPrice;
-            const result = diff * remainingQty * pointValue * multiplier;
-            grossTotal += result;
+            const diff = finalExitPrice - currentAvgPrice;
+            const resultCurrency = diff * remainingQty * pointValue * multiplier;
+            grossCurrencyTotal += resultCurrency;
             memoryItems.push({
-                label: `${$t("trades.wizard.summary.final_exit")} (-${remainingQty} ${assetType?.unit_label || "ctr"})`,
-                result,
+                label: `${$t("trades.wizard.summary.final_exit")} (-${remainingQty} ${assetType?.unit_label || "ctr"}) @ ${finalExitPrice}`,
+                resultCurrency: resultCurrency,
+                resultPoints: resultCurrency / pointValue,
                 type: "exit",
+                unit: isPoints ? "points" : "currency"
             });
         }
 
         // 3. Automatic Fee Calculation
-        let calculatedFees = 0;
         const feeProfile = settingsStore.fees.find(
             (f) => f.id === asset?.default_fee_id,
         );
 
         if (feeProfile) {
-            const entryValue =
-                formData.entry_price * formData.quantity * pointValue;
+            // Fee calculation on total volume
+            // Re-calculate total entry value for fee purposes
+            let totalEntryValForFees = formData.entry_price * formData.quantity;
+            sortedPartials.forEach((p: any) => {
+                if (p.type === "entry") totalEntryValForFees += (p.price || 0) * (p.quantity || 0);
+            });
+            const entryValue = totalEntryValForFees * pointValue;
 
-            // Fixed fees (per contract/unit)
             if (feeProfile.fixed_fee > 0) {
-                const fixed = feeProfile.fixed_fee * formData.quantity;
+                const fixed = feeProfile.fixed_fee * totalEntryQty;
                 calculatedFees += fixed;
                 memoryItems.push({
                     label: $t("trades.wizard.summary.fixed_fee"),
-                    result: -fixed,
+                    resultCurrency: -fixed,
+                    resultPoints: -fixed / pointValue,
+                    unit: "currency"
                 });
             }
 
-            // Percentage fees (on total volume)
             if (feeProfile.percentage_fee > 0) {
                 const perc = entryValue * (feeProfile.percentage_fee / 100);
                 calculatedFees += perc;
                 memoryItems.push({
                     label: `${$t("trades.wizard.summary.variable_fee")} (${feeProfile.percentage_fee}%)`,
-                    result: -perc,
+                    resultCurrency: -perc,
+                    resultPoints: -perc / pointValue,
+                    unit: "currency"
                 });
             }
 
-            // Exchange fees (Bovespa/Exchange)
             if (feeProfile.exchange_fee > 0) {
                 const exch = entryValue * (feeProfile.exchange_fee / 100);
                 calculatedFees += exch;
                 memoryItems.push({
                     label: `Taxas de Bolsa (${feeProfile.exchange_fee}%)`,
-                    result: -exch,
+                    resultCurrency: -exch,
+                    resultPoints: -exch / pointValue,
+                    unit: "currency"
                 });
             }
 
-            // Withholding Tax (IRRF) - Only on positive results
-            if (feeProfile.withholding_tax > 0 && grossTotal > 0) {
-                const irrf = grossTotal * (feeProfile.withholding_tax / 100);
+            if (feeProfile.withholding_tax > 0 && grossCurrencyTotal > 0) {
+                const irrf = grossCurrencyTotal * (feeProfile.withholding_tax / 100);
                 calculatedFees += irrf;
                 memoryItems.push({
                     label: `IRRF Estimado (${feeProfile.withholding_tax}%)`,
-                    result: -irrf,
+                    resultCurrency: -irrf,
+                    resultPoints: -irrf / pointValue,
+                    unit: "currency"
                 });
             }
         }
 
-        // Use manual fees if calculated is 0 and manual is provided
         const finalFees = calculatedFees || formData.fees || 0;
 
+        // Add Gross Header
+        if (memoryItems.length > 0) {
+            memoryItems.push({
+                label: $t("trades.wizard.summary.gross_result"),
+                resultCurrency: grossCurrencyTotal,
+                resultPoints: grossCurrencyTotal / pointValue,
+                unit: isPoints ? "points" : "currency",
+                isHeader: true
+            });
+        }
+
         return {
-            gross: grossTotal,
-            net: grossTotal - finalFees,
+            grossCurrency: grossCurrencyTotal,
+            grossPoints: grossCurrencyTotal / pointValue,
+            netCurrency: grossCurrencyTotal - finalFees,
+            netPoints: (grossCurrencyTotal - finalFees) / pointValue,
             fees: finalFees,
-            remainingQty,
+            remainingQty: totalEntryQty - totalExitQty,
             memoryItems,
             assetType,
             currencySymbol,
+            totalEntryQty,
+            globalAvgPrice: currentAvgPrice
         };
     });
 
@@ -855,7 +945,7 @@
                 asset_type_id: selectedAssetTypeId,
                 strategy_id: formData.strategy_id,
                 account_id: formData.account_id,
-                result: calculationResult.net,
+                result: calculationResult.netCurrency,
                 quantity: formData.quantity,
                 direction: formData.direction === "buy" ? "Buy" : "Sell",
                 entry_price: formData.entry_price,
@@ -903,7 +993,7 @@
 
             if (submissionId) {
                 // FISCAL GUARD (d5398093): Warn if profit increase might require complementary DARF
-                const currentNetResult = calculationResult.net;
+                const currentNetResult = calculationResult.netCurrency;
                 if (
                     originalResult !== null &&
                     activeRiskProfile?.id !== "demo"
@@ -926,6 +1016,15 @@
                             return;
                         }
                     }
+                }
+
+                // DARF Warning Logic (as per instruction)
+                if (editTradeId && calculationResult.netCurrency > originalResult + 100) {
+                    toast.error($_('trades.wizard.messages.complementary_darf_warning'), {
+                        duration: 6000,
+                        position: 'top-center',
+                        style: 'background: #1a1a1a; color: #ff4b4b; border: 1px solid #ff4b4b22; font-weight: 600;'
+                    });
                 }
 
                 console.log(
@@ -1291,6 +1390,17 @@
                         >
                             <!-- Left Column: Assets -->
                             <div class="space-y-4">
+                                {#if showDarfWarning}
+                                    <div class="p-3 rounded-lg bg-orange-500/10 border border-orange-500/30 flex gap-3 animate-pulse">
+                                        <AlertCircle class="w-5 h-5 text-orange-500 shrink-0" />
+                                        <div class="space-y-1">
+                                            <p class="text-xs font-bold text-orange-500 uppercase tracking-tight">{$t("trades.wizard.messages.complementary_darf_warning")}</p>
+                                            <p class="text-[10px] text-muted-foreground leading-snug">
+                                                O resultado aumentou {(calculationResult.netCurrency - originalResult).toFixed(2)}. Verifique se há necessidade de emitir um DARF complementar para evitar multas.
+                                            </p>
+                                        </div>
+                                    </div>
+                                {/if}
                                 <div class="flex flex-col gap-3">
                                     <!-- Asset Type Filter -->
                                     <div class="space-y-1">
@@ -1744,22 +1854,28 @@
                                 "trades.wizard.sections.partial_management.title",
                             )}
                         </h3>
-                        {#if calculationResult.assetType}
+                        {#if true}
+                            {@const selectedAsset = settingsStore.assets.find(
+                                (a) => a.symbol === formData.asset,
+                            )}
+                            {@const resolvedPointValue = (() => {
+                                if (selectedAsset?.point_value) return selectedAsset.point_value;
+                                const upperSym = (formData.asset || "").toUpperCase();
+                                if (upperSym.startsWith("WIN") || upperSym.startsWith("IND")) return 0.2;
+                                if (upperSym.startsWith("WDO")) return 10.0;
+                                if (upperSym.startsWith("DOL")) return 50.0;
+                                return 1.0;
+                            })()}
                             <PartialExitsManager
                                 bind:partials={formData.partial_exits}
                                 entryPrice={formData.entry_price}
                                 totalQuantity={formData.quantity}
-                                unitLabel={calculationResult.assetType
-                                    .unit_label ||
-                                    $t("trades.wizard.unit_labels.contracts")}
-                                resultSuffix={calculationResult.assetType
-                                    .result_type === "currency"
-                                    ? ""
-                                    : "pts"}
-                                resultPrefix={calculationResult.assetType
-                                    .result_type === "currency"
-                                    ? calculationResult.currencySymbol
-                                    : ""}
+                                direction={formData.direction}
+                                pointValue={resolvedPointValue}
+                                currencySymbol={calculationResult.currencySymbol}
+                                unitLabel={calculationResult.assetType?.unit_label || $t("trades.wizard.unit_labels.contracts")}
+                                resultSuffix={calculationResult.assetType?.result_type === "points" ? "pts" : ""}
+                                resultPrefix={calculationResult.assetType?.result_type === "currency" ? calculationResult.currencySymbol + " " : ""}
                             />
                         {/if}
                     </section>
@@ -1777,7 +1893,7 @@
                                     class="text-[10px] font-bold uppercase tracking-tighter {formData.status ===
                                     'open'
                                         ? 'text-primary'
-                                        : 'text-muted-foreground'}">Aberto</span
+                                        : 'text-muted-foreground'}">{$t("trades.status.open")}</span
                                 >
                                 <button
                                     class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 transition-colors bg-muted/40 border border-border/40"
@@ -1812,7 +1928,7 @@
                                     'closed'
                                         ? 'text-emerald-500'
                                         : 'text-muted-foreground'}"
-                                    >Fechado</span
+                                    >{$t("trades.status.closed")}</span
                                 >
                             </div>
                         </div>
@@ -1963,7 +2079,7 @@
                                 <div>
                                     <div class="flex items-center gap-2">
                                         <h4
-                                            class="text-base font-bold tracking-tight"
+                                            class="text-base font-bold tracking-tight text-foreground"
                                         >
                                             {formData.asset}
                                         </h4>
@@ -1996,6 +2112,11 @@
                                                 "trades.wizard.unit_labels.contracts",
                                             )}</span
                                         >
+                                        {#if calculationResult.totalEntryQty > formData.quantity}
+                                            <span class="ml-2 text-primary/60">
+                                                 / MÉDIO: <span class="text-foreground font-mono font-bold">{(formData.entry_price || 0).toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })}</span>
+                                            </span>
+                                        {/if}
                                     </p>
                                 </div>
                             </div>
@@ -2006,15 +2127,18 @@
                                     {$t("trades.details.net_result")}
                                 </p>
                                 <h3
-                                    class="text-2xl font-black {calculationResult.net >=
-                                    0
+                                    class="text-2xl font-black {calculationResult.netCurrency >= 0
                                         ? 'text-emerald-400'
                                         : 'text-red-400'}"
                                 >
-                                    R$ {calculationResult.net.toLocaleString(
-                                        $locale || "pt-BR",
-                                        { minimumFractionDigits: 2 },
-                                    )}
+                                    {#if calculationResult.assetType?.result_type === "points"}
+                                        {calculationResult.netPoints.toLocaleString($locale || "pt-BR", { maximumFractionDigits: 2 })} <span class="text-xs uppercase font-bold text-muted-foreground mr-1">pts</span>
+                                        <span class="text-xs text-muted-foreground font-medium block md:inline md:ml-2">
+                                            {calculationResult.currencySymbol} {calculationResult.netCurrency.toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })}
+                                        </span>
+                                    {:else}
+                                        {calculationResult.currencySymbol} {calculationResult.netCurrency.toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })}
+                                    {/if}
                                 </h3>
                             </div>
                         </div>
@@ -2161,7 +2285,7 @@
                 >
                     <section class="space-y-4 text-center py-12">
                         <h3
-                            class="text-sm font-bold text-white tracking-tight uppercase"
+                            class="text-sm font-bold text-foreground tracking-tight uppercase"
                         >
                             {$t("trades.wizard.sections.visual_evidence.title")}
                         </h3>
@@ -2211,17 +2335,20 @@
                                         <p
                                             class="text-[9px] text-muted-foreground uppercase font-bold tracking-widest"
                                         >
-                                            {$t(
-                                                "trades.wizard.fields.asset_direction",
-                                            )}
+                                            {$t("trades.wizard.fields.asset_direction")}
                                         </p>
                                         <div class="flex items-center gap-2">
                                             <span
                                                 class="text-base font-mono font-bold text-foreground"
                                                 >{formData.asset}</span
                                             >
+                                            {#if calculationResult.totalEntryQty > formData.quantity}
+                                                <span class="text-[10px] text-muted-foreground">
+                                                    (Médio: {(formData.entry_price || 0).toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })})
+                                                </span>
+                                            {/if}
                                             <span
-                                                class="px-2 py-0.5 rounded text-[8px] font-black {formData.direction ===
+                                                class="px-1.5 py-0.5 rounded text-[8px] font-black {formData.direction ===
                                                 'buy'
                                                     ? 'bg-emerald-500/20 text-emerald-400'
                                                     : 'bg-red-500/20 text-red-400'}"
@@ -2243,24 +2370,18 @@
                                             {$t("trades.table.pl")}
                                         </p>
                                         <p
-                                            class="text-xl font-black {calculationResult.net >=
-                                            0
+                                            class="text-xl font-black {calculationResult.netCurrency >= 0
                                                 ? 'text-emerald-400'
                                                 : 'text-red-400'}"
                                         >
-                                            {calculationResult.assetType
-                                                ?.result_type === "currency"
-                                                ? calculationResult.currencySymbol +
-                                                  " "
-                                                : ""}
-                                            {calculationResult.net.toLocaleString(
-                                                $locale || "pt-BR",
-                                                { minimumFractionDigits: 2 },
-                                            )}
-                                            {calculationResult.assetType
-                                                ?.result_type === "points"
-                                                ? " pts"
-                                                : ""}
+                                            {#if calculationResult.assetType?.result_type === "points"}
+                                                {calculationResult.netPoints.toLocaleString($locale || "pt-BR", { maximumFractionDigits: 2 })} pts
+                                                <span class="text-[10px] text-muted-foreground block font-bold">
+                                                    {calculationResult.currencySymbol} {calculationResult.netCurrency.toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })}
+                                                </span>
+                                            {:else}
+                                                {calculationResult.currencySymbol} {calculationResult.netCurrency.toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })}
+                                            {/if}
                                         </p>
                                     </div>
                                     <div class="space-y-0.5">
@@ -2362,36 +2483,18 @@
                                                         >
                                                     </div>
                                                     <span
-                                                        class="text-[10px] font-mono font-bold {item.result >=
-                                                        0
+                                                        class="text-[10px] font-mono font-bold {item.resultCurrency >= 0
                                                             ? 'text-emerald-400'
                                                             : 'text-red-400'}"
                                                     >
-                                                        {item.result >= 0
-                                                            ? "+"
-                                                            : ""}
-                                                        {calculationResult
-                                                            .assetType
-                                                            ?.result_type ===
-                                                        "currency"
-                                                            ? calculationResult.currencySymbol +
-                                                              " "
-                                                            : ""}
-                                                        {(
-                                                            item.result || 0
-                                                        ).toLocaleString(
-                                                            $locale || "pt-BR",
-                                                            {
-                                                                minimumFractionDigits: 2,
-                                                            },
-                                                        )}
-                                                        {calculationResult
-                                                            .assetType
-                                                            ?.result_type ===
-                                                            "points" &&
-                                                        item.result !== 0
-                                                            ? "pts"
-                                                            : ""}
+                                                        {#if item.resultCurrency !== 0}
+                                                            {item.resultPoints >= 0 ? "+" : ""}{item.resultPoints.toLocaleString($locale || "pt-BR", { maximumFractionDigits: 2 })} pts
+                                                            <span class="text-[9px] opacity-60 ml-1">
+                                                                ({calculationResult.currencySymbol} {Math.abs(item.resultCurrency).toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })})
+                                                            </span>
+                                                        {:else}
+                                                            -
+                                                        {/if}
                                                     </span>
                                                 </div>
                                             {/each}
@@ -2408,23 +2511,14 @@
                                             <span
                                                 class="text-xs font-mono font-black text-foreground"
                                             >
-                                                {calculationResult.assetType
-                                                    ?.result_type === "currency"
-                                                    ? calculationResult.currencySymbol +
-                                                      " "
-                                                    : ""}
-                                                {(
-                                                    calculationResult.gross || 0
-                                                ).toLocaleString(
-                                                    $locale || "pt-BR",
-                                                    {
-                                                        minimumFractionDigits: 2,
-                                                    },
-                                                )}
-                                                {calculationResult.assetType
-                                                    ?.result_type === "points"
-                                                    ? "pts"
-                                                    : ""}
+                                                {#if calculationResult.assetType?.result_type === "points"}
+                                                    {calculationResult.grossPoints.toLocaleString($locale || "pt-BR", { maximumFractionDigits: 2 })} pts
+                                                    <span class="text-[9px] text-muted-foreground ml-1">
+                                                        ({calculationResult.currencySymbol} {calculationResult.grossCurrency.toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })})
+                                                    </span>
+                                                {:else}
+                                                    {calculationResult.currencySymbol} {calculationResult.grossCurrency.toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })}
+                                                {/if}
                                             </span>
                                         </div>
                                         <div

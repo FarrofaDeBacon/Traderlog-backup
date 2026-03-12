@@ -65,7 +65,9 @@ export type Asset = {
     asset_type_id: string;
     point_value: number;
     default_fee_id?: string;
-    tax_profile_id?: string; // New field
+    tax_profile_id?: string;
+    is_root: boolean;
+    root_id?: string;
 };
 
 export type Currency = {

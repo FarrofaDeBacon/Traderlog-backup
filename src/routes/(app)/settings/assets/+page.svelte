@@ -13,6 +13,7 @@
         Activity,
         Building2,
         FileSpreadsheet,
+        Link,
     } from "lucide-svelte";
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
@@ -27,6 +28,7 @@
     import RTDImportDialog from "$lib/components/settings/RTDImportDialog.svelte";
     import Skeleton from "$lib/components/ui/skeleton.svelte";
     import { toast } from "svelte-sonner";
+    import { Checkbox } from "$lib/components/ui/checkbox";
 
     let isDialogOpen = $state(false);
     let isImportOpen = $state(false);
@@ -43,6 +45,8 @@
         point_value: 1,
         default_fee_id: "",
         tax_profile_id: "",
+        is_root: false,
+        root_id: "none",
     });
 
     function getAssetTypeStyle(code: string = "") {
@@ -142,21 +146,37 @@
             point_value: 1,
             default_fee_id: "",
             tax_profile_id: "",
+            is_root: false,
+            root_id: "none",
         };
         isDialogOpen = true;
     }
 
     function openEdit(item: Asset) {
         editingId = item.id;
-        formData = { ...item };
+        formData = {
+            symbol: item.symbol,
+            name: item.name,
+            asset_type_id: item.asset_type_id,
+            point_value: item.point_value,
+            default_fee_id: item.default_fee_id,
+            tax_profile_id: item.tax_profile_id || "",
+            is_root: item.is_root || false,
+            root_id: item.root_id || "none",
+        };
         isDialogOpen = true;
     }
 
-    function save() {
+    async function save() {
+        const dataToSave = {
+            ...formData,
+            root_id: formData.root_id === "none" ? undefined : formData.root_id,
+        };
+
         if (editingId) {
-            settingsStore.updateAsset(editingId, formData);
+            await settingsStore.updateAsset(editingId, dataToSave);
         } else {
-            settingsStore.addAsset(formData);
+            await settingsStore.addAsset(dataToSave);
         }
         isDialogOpen = false;
     }
@@ -178,6 +198,16 @@
             }
             deleteId = null;
         }
+    }
+
+    let rootAssets = $derived(
+        settingsStore.assets.filter((a) => a.is_root && a.id !== editingId),
+    );
+
+    function getRootSymbol(rootId: string | null) {
+        if (!rootId) return "";
+        const root = settingsStore.assets.find((a) => a.id === rootId);
+        return root ? root.symbol : "";
     }
 </script>
 
@@ -258,6 +288,24 @@
                                             <h4 class="font-bold text-base">
                                                 {asset.symbol}
                                             </h4>
+                                            {#if asset.is_root}
+                                                <Badge
+                                                    variant="outline"
+                                                    class="text-[10px] h-5 px-1.5 font-bold border-amber-500/50 text-amber-600 bg-amber-500/5"
+                                                >
+                                                    RAIZ
+                                                </Badge>
+                                            {/if}
+                                            {#if asset.root_id}
+                                                <div
+                                                    class="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border/50"
+                                                >
+                                                    <Link class="w-3 h-3" />
+                                                    {getRootSymbol(
+                                                        asset.root_id,
+                                                    )}
+                                                </div>
+                                            {/if}
                                             {#if !settingsStore.assetTypes.find((t) => t.id === asset.asset_type_id || t.id.replace(/^asset_type:/, "") === asset.asset_type_id.replace(/^asset_type:/, ""))}
                                                 <Badge
                                                     variant="destructive"
@@ -368,6 +416,67 @@
                     placeholder={$t("settings.assets.form.symbolPlaceholder")}
                 />
             </div>
+            <div class="grid grid-cols-4 items-center gap-4">
+                <Label class="text-right"
+                    >{$t("settings.assets.form.pointValue")}</Label
+                >
+                <Input
+                    type="number"
+                    step="0.0001"
+                    bind:value={formData.point_value}
+                    class="col-span-3"
+                />
+            </div>
+
+            <div class="grid grid-cols-4 items-center gap-4">
+                <div class="col-start-2 col-span-3 flex items-center gap-2">
+                    <Checkbox
+                        id="is_root"
+                        bind:checked={formData.is_root}
+                        onCheckedChange={(v) => {
+                            if (v) formData.root_id = "none";
+                        }}
+                    />
+                    <Label for="is_root" class="cursor-pointer">
+                        {$t("settings.assets.form.isRoot") || "Ativo Raiz"}
+                    </Label>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-4 items-center gap-4">
+                <Label class="text-right"
+                    >{$t("settings.assets.form.rootAsset") ||
+                        "Vincular a Raiz"}</Label
+                >
+                <div class="col-span-3">
+                    <Select.Root
+                        type="single"
+                        value={formData.root_id}
+                        onValueChange={(v) => (formData.root_id = v)}
+                        disabled={formData.is_root}
+                    >
+                        <Select.Trigger>
+                            {settingsStore.assets.find(
+                                (a) => a.id === formData.root_id,
+                            )?.symbol ||
+                                (formData.root_id === "none"
+                                    ? $t("general.none") || "Nenhum"
+                                    : $t(
+                                          "settings.assets.form.rootAssetPlaceholder",
+                                      ) || "Selecione um ativo raiz")}
+                        </Select.Trigger>
+                        <Select.Content>
+                            <Select.Item value="none">{$t("general.none") || "Nenhum"}</Select.Item>
+                            {#each rootAssets as root}
+                                <Select.Item value={root.id}
+                                    >{root.symbol}</Select.Item
+                                >
+                            {/each}
+                        </Select.Content>
+                    </Select.Root>
+                </div>
+            </div>
+
             <div class="grid grid-cols-4 items-center gap-4">
                 <Label class="text-right"
                     >{$t("settings.assets.form.name")}</Label

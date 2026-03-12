@@ -356,6 +356,8 @@
     let accountFilter = $state("all");
     let currencyFilter = $state("all");
     let searchTerm = $state("");
+    let expandedMonths = $state(new Set<string>());
+    let expandedWeeks = $state(new Set<string>());
 
     // Delete State
     let isDeleteOpen = $state(false);
@@ -448,6 +450,41 @@
             return tid === normalizedId;
         });
     }
+
+    $effect(() => {
+        if (hierarchicalData.length > 0) {
+            untrack(() => {
+                const today = new Date();
+                const currentMonthKey = today.toISOString().slice(0, 7);
+                const currentWeekKey = format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
+
+                // Auto-expand current month and week if not already set
+                if (expandedMonths.size === 0) {
+                    // Try to find current month
+                    if (hierarchicalData.some(m => m.key === currentMonthKey)) {
+                        expandedMonths.add(currentMonthKey);
+                    } else {
+                        // Fallback to latest month
+                        expandedMonths.add(hierarchicalData[0].key);
+                    }
+                    
+                    // Try to find current week in the expanded month
+                    const month = hierarchicalData.find(m => expandedMonths.has(m.key));
+                    if (month && month.weeks.length > 0) {
+                        const currentWeek = month.weeks.find((w: any) => w.key === currentWeekKey);
+                        if (currentWeek) {
+                            expandedWeeks.add(currentWeek.key);
+                        } else {
+                            expandedWeeks.add(month.weeks[0].key);
+                        }
+                    }
+                    
+                    expandedMonths = new Set(expandedMonths);
+                    expandedWeeks = new Set(expandedWeeks);
+                }
+            });
+        }
+    });
 </script>
 
 <div class="space-y-4">
@@ -605,7 +642,13 @@
             </div>
         </div>
     {:else}
-        <HierarchicalList data={hierarchicalData}>
+        <HierarchicalList 
+            data={hierarchicalData}
+            autoExpandDefault={true}
+            bind:expandedMonths
+            bind:expandedWeeks
+            mutualExclusion={true}
+        >
             <!-- Month badges: monthly PnL per currency -->
             {#snippet monthBadges(month: any)}
                 <Badge

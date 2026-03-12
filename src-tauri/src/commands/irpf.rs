@@ -1,115 +1,87 @@
 use crate::db::DbState;
+use std::collections::HashMap;
 use crate::logic::RuleBucket;
 use crate::models::irpf::{TaxAppraisal, TaxDarf, TaxLoss};
-use crate::models::{ToDto, Asset, AssetType, TaxMapping, TaxProfile, TaxProfileEntry, TaxRule};
+use crate::models::{ToDto, Asset, AssetType, TaxMapping, TaxProfile, TaxProfileEntry, TaxRule, SurrealJson};
 use chrono::{Datelike, NaiveDate};
-use serde::Deserialize;
 use serde_json;
+use crate::services::position_service::{PositionService, Position};
 use tauri::State;
 
-#[derive(Debug, Deserialize)]
-struct IrpfTrade {
-    #[serde(default)]
-    pub id: String,
-    #[serde(default)]
-    pub date: String,
-    #[serde(default)]
-    pub asset_symbol: String,
-    #[serde(default)]
-    pub exit_date: Option<String>,
-    #[serde(default)]
-    pub result: Option<f64>,
-    #[serde(default)]
-    pub fee_total: Option<f64>,
-    #[serde(default)]
-    pub quantity: Option<f64>,
-    #[serde(default)]
-    pub exit_price: Option<f64>,
-    #[serde(default)]
-    pub modality_id: Option<String>,
-    #[serde(default)]
-    pub asset_id: Option<String>,
-    #[serde(default)]
-    pub asset_type_id: Option<String>,
-    #[serde(default)]
-    pub point_value: Option<f64>,
-}
 
 
 #[tauri::command]
 pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16) -> Result<Vec<crate::models::dto::TaxAppraisalDto>, String> {
     println!(">>> ENTRY: calculate_monthly_tax(month={}, year={})", month, year);
 
-    // 1. Fetch only trades for the requested month using SurrealQL string prefix filter
-    // (string::starts_with is stable SurrealQL - avoids the broken NOT IN/NOT INSIDE syntax)
-    let prefix = format!("{}-{:02}-", year, month);
-    let query_trades = "SELECT
-            type::string(id) as id,
-            type::string(date) as date,
-            (IF exit_date != NONE THEN type::string(exit_date) ELSE null END) as exit_date,
-            (IF asset_id != NONE THEN type::string(asset_id) ELSE null END) as asset_id,
-            (IF modality_id != NONE THEN type::string(modality_id) ELSE null END) as modality_id,
-            type::string(asset_type_id) as trade_asset_type_id,
-            type::float(result) as result,
-            type::float(fee_total) as fee_total,
-            type::float(quantity) as quantity,
-            type::float(exit_price) as exit_price,
-            (SELECT VALUE type::string(symbol) FROM asset WHERE id = $parent.asset_id LIMIT 1)[0] as asset_symbol,
-            (SELECT VALUE (IF asset_type_id != NONE THEN type::string(asset_type_id) ELSE null END) FROM asset WHERE id = $parent.asset_id LIMIT 1)[0] as linked_asset_type_id,
-            (SELECT VALUE type::float(point_value) FROM asset WHERE id = $parent.asset_id LIMIT 1)[0] as point_value
-         FROM trade WHERE (exit_date IS NOT NONE) AND (result IS NOT NONE)
-         AND string::starts_with(type::string(exit_date), $prefix)";
+    // 0. Load reference data first so we can use it during normalization
+    let mut asset_res = db.0.query("SELECT id, symbol, name, asset_type_id, type::float(point_value) as point_value, default_fee_id, tax_profile_id FROM asset").await.map_err(|e| e.to_string())?;
+    let assets_json: Vec<SurrealJson> = asset_res.take(0).map_err(|e| e.to_string())?;
+    let assets: Vec<Asset> = assets_json.into_iter().filter_map(|sj| serde_json::from_value(sj.0).ok()).collect();
 
-    let mut trade_res = db.0.query(query_trades)
-        .bind(("prefix", prefix.clone()))
-        .await
-        .map_err(|e| e.to_string())?;
+    let mut at_res = db.0.query("SELECT id, name, code, market_id, unit_label, result_type, default_fee_id, tax_profile_id FROM asset_type").await.map_err(|e| e.to_string())?;
+    let at_json: Vec<SurrealJson> = at_res.take(0).map_err(|e| e.to_string())?;
+    let mut asset_types: Vec<AssetType> = at_json.into_iter().filter_map(|sj| serde_json::from_value(sj.0).ok()).collect();
 
-    let raw_trades: Vec<serde_json::Value> = trade_res.take(0).map_err(|e| {
-        let err_msg = format!("RAW DESERIALIZATION ERROR: {}", e);
-        println!("{}", err_msg);
-        err_msg
-    })?;
-
-    println!("[IRPF] Found {} trades for period {}.", raw_trades.len(), prefix);
-
-
-    let mut all_trades = Vec::new();
-    for rt in raw_trades {
-        let linked_at_id = rt["linked_asset_type_id"].as_str().map(|s| s.to_string());
-        let trade_at_id = rt["trade_asset_type_id"].as_str().map(|s| s.to_string());
-        let at_id = linked_at_id.or(trade_at_id);
-
-        all_trades.push(IrpfTrade {
-            id: rt["id"].as_str().unwrap_or("").to_string(),
-            date: rt["date"].as_str().unwrap_or("").to_string(),
-            asset_symbol: rt["asset_symbol"].as_str().unwrap_or("").to_string(),
-            exit_date: rt["exit_date"].as_str().map(|s| s.to_string()),
-            result: rt["result"].as_f64(),
-            fee_total: rt["fee_total"].as_f64().or_else(|| rt["fees"].as_f64()),
-            quantity: rt["quantity"].as_f64(),
-            exit_price: rt["exit_price"].as_f64(),
-            modality_id: rt["modality_id"].as_str().map(|s| s.to_string()),
-            asset_id: rt["asset_id"].as_str().map(|s| s.to_string()),
-            asset_type_id: at_id,
-            point_value: rt["point_value"].as_f64(),
-        });
+    // Auto-heal missing tax profiles for standard asset types
+    for at in asset_types.iter_mut() {
+        if at.tax_profile_id.is_none() {
+            let id_str = at.id.as_deref().unwrap_or("");
+            let clean = id_str.split(':').last().unwrap_or(id_str);
+            if clean == "at1" { at.tax_profile_id = Some("tax_profile:tp_acoes".to_string()); }
+            else if clean == "at2" { at.tax_profile_id = Some("tax_profile:tp_futuros".to_string()); }
+        }
     }
 
-    // 2. The DB query already filters by prefix — use all_trades directly
-    let trades_for_period = all_trades;
-    println!("[IRPF] {} trades for period {}/{}", trades_for_period.len(), month, year);
+    // 1. Fetch ALL trades for the assets involved in this month to calculate accurate PM
+    let month_end = if month == 12 { format!("{}-12-31", year) } else { format!("{}-{:02}-01", year, month + 1) };
+    
+    // First, find which assets have activity in the period
+    let period_prefix = format!("{}-{:02}-", year, month);
+    // DEBUG: Check some exit_date values
+    if let Ok(mut debug_res) = db.0.query("SELECT exit_date, type::string(exit_date) as s_date FROM trade WHERE exit_date != NONE LIMIT 5").await {
+        let debug_json: Vec<SurrealJson> = debug_res.take(0).unwrap_or_default();
+        println!("[IRPF] DEBUG: Sample exit_dates: {:?}", debug_json);
+    }
 
-    // 3. Existing appraisals for incremental exclusion logic
-
-    let exist_query = "SELECT *, type::string(id) as id FROM tax_appraisal WHERE period_month = $month AND period_year = $year";
-    let mut exist_res = db.0.query(exist_query).bind(("month", month)).bind(("year", year)).await.map_err(|e| e.to_string())?;
-    let existing_raw: Vec<serde_json::Value> = exist_res.take(0).map_err(|e| e.to_string())?;
-    let existing_appraisals: Vec<TaxAppraisal> = existing_raw.into_iter()
-        .filter_map(|v| serde_json::from_value(v).ok())
+    let mut symbols_res = db.0.query("SELECT asset_symbol FROM trade WHERE exit_date != NONE AND (IF type::is::datetime(exit_date) THEN string::starts_with(type::string(exit_date), $prefix) ELSE string::starts_with(exit_date, $prefix) END) GROUP BY asset_symbol")
+        .bind(("prefix", period_prefix.clone()))
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    let symbols: Vec<String> = symbols_res.take::<Vec<SurrealJson>>(0)
+        .map_err(|e| e.to_string())?
+        .into_iter()
+        .filter_map(|sj| sj.0["asset_symbol"].as_str().map(|s| s.to_string()))
         .collect();
 
-    // 4. Identify which trades are already in Paid/Ok appraisals
+    if symbols.is_empty() {
+        println!("[IRPF] No asset activity for period {}.", period_prefix);
+        return Ok(vec![]);
+    }
+
+    // Now fetch full history for these assets up to the end of the month
+    let mut history_res = db.0.query("SELECT * FROM trade WHERE asset_symbol INSIDE $symbols AND date < $end ORDER BY date ASC")
+        .bind(("symbols", symbols))
+        .bind(("end", month_end))
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    let raw_history: Vec<SurrealJson> = history_res.take(0).map_err(|e| e.to_string())?;
+    let all_history: Vec<crate::models::Trade> = raw_history.into_iter()
+        .filter_map(|sj| serde_json::from_value(sj.0).ok())
+        .collect();
+
+    println!("[IRPF] Loaded {} history trades for calculation.", all_history.len());
+
+    // 2. Identify which trades are already in Paid/Ok appraisals
+    let exist_query = "SELECT *, id FROM tax_appraisal WHERE period_month = $month AND period_year = $year";
+    let mut exist_res = db.0.query(exist_query).bind(("month", month)).bind(("year", year)).await.map_err(|e| e.to_string())?;
+    let existing_raw: Vec<SurrealJson> = exist_res.take(0).map_err(|e| e.to_string())?;
+    let existing_appraisals: Vec<TaxAppraisal> = existing_raw.into_iter()
+        .filter_map(|sj| serde_json::from_value(sj.0).ok())
+        .collect();
+
     let mut already_appraised_ids = std::collections::HashSet::new();
     for app in &existing_appraisals {
         if app.status == "Paid" || app.status == "Ok" {
@@ -119,44 +91,22 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
         }
     }
 
-    let trades: Vec<IrpfTrade> = if !already_appraised_ids.is_empty() {
-        println!("[IRPF] Excluding {} already-appraised trades", already_appraised_ids.len());
-        trades_for_period.into_iter().filter(|t| !already_appraised_ids.contains(&t.id)).collect()
-    } else {
-        trades_for_period
-    };
-
-    if !already_appraised_ids.is_empty() && trades.is_empty() {
-        println!("[IRPF] No NEW trades to appraise for {}/{}", month, year);
+    if all_history.is_empty() {
+        println!("[IRPF] No trade history for period {}/{}.", month, year);
         return Ok(vec![]);
     }
 
-    println!("[IRPF] {} trades to process", trades.len());
+    let mut entry_res = db.0.query("SELECT id, tax_profile_id, modality_id, tax_rule_id FROM tax_profile_entry").await.map_err(|e| e.to_string())?;
+    let entries_json: Vec<SurrealJson> = entry_res.take(0).map_err(|e| e.to_string())?;
+    let profile_entries: Vec<TaxProfileEntry> = entries_json.into_iter().filter_map(|sj| serde_json::from_value(sj.0).ok()).collect();
 
-    // 5. Load reference data
-    let mut asset_res = db.0.query("SELECT type::string(id) as id, symbol, name, type::string(asset_type_id) as asset_type_id, type::float(point_value) as point_value, (IF default_fee_id != NONE THEN type::string(default_fee_id) ELSE null END) as default_fee_id, (IF tax_profile_id != NONE THEN type::string(tax_profile_id) ELSE null END) as tax_profile_id FROM asset").await.map_err(|e| e.to_string())?;
-    let assets: Vec<Asset> = asset_res.take(0).map_err(|e| e.to_string())?;
+    let mut rule_res = db.0.query("SELECT id, name, trade_type, revenue_code, tax_rate, withholding_rate, withholding_basis, exemption_threshold, cumulative_losses, basis FROM tax_rule").await.map_err(|e| e.to_string())?;
+    let rules_json: Vec<SurrealJson> = rule_res.take(0).map_err(|e| e.to_string())?;
+    let rules: Vec<TaxRule> = rules_json.into_iter().filter_map(|sj| serde_json::from_value(sj.0).ok()).collect();
 
-    let mut at_res = db.0.query("SELECT type::string(id) as id, name, code, type::string(market_id) as market_id, unit_label, result_type, (IF default_fee_id != NONE THEN type::string(default_fee_id) ELSE null END) as default_fee_id, (IF tax_profile_id != NONE THEN type::string(tax_profile_id) ELSE null END) as tax_profile_id FROM asset_type").await.map_err(|e| e.to_string())?;
-    let mut asset_types: Vec<AssetType> = at_res.take(0).map_err(|e| e.to_string())?;
-
-    // Auto-heal missing tax profiles for standard asset types
-    for at in asset_types.iter_mut() {
-        if at.tax_profile_id.is_none() {
-            let clean = at.id.split(':').last().unwrap_or(&at.id);
-            if clean == "at1" { at.tax_profile_id = Some("tax_profile:tp_acoes".to_string()); }
-            else if clean == "at2" { at.tax_profile_id = Some("tax_profile:tp_futuros".to_string()); }
-        }
-    }
-
-    let mut entry_res = db.0.query("SELECT type::string(id) as id, type::string(tax_profile_id) as tax_profile_id, type::string(modality_id) as modality_id, type::string(tax_rule_id) as tax_rule_id FROM tax_profile_entry").await.map_err(|e| e.to_string())?;
-    let profile_entries: Vec<TaxProfileEntry> = entry_res.take(0).map_err(|e| e.to_string())?;
-
-    let mut rule_res = db.0.query("SELECT type::string(id) as id, name, trade_type, revenue_code, tax_rate, withholding_rate, withholding_basis, exemption_threshold, cumulative_losses, basis FROM tax_rule").await.map_err(|e| e.to_string())?;
-    let rules: Vec<TaxRule> = rule_res.take(0).map_err(|e| e.to_string())?;
-
-    let mut loss_res = db.0.query("SELECT type::string(id) as id, trade_type, amount, balance, origin_date FROM tax_loss WHERE balance > 0").await.map_err(|e| e.to_string())?;
-    let losses: Vec<TaxLoss> = loss_res.take(0).map_err(|e| e.to_string())?;
+    let mut loss_res = db.0.query("SELECT id, trade_type, amount, balance, origin_date FROM tax_loss WHERE balance > 0").await.map_err(|e| e.to_string())?;
+    let losses_json: Vec<SurrealJson> = loss_res.take(0).map_err(|e| e.to_string())?;
+    let losses: Vec<TaxLoss> = losses_json.into_iter().filter_map(|sj| serde_json::from_value(sj.0).ok()).collect();
 
     println!("[IRPF] Loaded: {} assets, {} types, {} profile_entries, {} rules", assets.len(), asset_types.len(), profile_entries.len(), rules.len());
 
@@ -175,12 +125,12 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
         let clean_pid = normalize_id("ProfileParam", profile_id);
         let clean_mid = normalize_id("ModalityParam", target_mod_id);
         let entry = profile_entries.iter().find(|e| {
-            normalize_id("EntryProfile", &e.tax_profile_id) == clean_pid &&
-            normalize_id("EntryModality", &e.modality_id) == clean_mid
+            normalize_id("EntryProfile", e.tax_profile_id.as_deref().unwrap_or("")) == clean_pid &&
+            normalize_id("EntryModality", e.modality_id.as_deref().unwrap_or("")) == clean_mid
         });
         if let Some(e) = entry {
-            let clean_rid = normalize_id("EntryRule", &e.tax_rule_id);
-            rules.iter().find(|r| normalize_id("RuleId", &r.id) == clean_rid).cloned()
+            let clean_rid = normalize_id("EntryRule", e.tax_rule_id.as_deref().unwrap_or(""));
+            rules.iter().find(|r| normalize_id("RuleId", r.id.as_deref().unwrap_or("")) == clean_rid).cloned()
         } else {
             println!("[IRPF] No entry for profile={} modality={}", clean_pid, clean_mid);
             None
@@ -188,56 +138,81 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
     };
 
     // 8. Group trades into rule buckets
-    use std::collections::HashMap;
+    // 8. Group trades into rule buckets using PM from PositionService
+    let mut positions: HashMap<String, Position> = HashMap::new();
     let mut buckets: HashMap<String, RuleBucket> = HashMap::new();
+    let period_prefix = format!("{}-{:02}-", year, month);
 
-    for trade in &trades {
-        let mut trade_mod_id = trade.modality_id.as_deref().unwrap_or("").to_string();
-        if trade_mod_id.is_empty() || trade_mod_id == "null" {
-            let ed = trade.date.split('T').next().unwrap_or("");
-            let xd = trade.exit_date.as_deref().unwrap_or("").split('T').next().unwrap_or("");
-            trade_mod_id = if !ed.is_empty() && ed == xd { "mod1".to_string() } else { "mod2".to_string() };
-        }
+    for trade in all_history {
+        let symbol = trade.asset_symbol.clone();
+        let current_pm = positions.get(&symbol).map(|p| p.average_price).unwrap_or(0.0);
 
-        let initial_result = trade.result.unwrap_or(0.0) - trade.fee_total.unwrap_or(0.0);
-        let mut final_profile_id: Option<String> = None;
+        // Check if this trade belongs to the target period for tax calculation
+        let is_in_period = trade.exit_date.as_ref().map(|d| d.starts_with(&period_prefix)).unwrap_or(false);
+        let is_not_appraised = !already_appraised_ids.contains(&trade.id);
 
-        if let Some(aid) = &trade.asset_id {
-            let clean_aid = normalize_id("AssetId", aid);
-            if let Some(asset) = assets.iter().find(|a| normalize_id("AssetTblId", &a.id) == clean_aid || a.symbol == trade.asset_symbol) {
-                if let Some(pid) = &asset.tax_profile_id { final_profile_id = Some(pid.clone()); }
+        if is_in_period && is_not_appraised {
+            // Find modality (DayTrade vs SwingTrade)
+            let mut trade_mod_id = trade.modality_id.as_deref().unwrap_or("").to_string();
+            if trade_mod_id.is_empty() || trade_mod_id == "null" {
+                let ed = trade.date.split('T').next().unwrap_or("");
+                let xd = trade.exit_date.as_deref().unwrap_or("").split('T').next().unwrap_or("");
+                trade_mod_id = if !ed.is_empty() && ed == xd { "mod1".to_string() } else { "mod2".to_string() };
             }
-        }
-        if final_profile_id.is_none() {
-            if let Some(atid) = &trade.asset_type_id {
-                let clean_atid = normalize_id("AssetTypeId", atid);
-                if let Some(at) = asset_types.iter().find(|t| normalize_id("AssetTypeTblId", &t.id) == clean_atid) {
-                    final_profile_id = at.tax_profile_id.clone();
+
+            // Calculate ACTUAL result using PM
+            let real_result = PositionService::calculate_trade_result(&trade, current_pm);
+
+            // Find tax profile
+            let mut final_profile_id: Option<String> = None;
+            if let Some(aid) = &trade.asset_id {
+                let clean_aid = normalize_id("AssetId", aid);
+                if let Some(asset) = assets.iter().find(|a| normalize_id("AssetTblId", a.id.as_deref().unwrap_or("")) == clean_aid || a.symbol == symbol) {
+                    if let Some(pid) = &asset.tax_profile_id { final_profile_id = Some(pid.clone()); }
                 }
             }
-        }
-
-        if let Some(profile_id) = final_profile_id {
-            if let Some(rule) = find_rule(&profile_id, &trade_mod_id) {
-                let bucket_key = format!("{}:{}", rule.id, trade_mod_id);
-                let entry = buckets.entry(bucket_key).or_insert(RuleBucket {
-                    rule: rule.clone(),
-                    gross_profit: 0.0,
-                    gross_loss: 0.0,
-                    sales_total: 0.0,
-                    trade_ids: Vec::new(),
-                });
-                if initial_result > 0.0 { entry.gross_profit += initial_result; }
-                else { entry.gross_loss += initial_result.abs(); }
-                if rule.trade_type != "DayTrade" {
-                    if let (Some(price), Some(qty)) = (trade.exit_price, trade.quantity) {
-                        entry.sales_total += price * qty * trade.point_value.unwrap_or(1.0);
+            if final_profile_id.is_none() {
+                if let Some(atid) = &trade.asset_type_id {
+                    let clean_atid = normalize_id("AssetTypeId", atid);
+                    if let Some(at) = asset_types.iter().find(|t| normalize_id("AssetTypeTblId", t.id.as_deref().unwrap_or("")) == clean_atid) {
+                        final_profile_id = at.tax_profile_id.clone();
                     }
                 }
-                entry.trade_ids.push(trade.id.clone());
             }
-        } else {
-            println!("[IRPF] Trade {} skipped: no tax profile", trade.id);
+
+            if let Some(profile_id) = final_profile_id {
+                if let Some(rule) = find_rule(&profile_id, &trade_mod_id) {
+                    let bucket_key = format!("{}:{}", rule.id.as_deref().unwrap_or(""), trade_mod_id);
+                    let entry = buckets.entry(bucket_key).or_insert(RuleBucket {
+                        rule: rule.clone(),
+                        gross_profit: 0.0,
+                        gross_loss: 0.0,
+                        sales_total: 0.0,
+                        trade_ids: Vec::new(),
+                    });
+
+                    if real_result > 0.0 { entry.gross_profit += real_result; }
+                    else { entry.gross_loss += real_result.abs(); }
+
+                    if rule.trade_type != "DayTrade" {
+                        let point_value = trade.asset_id.as_ref().and_then(|aid| {
+                            let clean_aid = normalize_id("AssetId", aid);
+                            assets.iter().find(|a| normalize_id("AssetTblId", a.id.as_deref().unwrap_or("")) == clean_aid).map(|a| a.point_value)
+                        }).unwrap_or(1.0);
+                        
+                        if let Some(price) = trade.exit_price {
+                             entry.sales_total += price * trade.quantity * point_value;
+                        }
+                    }
+                    entry.trade_ids.push(trade.id.clone());
+                }
+            }
+        }
+
+        // Always update PM for the next trades
+        let updated_pos = PositionService::calculate_positions(&[trade]);
+        if let Some(up) = updated_pos.get(&symbol) {
+            positions.insert(symbol, up.clone());
         }
     }
 
@@ -258,7 +233,8 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
         // Previous IRRF credit
         let mut credit_res = db.0.query("SELECT type::float(withholding_credit_remaining) as withholding_credit_remaining, period_year, period_month FROM tax_appraisal WHERE trade_type = $type")
             .bind(("type", loss_category.clone())).await.map_err(|e| e.to_string())?;
-        let mut prev_credit_vec: Vec<serde_json::Value> = credit_res.take(0).map_err(|e| e.to_string())?;
+        let credit_json: Vec<SurrealJson> = credit_res.take(0).map_err(|e| e.to_string())?;
+        let mut prev_credit_vec: Vec<serde_json::Value> = credit_json.into_iter().map(|sj| sj.0).collect();
         prev_credit_vec.retain(|v| {
             let py = v.get("period_year").and_then(|x| x.as_u64()).unwrap_or(0) as u16;
             let pm = v.get("period_month").and_then(|x| x.as_u64()).unwrap_or(0) as u8;
@@ -274,7 +250,8 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
         // Accumulated sub-R$10 appraisals
         let mut accum_res = db.0.query("SELECT type::float(total_payable) as total_payable, period_year, period_month FROM tax_appraisal WHERE trade_type = $type AND status = 'Pending'")
             .bind(("type", loss_category.clone())).await.map_err(|e| e.to_string())?;
-        let mut prev_accum: Vec<serde_json::Value> = accum_res.take(0).map_err(|e| e.to_string())?;
+        let accum_json: Vec<SurrealJson> = accum_res.take(0).map_err(|e| e.to_string())?;
+        let mut prev_accum: Vec<serde_json::Value> = accum_json.into_iter().map(|sj| sj.0).collect();
         prev_accum.retain(|v| {
             let py = v.get("period_year").and_then(|x| x.as_u64()).unwrap_or(0) as u16;
             let pm = v.get("period_month").and_then(|x| x.as_u64()).unwrap_or(0) as u8;
@@ -291,11 +268,12 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
         // Complementary check
         let mut paid_res = db.0.query("SELECT type::float(total_payable) as total_payable FROM tax_appraisal WHERE period_month = $month AND period_year = $year AND trade_type = $type AND status = 'Paid'")
             .bind(("month", month)).bind(("year", year)).bind(("type", loss_category.clone())).await.map_err(|e| e.to_string())?;
-        let already_paid: f64 = paid_res.take::<Vec<serde_json::Value>>(0).map_err(|e| e.to_string())?
-            .iter().map(|v| v.get("total_payable").and_then(|t| t.as_f64()).unwrap_or(0.0)).sum();
+        let paid_json: Vec<SurrealJson> = paid_res.take(0).map_err(|e| e.to_string())?;
+        let already_paid: f64 = paid_json.into_iter().map(|sj| sj.0)
+            .map(|v| v.get("total_payable").and_then(|t| t.as_f64()).unwrap_or(0.0)).sum();
 
         let mut appraisal = crate::logic::calculate_appraisal(&bucket, month, year, available_loss, previous_credit, tax_accumulated, 0.0);
-        appraisal.tax_rule_id = rule_id;
+        appraisal.tax_rule_id = Some(rule_id);
         appraisal.calculation_date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
         appraisal.is_complementary = already_paid > 0.0;
         appraisals.push(appraisal);
@@ -321,11 +299,11 @@ pub async fn get_appraisals(
     }
 
     let base_select = "SELECT \
-        type::string(id) as id, \
+        id, \
         type::number(period_month) as period_month, \
         type::number(period_year) as period_year, \
         trade_type, \
-        (IF tax_rule_id != NONE THEN type::string(tax_rule_id) ELSE null END) as tax_rule_id, \
+        tax_rule_id, \
         revenue_code, \
         type::float(gross_profit) as gross_profit, \
         type::float(loss) as loss, \
@@ -341,9 +319,9 @@ pub async fn get_appraisals(
         type::float(tax_accumulated) as tax_accumulated, \
         type::float(total_payable) as total_payable, \
         is_exempt, \
-        (IF calculation_date != NONE THEN type::string(calculation_date) ELSE '' END) as calculation_date, \
+        calculation_date, \
         status, \
-        (SELECT VALUE type::string(self) FROM trade_ids) as trade_ids, \
+        trade_ids, \
         is_complementary \
         FROM tax_appraisal ";
 
@@ -354,9 +332,11 @@ pub async fn get_appraisals(
     };
 
     let mut result = db.0.query(query).await.map_err(|e| e.to_string())?;
-    let appraisals_json: Vec<crate::models::SurrealJson> = result.take(0).map_err(|e| e.to_string())?;
+    let appraisals_json_sj: Vec<SurrealJson> = result.take(0).map_err(|e| e.to_string())?;
     
-    let mut appraisals: Vec<TaxAppraisal> = appraisals_json.into_iter().filter_map(|v| serde_json::from_value(v.0).ok()).collect();
+    let mut appraisals: Vec<TaxAppraisal> = appraisals_json_sj.into_iter()
+        .filter_map(|sj| serde_json::from_value(sj.0).ok())
+        .collect();
 
     // Sort descending by year then month
     appraisals.sort_by(|a, b| {
@@ -373,7 +353,7 @@ pub async fn save_appraisal(
     data: TaxAppraisal,
 ) -> Result<crate::models::dto::TaxAppraisalDto, String> {
     // --- NEW: LOSS RESTORATION (Undo previous compensation if updating) ---
-    let query_existing = "SELECT *, type::string(id) as id FROM tax_appraisal WHERE period_month = $month AND period_year = $year AND trade_type = $type AND status = 'Pending' LIMIT 1";
+    let query_existing = "SELECT *, id FROM tax_appraisal WHERE period_month = $month AND period_year = $year AND trade_type = $type AND status = 'Pending' LIMIT 1";
     let mut check_res =
         db.0.query(query_existing)
             .bind(("month", data.period_month))
@@ -382,8 +362,8 @@ pub async fn save_appraisal(
             .await
             .map_err(|e| e.to_string())?;
 
-    let existing_opt_json: Option<crate::models::SurrealJson> = check_res.take(0).map_err(|e| e.to_string())?;
-    let existing_opt: Option<TaxAppraisal> = existing_opt_json.and_then(|v| serde_json::from_value(v.0).ok());
+    let existing_raw_opt: Option<SurrealJson> = check_res.take(0).map_err(|e| e.to_string())?;
+    let existing_opt: Option<TaxAppraisal> = existing_raw_opt.and_then(|sj| serde_json::from_value(sj.0).ok());
 
     if let Some(existing) = existing_opt {
         if existing.compensated_loss > 0.0 {
@@ -394,15 +374,15 @@ pub async fn save_appraisal(
             let mut to_restore = existing.compensated_loss;
 
             // Restore LIFO (Newest first, reverse of FIFO usage)
-            let loss_query = "SELECT *, type::string(id) as id FROM tax_loss WHERE trade_type = $type AND balance < amount ORDER BY origin_date DESC";
+            let loss_query = "SELECT *, id FROM tax_loss WHERE trade_type = $type AND balance < amount ORDER BY origin_date DESC";
             let mut loss_result =
                 db.0.query(loss_query)
                     .bind(("type", data.trade_type.clone()))
                     .await
                     .map_err(|e| e.to_string())?;
 
-            let losses_to_restore_json: Vec<crate::models::SurrealJson> = loss_result.take(0).map_err(|e| e.to_string())?;
-            let losses_to_restore: Vec<TaxLoss> = losses_to_restore_json.into_iter().filter_map(|v| serde_json::from_value(v.0).ok()).collect();
+            let losses_to_restore_json: Vec<SurrealJson> = loss_result.take(0).map_err(|e| e.to_string())?;
+            let losses_to_restore: Vec<TaxLoss> = losses_to_restore_json.into_iter().filter_map(|sj| serde_json::from_value(sj.0).ok()).collect();
             for mut loss_record in losses_to_restore {
                 if to_restore <= 0.0 {
                     break;
@@ -427,14 +407,14 @@ pub async fn save_appraisal(
                     };
                     let l_id = if parts.len() > 1 { parts[1] } else { &id_val };
                     loss_record.id = None;
-                    let _: Option<crate::models::SurrealJson> =
+                    let _: Option<SurrealJson> =
                         db.0.query("UPDATE type::thing($tb, $id) SET balance = $bal")
                             .bind(("tb", l_tb.to_string()))
                             .bind(("id", l_id.to_string()))
                             .bind(("bal", loss_record.balance))
                             .await
                             .map_err(|e| e.to_string())?
-                            .take(0)
+                            .take::<Option<SurrealJson>>(0)
                             .map_err(|e| e.to_string())?;
                 }
             }
@@ -446,11 +426,11 @@ pub async fn save_appraisal(
         let mut remaining_compensation = data.compensated_loss;
 
         let loss_query = "SELECT \
-            type::string(id) as id, \
+            id, \
             trade_type, \
             type::float(amount) as amount, \
             type::float(balance) as balance, \
-            type::string(origin_date) as origin_date \
+            origin_date \
             FROM tax_loss WHERE balance > 0 AND (trade_type = $type OR trade_type = $alt_type) ORDER BY origin_date ASC";
         
         let alt_type = if data.trade_type == "SwingTrade" { "Swing Trade" } else { "Day Trade" };
@@ -462,12 +442,12 @@ pub async fn save_appraisal(
                 .await
                 .map_err(|e| e.to_string())?;
         
-        let losses_json: Vec<crate::models::SurrealJson> = loss_result.take(0usize).map_err(|e| {
+        let losses_json: Vec<SurrealJson> = loss_result.take(0usize).map_err(|e| {
             println!("[ERROR] save_appraisal (losses) deserialization failure: {}", e);
             e.to_string()
         })?;
         
-        let losses: Vec<TaxLoss> = losses_json.into_iter().filter_map(|v| serde_json::from_value(v.0).ok()).collect();
+        let losses: Vec<TaxLoss> = losses_json.into_iter().filter_map(|sj| serde_json::from_value(sj.0).ok()).collect();
 
         for mut loss_record in losses {
             if remaining_compensation <= 0.0 {
@@ -493,14 +473,14 @@ pub async fn save_appraisal(
                 };
                 let l_id = if parts.len() > 1 { parts[1] } else { &id_val };
                 loss_record.id = None;
-                let _: Option<crate::models::SurrealJson> =
+                let _: Option<SurrealJson> =
                     db.0.query("UPDATE type::thing($tb, $id) SET balance = $bal")
                         .bind(("tb", l_tb.to_string()))
                         .bind(("id", l_id.to_string()))
                         .bind(("bal", loss_record.balance))
                         .await
                         .map_err(|e| e.to_string())?
-                        .take(0)
+                        .take::<Option<SurrealJson>>(0)
                         .map_err(|e| e.to_string())?;
             }
         }
@@ -513,11 +493,11 @@ pub async fn save_appraisal(
         // First day of the month as origin
 
         let check_query = "SELECT \
-            type::string(id) as id, \
+            id, \
             trade_type, \
             type::float(amount) as amount, \
             type::float(balance) as balance, \
-            type::string(origin_date) as origin_date \
+            origin_date \
             FROM tax_loss WHERE origin_date = $date AND (trade_type = $type OR trade_type = $alt_type) LIMIT 1";
         
         let alt_type = if data.trade_type == "SwingTrade" { "Swing Trade" } else { "Day Trade" };
@@ -530,12 +510,12 @@ pub async fn save_appraisal(
                 .await
                 .map_err(|e| e.to_string())?;
         
-        let existing_loss_json: Option<crate::models::SurrealJson> = check_result.take(0).map_err(|e| {
+        let existing_loss_sql: Option<SurrealJson> = check_result.take(0).map_err(|e| {
             println!("[ERROR] save_appraisal (check_loss) deserialization failure: {}", e);
             e.to_string()
         })?;
         
-        let existing_loss: Option<TaxLoss> = existing_loss_json.and_then(|v| serde_json::from_value(v.0).ok());
+        let existing_loss: Option<TaxLoss> = existing_loss_sql.and_then(|sj| serde_json::from_value(sj.0).ok());
 
         if let Some(mut loss) = existing_loss {
             // Update existing loss record
@@ -550,13 +530,13 @@ pub async fn save_appraisal(
                     obj.remove("id");
                 }
 
-                let _: Option<crate::models::SurrealJson> =
+                let _: Option<SurrealJson> =
                     db.0.query("UPDATE type::thing('tax_loss', $id) MERGE $data")
                         .bind(("id", clean_lid))
                         .bind(("data", loss_json))
                         .await
                         .map_err(|e| e.to_string())?
-                        .take(0)
+                        .take::<Option<SurrealJson>>(0)
                         .map_err(|e| e.to_string())?;
             }
         } else {
@@ -569,7 +549,7 @@ pub async fn save_appraisal(
                 balance: data.loss,
             };
 
-            let _: Option<crate::models::SurrealJson> =
+            let _: Option<SurrealJson> =
                 db.0.query("CREATE tax_loss SET 
                     trade_type = $type,
                     amount = $amount,
@@ -581,7 +561,7 @@ pub async fn save_appraisal(
                     .bind(("balance", new_loss.balance))
                     .await
                     .map_err(|e| e.to_string())?
-                    .take(0)
+                    .take::<Option<SurrealJson>>(0)
                     .map_err(|e| e.to_string())?;
         }
     }
@@ -596,21 +576,21 @@ pub async fn save_appraisal(
             obj.remove("id");
         }
 
-        let query_str = "UPDATE type::thing('tax_appraisal', $id) MERGE $data RETURN *, type::string(id) as id;";
+        let query_str = "UPDATE type::thing('tax_appraisal', $id) MERGE $data RETURN *, id;";
         let mut update_res =
             db.0.query(query_str)
                 .bind(("id", clean_tid))
                 .bind(("data", content_json))
                 .await
                 .map_err(|e| {
-                    println!("[IRPF] Error updating appraisal SDK: {}", e);
+                    println!("[IRPF] calculate_appraisal: rule_id={:?}", data.tax_rule_id.as_deref().unwrap_or(""));
                     e.to_string()
                 })?;
 
-        let updated_json: Option<crate::models::SurrealJson> = update_res.take(0).map_err(|e| e.to_string())?;
+        let updated_raw: Option<SurrealJson> = update_res.take(0).map_err(|e| e.to_string())?;
         
-        if let Some(v) = updated_json {
-            match serde_json::from_value::<TaxAppraisal>(v.0) {
+        if let Some(sj) = updated_raw {
+            match serde_json::from_value::<TaxAppraisal>(sj.0) {
                 Ok(updated) => return Ok(crate::models::ToDto::to_dto(&updated)),
                 Err(e) => {
                     println!("[IRPF] Deserialization error after update: {}", e);
@@ -624,7 +604,7 @@ pub async fn save_appraisal(
     // 2. If no ID, check if one exists for this Month/Year/Type to avoid duplicates
     // CRITICAL: Only match PENDING appraisals WITHOUT a generated DARF.
     // If a DARF exists, we create a NEW COMPLEMENTARY record to avoid changing the committed value.
-    let query = "SELECT *, type::string(id) as id, (SELECT VALUE count() FROM tax_darf WHERE appraisal_id = $parent.id AND status = 'Pending') as pending_darf_count FROM tax_appraisal WHERE period_month = $month AND period_year = $year AND trade_type = $type AND status = 'Pending'";
+    let query = "SELECT *, id, (SELECT VALUE count() FROM tax_darf WHERE appraisal_id = $parent.id AND status = 'Pending') as pending_darf_count FROM tax_appraisal WHERE period_month = $month AND period_year = $year AND trade_type = $type AND status = 'Pending'";
     let mut result =
         db.0.query(query)
             .bind(("month", data.period_month))
@@ -633,10 +613,10 @@ pub async fn save_appraisal(
             .await
             .map_err(|e| e.to_string())?;
 
-    let existing: Option<crate::models::SurrealJson> = result.take(0).map_err(|e| e.to_string())?;
+    let existing_raw: Option<SurrealJson> = result.take(0).map_err(|e| e.to_string())?;
+    let existing_val_opt = existing_raw.map(|sj| sj.0);
 
-    if let Some(surreal_val) = existing {
-        let existing_val = surreal_val.0;
+    if let Some(existing_val) = existing_val_opt {
         let dc = existing_val["pending_darf_count"].as_i64().unwrap_or(0);
         if dc > 0 {
             println!("[IRPF] Existing Pending appraisal found, but it ALREADY has a DARF. Falling through to create a new complementary one.");
@@ -698,17 +678,17 @@ pub async fn save_appraisal(
                 }
                 content_map.insert("trade_ids".to_string(), serde_json::json!(combined_trades));
 
-                let mut update_res = db.0.query("UPDATE type::thing('tax_appraisal', $id) MERGE $data RETURN *, type::string(id) as id")
+                let mut update_res = db.0.query("UPDATE type::thing('tax_appraisal', $id) MERGE $data RETURN *")
                     .bind(("id", tid))
                     .bind(("data", serde_json::Value::Object(content_map)))
                     .await
                     .map_err(|e| e.to_string())?;
 
-                let updated_json: Option<crate::models::SurrealJson> =
+                let updated_sj: Option<SurrealJson> =
                     update_res.take(0).map_err(|e| e.to_string())?;
                 
-                let updated = updated_json
-                    .and_then(|v| serde_json::from_value::<TaxAppraisal>(v.0).ok())
+                let updated = updated_sj
+                    .and_then(|sj| serde_json::from_value::<TaxAppraisal>(sj.0).ok())
                     .ok_or_else(|| "Failed to deserialize updated record".to_string())?;
 
                 return Ok(crate::models::ToDto::to_dto(&updated));
@@ -745,16 +725,16 @@ pub async fn save_appraisal(
     content_map.insert("trade_ids".to_string(), serde_json::json!(data.trade_ids));
 
     let mut create_res =
-        db.0.query("CREATE tax_appraisal CONTENT $data RETURN *, type::string(id) as id")
+        db.0.query("CREATE tax_appraisal CONTENT $data RETURN *")
             .bind(("data", serde_json::Value::Object(content_map)))
             .await
             .map_err(|e| e.to_string())?;
 
-    let created_json: Option<crate::models::SurrealJson> =
+    let created_sj: Option<SurrealJson> =
         create_res.take(0).map_err(|e| e.to_string())?;
-
-    let created: TaxAppraisal = created_json
-        .and_then(|v| serde_json::from_value(v.0).ok())
+    
+    let created: TaxAppraisal = created_sj
+        .and_then(|sj| serde_json::from_value(sj.0).ok())
         .ok_or_else(|| "Failed to create new appraisal".to_string())?;
 
     // --- NEW: ACCUMULATION MERGE / COMPLEMENTARY DETECTION ---
@@ -768,12 +748,12 @@ pub async fn save_appraisal(
         .await
         .map_err(|e| e.to_string())?;
 
-    let paid_count: i64 = comp_res
-        .take::<Vec<crate::models::SurrealJson>>(0)
-        .map_err(|e| e.to_string())?
-        .first()
-        .and_then(|v| v.0.get("count"))
-        .and_then(|c| c.as_i64())
+    let paid_count_res: Vec<SurrealJson> = comp_res
+        .take(0)
+        .map_err(|e| e.to_string())?;
+    
+    let paid_count = paid_count_res.first()
+        .and_then(|sj| sj.0.get("count").and_then(|c| c.as_i64()))
         .unwrap_or(0);
     
     if paid_count > 0 {
@@ -786,9 +766,9 @@ pub async fn save_appraisal(
                 .await
                 .map_err(|e| e.to_string())?;
             
-            let updated_comp_json: Option<crate::models::SurrealJson> = comp_res.take(0).map_err(|e| e.to_string())?;
-            if let Some(v) = updated_comp_json {
-                if let Ok(updated_comp) = serde_json::from_value::<TaxAppraisal>(v.0) {
+            let updated_comp_sj: Option<SurrealJson> = comp_res.take(0).map_err(|e| e.to_string())?;
+            if let Some(sj) = updated_comp_sj {
+                if let Ok(updated_comp) = serde_json::from_value::<TaxAppraisal>(sj.0) {
                     return Ok(crate::models::ToDto::to_dto(&updated_comp));
                 }
             }
@@ -814,8 +794,9 @@ pub async fn save_appraisal(
 
 #[tauri::command]
 pub async fn get_accumulated_losses(db: State<'_, DbState>) -> Result<Vec<crate::models::dto::TaxLossDto>, String> {
-    let mut loss_res = db.0.query("SELECT type::string(id) as id, trade_type, type::float(amount) as amount, type::float(balance) as balance, type::string(origin_date) as origin_date FROM tax_loss WHERE balance > 0 ORDER BY origin_date ASC").await.map_err(|e| e.to_string())?;
-    let losses: Vec<TaxLoss> = loss_res.take(0).map_err(|e| e.to_string())?;
+    let mut loss_res = db.0.query("SELECT id, trade_type, type::float(amount) as amount, type::float(balance) as balance, origin_date FROM tax_loss WHERE balance > 0 ORDER BY origin_date ASC").await.map_err(|e| e.to_string())?;
+    let losses_sj: Vec<SurrealJson> = loss_res.take(0).map_err(|e| e.to_string())?;
+    let losses: Vec<TaxLoss> = losses_sj.into_iter().filter_map(|sj| serde_json::from_value(sj.0).ok()).collect();
     Ok(losses.into_iter().map(|l| crate::models::ToDto::to_dto(&l)).collect())
 }
 
@@ -828,8 +809,8 @@ pub async fn get_appraisal_by_id(
     let tb = if parts.len() > 1 { parts[0] } else { "tax_appraisal" };
     let tid = if parts.len() > 1 { parts[1] } else { &id };
 
-    let res_json: Option<crate::models::SurrealJson> = db.0.select((tb, tid)).await.map_err(|e| e.to_string())?;
-    let appraisal: Option<TaxAppraisal> = res_json.and_then(|v| serde_json::from_value(v.0).ok());
+    let res_sj: Option<SurrealJson> = db.0.select((tb, tid)).await.map_err(|e| e.to_string())?;
+    let appraisal: Option<TaxAppraisal> = res_sj.and_then(|sj| serde_json::from_value(sj.0).ok());
 
     Ok(appraisal.map(|a| crate::models::ToDto::to_dto(&a)))
 }
@@ -846,10 +827,9 @@ pub async fn delete_appraisal(db: State<'_, DbState>, id: String) -> Result<(), 
     };
     let tid = if parts.len() > 1 { parts[1] } else { &id };
 
-    let appraisal_json: Option<crate::models::SurrealJson> =
+    let appraisal_sj: Option<SurrealJson> =
         db.0.select((tb, tid)).await.map_err(|e| e.to_string())?;
-
-    let appraisal: Option<TaxAppraisal> = appraisal_json.and_then(|v| serde_json::from_value(v.0).ok());
+    let appraisal: Option<TaxAppraisal> = appraisal_sj.and_then(|sj| serde_json::from_value(sj.0).ok());
 
     if let Some(appraisal) = appraisal {
         // 2. If it generated a loss, delete the corresponding TaxLoss record
@@ -865,8 +845,8 @@ pub async fn delete_appraisal(db: State<'_, DbState>, id: String) -> Result<(), 
                     .await
                     .map_err(|e| e.to_string())?;
 
-            let loss_record_json: Option<crate::models::SurrealJson> = result.take(0).map_err(|e| e.to_string())?;
-            let loss_record: Option<TaxLoss> = loss_record_json.and_then(|v| serde_json::from_value(v.0).ok());
+            let loss_record_sj: Option<SurrealJson> = result.take(0).map_err(|e| e.to_string())?;
+            let loss_record: Option<TaxLoss> = loss_record_sj.and_then(|sj| serde_json::from_value(sj.0).ok());
 
             if let Some(loss) = loss_record {
                 if let Some(lid) = loss.id {
@@ -885,15 +865,15 @@ pub async fn delete_appraisal(db: State<'_, DbState>, id: String) -> Result<(), 
         }
 
         // 3. Delete associated DARFs to prevent orphans (but block if any is Paid)
-        let darf_query = "SELECT *, type::string(id) as id FROM tax_darf WHERE appraisal_id = $id";
+        let darf_query = "SELECT * FROM tax_darf WHERE appraisal_id = $id";
         let mut darf_result =
             db.0.query(darf_query)
                 .bind(("id", id.clone()))
                 .await
                 .map_err(|e| e.to_string())?;
 
-        let darfs_json: Vec<crate::models::SurrealJson> = darf_result.take(0).map_err(|e| e.to_string())?;
-        let darfs: Vec<TaxDarf> = darfs_json.into_iter().filter_map(|v| serde_json::from_value(v.0).ok()).collect();
+        let darfs_json_sj: Vec<SurrealJson> = darf_result.take(0).map_err(|e| e.to_string())?;
+        let darfs: Vec<TaxDarf> = darfs_json_sj.into_iter().filter_map(|sj| serde_json::from_value(sj.0).ok()).collect();
 
         // CHECK: If any DARF is paid, block appraisal deletion
         if darfs.iter().any(|d| d.status == "Paid") {
@@ -977,10 +957,9 @@ pub async fn generate_darf(
     }
 
     // Use revenue code from appraisal with fallback for older records
-    let revenue_code = if !appraisal.revenue_code.is_empty() {
-        appraisal.revenue_code.clone()
+    let revenue_code = if let Some(rc) = appraisal.revenue_code.as_ref() {
+        if !rc.is_empty() { rc.clone() } else { "6015".to_string() }
     } else {
-        // Fallback for old records: 6015 is standard for individuals in stock market
         "6015".to_string()
     };
 
@@ -988,12 +967,7 @@ pub async fn generate_darf(
 
     println!("DEBUG: Checking existing DARFs for this Appraisal ID...");
     // Identify if a DARF already exists for THIS appraisal
-    let check_query = "SELECT *, \
-        type::string(id) as id, \
-        (IF appraisal_id != NONE THEN type::string(appraisal_id) ELSE null END) as appraisal_id, \
-        (IF account_id != NONE THEN type::string(account_id) ELSE null END) as account_id, \
-        (IF transaction_id != NONE THEN type::string(transaction_id) ELSE null END) as transaction_id \
-        FROM tax_darf WHERE (IF appraisal_id != NONE THEN type::string(appraisal_id) ELSE '' END) = $appraisal_id";
+    let check_query = "SELECT * FROM tax_darf WHERE appraisal_id = $appraisal_id";
     let mut check_result =
         db.0.query(check_query)
             .bind(("appraisal_id", appraisal_id.clone()))
@@ -1043,8 +1017,8 @@ pub async fn generate_darf(
 
     let darf = TaxDarf {
         id: None,
-        appraisal_id,
-        revenue_code: revenue_code.clone(),
+        appraisal_id: Some(appraisal_id),
+        revenue_code: Some(revenue_code.clone()),
         period,
         principal_value: appraisal.total_payable,
         fine: 0.0,
@@ -1095,9 +1069,11 @@ pub async fn generate_darf(
             e.to_string()
         })?;
 
-    let created: Option<TaxDarf> = created_res
+    let created_sj: Option<SurrealJson> = created_res
         .take(0)
         .map_err(|e| e.to_string())?;
+    
+    let created: Option<TaxDarf> = created_sj.and_then(|sj| serde_json::from_value(sj.0).ok());
 
     if let Some(ref d) = created {
         println!("DEBUG: DARF generated successfully with ID: {:?}", d.id);
@@ -1111,42 +1087,10 @@ pub async fn generate_darf(
 pub async fn get_darfs(db: State<'_, DbState>, year: Option<u16>) -> Result<Vec<crate::models::dto::TaxDarfDto>, String> {
     println!("DEBUG: get_darfs called for year: {:?}", year);
     let (base_query, query_params) = if let Some(y) = year {
-        let q = "SELECT \
-            type::string(id) as id, \
-            type::string(appraisal_id) as appraisal_id, \
-            revenue_code, \
-            period, \
-            type::float(principal_value) as principal_value, \
-            type::float(fine) as fine, \
-            type::float(interest) as interest, \
-            type::float(total_value) as total_value, \
-            type::string(due_date) as due_date, \
-            (IF payment_date != NONE THEN type::string(payment_date) ELSE null END) as payment_date, \
-            status, \
-            darf_number, \
-            (IF account_id != NONE THEN type::string(account_id) ELSE null END) as account_id, \
-            (IF transaction_id != NONE THEN type::string(transaction_id) ELSE null END) as transaction_id, \
-            is_complementary \
-            FROM tax_darf WHERE string::ends_with(period, $year) OR status = 'Pending' OR (payment_date != NONE AND string::starts_with(type::string(payment_date), $year)) ORDER BY due_date DESC";
+        let q = "SELECT * FROM tax_darf WHERE string::ends_with(period, $year) OR status = 'Pending' OR (payment_date != NONE AND string::starts_with(type::string(payment_date), $year)) ORDER BY due_date DESC";
         (q, Some(y.to_string()))
     } else {
-        let q = "SELECT \
-            type::string(id) as id, \
-            type::string(appraisal_id) as appraisal_id, \
-            revenue_code, \
-            period, \
-            type::float(principal_value) as principal_value, \
-            type::float(fine) as fine, \
-            type::float(interest) as interest, \
-            type::float(total_value) as total_value, \
-            type::string(due_date) as due_date, \
-            (IF payment_date != NONE THEN type::string(payment_date) ELSE null END) as payment_date, \
-            status, \
-            darf_number, \
-            (IF account_id != NONE THEN type::string(account_id) ELSE null END) as account_id, \
-            (IF transaction_id != NONE THEN type::string(transaction_id) ELSE null END) as transaction_id, \
-            is_complementary \
-            FROM tax_darf ORDER BY due_date DESC";
+        let q = "SELECT * FROM tax_darf ORDER BY due_date DESC";
         (q, None)
     };
 
@@ -1156,8 +1100,8 @@ pub async fn get_darfs(db: State<'_, DbState>, year: Option<u16>) -> Result<Vec<
         db.0.query(base_query).await.map_err(|e| e.to_string())?
     };
     
-    let darfs_json: Vec<crate::models::SurrealJson> = result.take(0).map_err(|e| e.to_string())?;
-    let darfs: Vec<TaxDarf> = darfs_json.into_iter().filter_map(|v| serde_json::from_value(v.0).ok()).collect();
+    let darfs_json: Vec<SurrealJson> = result.take(0).map_err(|e| e.to_string())?;
+    let darfs: Vec<TaxDarf> = darfs_json.into_iter().filter_map(|sj| serde_json::from_value(sj.0).ok()).collect();
 
     Ok(darfs.into_iter().map(|d| crate::models::ToDto::to_dto(&d)).collect())
 }
@@ -1256,7 +1200,7 @@ pub async fn mark_darf_paid(
 
     // 1. Update DARF record
     let clean_id = id.split(':').last().unwrap_or(&id).to_string();
-    let update_query = "UPDATE type::thing('tax_darf', $id) MERGE $content RETURN *, type::string(id) as id";
+    let update_query = "UPDATE type::thing('tax_darf', $id) MERGE $content RETURN *";
     let mut update_result =
         db.0.query(update_query)
             .bind(("id", clean_id.clone()))
@@ -1268,12 +1212,12 @@ pub async fn mark_darf_paid(
     let updated: Option<TaxDarf> = updated_json.and_then(|v| serde_json::from_value(v.0).ok());
 
     // 2. Update Appraisal Record
-    let appraisal_id = darf.appraisal_id.clone();
-    let parts: Vec<&str> = appraisal_id.split(':').collect();
+    let appraisal_id_str = darf.appraisal_id.as_deref().unwrap_or("");
+    let parts: Vec<&str> = appraisal_id_str.split(':').collect();
     let aid_val = if parts.len() > 1 {
         parts[1]
     } else {
-        &appraisal_id
+        appraisal_id_str
     };
 
     let appraisal_result: Result<Option<TaxAppraisal>, _> =
@@ -1371,7 +1315,7 @@ pub async fn mark_darf_paid(
         "[DARF] Creating cash_transaction:{}:{} for account:{}",
         tx_tb, tx_id_only, acc_id_only
     );
-    let description = format!("Pagamento DARF {} ({})", darf.period, darf.revenue_code);
+    let description = format!("Pagamento DARF {} ({})", darf.period, darf.revenue_code.as_deref().unwrap_or(""));
 
     // Use full payment_date string (which may contain time)
     let tx_query = "CREATE type::thing($tx_tb, $tx_id) SET 
@@ -1407,8 +1351,8 @@ pub async fn mark_darf_paid(
 #[tauri::command]
 pub async fn diagnostic_dump_darfs(db: State<'_, DbState>) -> Result<(), String> {
     println!("[DIAGNOSTIC] Dumping all TAX_DARF records...");
-    let mut result = db.0.query("SELECT *, type::string(id) as id, type::string(transaction_id) as tx_id_str FROM tax_darf").await.map_err(|e| e.to_string())?;
-    let darfs: Vec<crate::models::SurrealJson> = result.take(0).map_err(|e| e.to_string())?;
+    let mut result = db.0.query("SELECT * FROM tax_darf").await.map_err(|e| e.to_string())?;
+    let darfs: Vec<SurrealJson> = result.take(0).map_err(|e| e.to_string())?;
     println!("[DIAGNOSTIC] Total DARFs found: {}", darfs.len());
     for d in darfs {
         println!(
@@ -1442,9 +1386,10 @@ pub async fn get_darf_by_transaction(
     db: State<'_, DbState>,
     transaction_id: String,
 ) -> Result<Option<crate::models::dto::TaxDarfDto>, String> {
-    let q = "SELECT *, type::string(id) as id FROM tax_darf WHERE (IF transaction_id != NONE THEN type::string(transaction_id) ELSE '' END) = $tx_id";
+    let q = "SELECT * FROM tax_darf WHERE (IF transaction_id != NONE THEN type::string(transaction_id) ELSE '' END) = $tx_id";
     let mut result: surrealdb::Response = db.0.query(q).bind(("tx_id", transaction_id)).await.map_err(|e| e.to_string())?;
-    let darf: Option<TaxDarf> = result.take(0).map_err(|e| e.to_string())?;
+    let darf_sj: Option<SurrealJson> = result.take(0).map_err(|e| e.to_string())?;
+    let darf: Option<TaxDarf> = darf_sj.and_then(|sj| serde_json::from_value(sj.0).ok());
     Ok(darf.map(|d| crate::models::ToDto::to_dto(&d)))
 }
 
@@ -1520,7 +1465,7 @@ pub async fn unpay_darf(db: State<'_, DbState>, id: String) -> Result<crate::mod
         let refund_tx_id = format!("refund_{}", raw_tid);
         let description = format!(
             "Estorno - Pagamento DARF {} ({})",
-            darf.period, darf.revenue_code
+            darf.period, darf.revenue_code.as_deref().unwrap_or("")
         );
 
         // Use original payment date for the refund so they appear together in the statement
@@ -1585,12 +1530,12 @@ pub async fn unpay_darf(db: State<'_, DbState>, id: String) -> Result<crate::mod
             .map_err(|e| e.to_string())?;
 
     // 3. Update Appraisal Status
-    let appraisal_id = darf.appraisal_id.clone();
-    let parts: Vec<&str> = appraisal_id.split(':').collect();
+    let appraisal_id_str = darf.appraisal_id.as_deref().unwrap_or("");
+    let parts: Vec<&str> = appraisal_id_str.split(':').collect();
     let aid_val = if parts.len() > 1 {
         parts[1]
     } else {
-        &appraisal_id
+        appraisal_id_str
     };
 
     let appraisal_result: Result<Option<TaxAppraisal>, _> =
@@ -1726,20 +1671,22 @@ pub async fn delete_tax_loss(db: State<'_, DbState>, id: String) -> Result<(), S
 
 #[tauri::command]
 pub async fn get_tax_rules(db: State<'_, DbState>) -> Result<Vec<crate::models::dto::TaxRuleDto>, String> {
-    let mut result = db.0.query("SELECT *, type::string(id) as id FROM tax_rule").await.map_err(|e| e.to_string())?;
-    let rules: Vec<TaxRule> = result.take(0).map_err(|e| e.to_string())?;
+    let mut result = db.0.query("SELECT * FROM tax_rule").await.map_err(|e| e.to_string())?;
+    let rules_sj: Vec<SurrealJson> = result.take(0).map_err(|e| e.to_string())?;
+    let rules: Vec<TaxRule> = rules_sj.into_iter().filter_map(|sj| serde_json::from_value(sj.0).ok()).collect();
     Ok(rules.into_iter().map(|r| crate::models::ToDto::to_dto(&r)).collect())
 }
 
 #[tauri::command]
 pub async fn save_tax_rule(db: State<'_, DbState>, rule: TaxRule) -> Result<crate::models::dto::TaxRuleDto, String> {
     let mut json = serde_json::to_value(&rule).map_err(|e| e.to_string())?;
-    let id_str = rule.id.clone();
-    let clean_id = id_str.split(':').last().unwrap_or(&id_str).to_string();
+    let id_str = rule.id.as_deref().unwrap_or("");
+    let clean_id = id_str.split(':').last().unwrap_or(id_str).to_string();
     if let Some(obj) = json.as_object_mut() { obj.remove("id"); }
-    let mut response = db.0.query("UPSERT type::thing('tax_rule', $id) CONTENT $data RETURN *, type::string(id) as id")
+    let mut response = db.0.query("UPSERT type::thing('tax_rule', $id) CONTENT $data RETURN *")
             .bind(("id", clean_id)).bind(("data", json)).await.map_err(|e| e.to_string())?;
-    let saved: TaxRule = response.take::<Option<TaxRule>>(0).map_err(|e| e.to_string())?
+    let saved_sj: Option<SurrealJson> = response.take(0).map_err(|e| e.to_string())?;
+    let saved: TaxRule = saved_sj.and_then(|sj| serde_json::from_value(sj.0).ok())
         .ok_or_else(|| "Failed to save tax rule".to_string())?;
     Ok(crate::models::ToDto::to_dto(&saved))
 }
@@ -1756,8 +1703,9 @@ pub async fn delete_tax_rule(db: State<'_, DbState>, id: String) -> Result<(), S
 
 #[tauri::command]
 pub async fn get_tax_mappings(db: State<'_, DbState>) -> Result<Vec<crate::models::dto::TaxMappingDto>, String> {
-    let mut result = db.0.query("SELECT *, type::string(id) as id, type::string(asset_type_id) as asset_type_id, type::string(modality_id) as modality_id, type::string(tax_rule_id) as tax_rule_id FROM tax_mapping").await.map_err(|e| e.to_string())?;
-    let mappings: Vec<TaxMapping> = result.take(0).map_err(|e| e.to_string())?;
+    let mut result = db.0.query("SELECT * FROM tax_mapping").await.map_err(|e| e.to_string())?;
+    let mappings_sj: Vec<SurrealJson> = result.take(0).map_err(|e| e.to_string())?;
+    let mappings: Vec<TaxMapping> = mappings_sj.into_iter().filter_map(|sj| serde_json::from_value(sj.0).ok()).collect();
     Ok(mappings.into_iter().map(|m| crate::models::ToDto::to_dto(&m)).collect())
 }
 
@@ -1768,8 +1716,8 @@ pub async fn save_tax_mapping(
 ) -> Result<crate::models::dto::TaxMappingDto, String> {
     let mut json = serde_json::to_value(&mapping).map_err(|e| e.to_string())?;
 
-    let id_str = mapping.id.clone();
-    let clean_id = id_str.split(':').last().unwrap_or(&id_str).to_string();
+    let id_str = mapping.id.as_deref().unwrap_or("");
+    let clean_id = id_str.split(':').last().unwrap_or(id_str).to_string();
 
     if let Some(obj) = json.as_object_mut() {
         obj.remove("id");
@@ -1777,13 +1725,14 @@ pub async fn save_tax_mapping(
 
     // Use raw query for robust serialization with custom IdVisitor
     let mut response =
-        db.0.query("UPSERT type::thing('tax_mapping', $id) CONTENT $data RETURN *, type::string(id) as id")
+        db.0.query("UPSERT type::thing('tax_mapping', $id) CONTENT $data RETURN *")
             .bind(("id", clean_id))
             .bind(("data", json))
             .await
             .map_err(|e| e.to_string())?;
 
-    let saved: TaxMapping = response.take::<Option<TaxMapping>>(0).map_err(|e| e.to_string())?
+    let saved_sj: Option<SurrealJson> = response.take(0).map_err(|e| e.to_string())?;
+    let saved: TaxMapping = saved_sj.and_then(|sj| serde_json::from_value(sj.0).ok())
         .ok_or_else(|| "Failed to save tax mapping".to_string())?;
     Ok(crate::models::ToDto::to_dto(&saved))
 }
@@ -1803,10 +1752,11 @@ pub async fn delete_tax_mapping(db: State<'_, DbState>, id: String) -> Result<()
 #[tauri::command]
 pub async fn get_tax_profiles(db: State<'_, DbState>) -> Result<Vec<crate::models::dto::TaxProfileDto>, String> {
     let mut result =
-        db.0.query("SELECT *, type::string(id) as id FROM tax_profile")
+        db.0.query("SELECT * FROM tax_profile")
             .await
             .map_err(|e| e.to_string())?;
-    let profiles: Vec<TaxProfile> = result.take(0).map_err(|e| e.to_string())?;
+    let profiles_sj: Vec<SurrealJson> = result.take(0).map_err(|e| e.to_string())?;
+    let profiles: Vec<TaxProfile> = profiles_sj.into_iter().filter_map(|sj| serde_json::from_value(sj.0).ok()).collect();
     Ok(profiles.into_iter().map(|p| crate::models::ToDto::to_dto(&p)).collect())
 }
 
@@ -1817,8 +1767,8 @@ pub async fn save_tax_profile(
 ) -> Result<crate::models::dto::TaxProfileDto, String> {
     let mut json = serde_json::to_value(&profile).map_err(|e| e.to_string())?;
 
-    let id_str = profile.id.clone();
-    let clean_id = id_str.split(':').last().unwrap_or(&id_str).to_string();
+    let id_str = profile.id.as_deref().unwrap_or("");
+    let clean_id = id_str.split(':').last().unwrap_or(id_str).to_string();
 
     if let Some(obj) = json.as_object_mut() {
         obj.remove("id");
@@ -1826,13 +1776,14 @@ pub async fn save_tax_profile(
 
     // Use raw query for robust serialization with custom IdVisitor
     let mut response =
-        db.0.query("UPSERT type::thing('tax_profile', $id) CONTENT $data RETURN *, type::string(id) as id")
+        db.0.query("UPSERT type::thing('tax_profile', $id) CONTENT $data RETURN *")
             .bind(("id", clean_id))
             .bind(("data", json))
             .await
             .map_err(|e| e.to_string())?;
 
-    let saved: TaxProfile = response.take::<Option<TaxProfile>>(0).map_err(|e| e.to_string())?
+    let saved_sj: Option<SurrealJson> = response.take(0).map_err(|e| e.to_string())?;
+    let saved: TaxProfile = saved_sj.and_then(|sj| serde_json::from_value(sj.0).ok())
         .ok_or_else(|| "Failed to save tax profile".to_string())?;
     Ok(crate::models::ToDto::to_dto(&saved))
 }
@@ -1862,14 +1813,15 @@ pub async fn get_tax_profile_entries(
 ) -> Result<Vec<crate::models::dto::TaxProfileEntryDto>, String> {
     // Fallsback to format! to resolve persistent lifetime issues with bind in this async context
     let query = if let Some(pid) = profile_id {
-        format!("SELECT *, type::string(id) as id, type::string(tax_profile_id) as tax_profile_id, type::string(modality_id) as modality_id, type::string(tax_rule_id) as tax_rule_id FROM tax_profile_entry WHERE tax_profile_id = '{}'", pid)
+        format!("SELECT * FROM tax_profile_entry WHERE tax_profile_id = '{}'", pid)
     } else {
-        "SELECT *, type::string(id) as id, type::string(tax_profile_id) as tax_profile_id, type::string(modality_id) as modality_id, type::string(tax_rule_id) as tax_rule_id FROM tax_profile_entry".to_string()
+        "SELECT * FROM tax_profile_entry".to_string()
     };
 
     let mut result = db.0.query(query).await.map_err(|e| e.to_string())?;
 
-    let entries: Vec<TaxProfileEntry> = result.take(0).map_err(|e| e.to_string())?;
+    let entries_sj: Vec<SurrealJson> = result.take(0).map_err(|e| e.to_string())?;
+    let entries: Vec<TaxProfileEntry> = entries_sj.into_iter().filter_map(|sj| serde_json::from_value(sj.0).ok()).collect();
     Ok(entries.into_iter().map(|e| crate::models::ToDto::to_dto(&e)).collect())
 }
 
@@ -1880,8 +1832,8 @@ pub async fn save_tax_profile_entry(
 ) -> Result<crate::models::dto::TaxProfileEntryDto, String> {
     let mut json = serde_json::to_value(&entry).map_err(|e| e.to_string())?;
 
-    let id_str = entry.id.clone();
-    let clean_id = id_str.split(':').last().unwrap_or(&id_str).to_string();
+    let id_str = entry.id.as_deref().unwrap_or("");
+    let clean_id = id_str.split(':').last().unwrap_or(id_str).to_string();
 
     if let Some(obj) = json.as_object_mut() {
         obj.remove("id");
@@ -1889,13 +1841,14 @@ pub async fn save_tax_profile_entry(
 
     // Use raw query for robust serialization with custom IdVisitor
     let mut response =
-        db.0.query("UPSERT type::thing('tax_profile_entry', $id) CONTENT $data RETURN *, type::string(id) as id")
+        db.0.query("UPSERT type::thing('tax_profile_entry', $id) CONTENT $data RETURN *")
             .bind(("id", clean_id))
             .bind(("data", json))
             .await
             .map_err(|e| e.to_string())?;
 
-    let saved: TaxProfileEntry = response.take::<Option<TaxProfileEntry>>(0).map_err(|e| e.to_string())?
+    let saved_sj: Option<SurrealJson> = response.take(0).map_err(|e| e.to_string())?;
+    let saved: TaxProfileEntry = saved_sj.and_then(|sj| serde_json::from_value(sj.0).ok())
         .ok_or_else(|| "Failed to save tax profile entry".to_string())?;
     Ok(crate::models::ToDto::to_dto(&saved))
 }

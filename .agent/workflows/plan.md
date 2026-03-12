@@ -8,7 +8,7 @@ $ARGUMENTS
 
 ---
 
-## 🔴 CRITICAL RULES
+## ðŸ”´ CRITICAL RULES
 
 1. **NO CODE WRITING** - This command creates plan file only
 2. **Use project-planner agent** - NOT Antigravity Agent's native Plan mode
@@ -31,7 +31,7 @@ NAMING RULES:
 1. Extract 2-3 key words from request
 2. Lowercase, hyphen-separated
 3. Max 30 characters
-4. Example: "e-commerce cart" → PLAN-ecommerce-cart.md
+4. Example: "e-commerce cart" â†’ PLAN-ecommerce-cart.md
 
 RULES:
 1. Follow project-planner.md Phase -1 (Context Check)

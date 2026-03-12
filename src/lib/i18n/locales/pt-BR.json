@@ -100,6 +100,27 @@
     "next": "Próximo"
   },
   "dashboard": {
+    "mindset": {
+      "title": "Estado Psicológico",
+      "impact_detected": "Impacto {impact} detectado",
+      "empty": "Sem registros recentes",
+      "placeholder": "Comece seu dia registrando seu mindset no diário para uma análise completa.",
+      "followed_plan": "Seguiu o Plano",
+      "deviated_plan": "Desviou o Plano"
+    },
+    "market_context": {
+      "win": "Índice (WIN)",
+      "wdo": "Dólar (WDO)",
+      "selic": "SELIC EA.",
+      "selic_desc": "Meta Banco Central",
+      "di": "Taxa DI (CDI)",
+      "di_desc": "Referencial Juros",
+      "ptax": "PTAX (Oficial)",
+      "ptax_desc": "Média Dólar BCB"
+    },
+    "account": {
+      "balance": "Saldo"
+    },
     "charts": {
       "consistency": "CONSISTÊNCIA",
       "equity": "Evolução do Patrimônio",
@@ -110,12 +131,14 @@
     "dailyDetail": {
       "asset": "Ativo",
       "buy": "Compra",
+      "buyShort": "C",
       "direction": "Direção",
       "efficiency": "Eficiência",
       "noTrades": "Nenhum trade",
       "operationsList": "Lista de Operações",
       "result": "Resultado",
       "sell": "Venda",
+      "sellShort": "V",
       "subtitle": "Visão detalhada do dia",
       "summary": "Resumo",
       "title": "Detalhe Diário",
@@ -711,22 +734,105 @@
   "settings": {
     "fiscal": {
       "assignments": {
-        "title": "Atribuições Fiscais",
-        "description": "Vincule perfis tributários aos tipos de ativos para automatizar o cálculo de impostos.",
-        "goToAssetTypes": "Gerenciar Tipos de Ativos",
+        "description": "Description",
+        "goToAssetTypes": "Go To Asset Types",
         "table": {
-          "market": "Mercado",
-          "assetType": "Tipo de Ativo",
-          "fiscalProfile": "Perfil Tributário",
-          "unknownProfile": "Perfil Desconhecido",
-          "defaultExempt": "Isento (Padrão)",
-          "empty": "Nenhum tipo de ativo configurado."
+          "assetType": "Asset Type",
+          "empty": "Empty",
+          "market": "Market"
         },
         "tip": {
-          "title": "Dica:",
-          "text": "A alteração do perfil fiscal afeta apenas novos cálculos e fechamentos de trades."
-        }
-      }
+          "text": "Text",
+          "title": "Title"
+        },
+        "title": "Title"
+      },
+      "description": "Configure as alíquotas de imposto (IRPF) para cada tipo de ativo e modalidade.",
+      "mappings": {
+        "assetType": "Tipo de Ativo",
+        "description": "Associe cada Tipo de Ativo e Modalidade a uma Regra Fiscal.",
+        "modality": "Modalidade",
+        "noRule": "Sem Regra (Isento/Ignorado)",
+        "rule": "Regra Aplicável"
+      },
+      "profiles": {
+        "create": "Create",
+        "description": "Description",
+        "empty": "Empty",
+        "error": {
+          "duplicateModality": "Duplicate Modality",
+          "errorAddEntry": "Error Add Entry",
+          "nameRequired": "Name Required",
+          "saveError": "Save Error",
+          "selectRequired": "Select Required"
+        },
+        "form": {
+          "addModalityHint": "Clique em + para adicionar uma regra a uma modalidade.",
+          "description": "Description",
+          "descriptionLabel": "Descrição",
+          "descriptionPlaceholder": "Descrição do perfil...",
+          "emptyRules": "Nenhuma regra adicionada.",
+          "modality": "Modalidade",
+          "name": "Name",
+          "namePlaceholder": "Ex: Perfil de Ações",
+          "rule": "Regra Fiscal",
+          "rulesByModality": "Regras por Modalidade",
+          "save": "Save",
+          "saving": "Saving",
+          "select": "Selecionar...",
+          "titleEdit": "Editar Perfil",
+          "titleNew": "Novo Perfil",
+          "update": "Update"
+        },
+        "linkedRules": "Linked Rules",
+        "new": "New",
+        "noLinkedRules": "No Linked Rules",
+        "success": {
+          "create": "Create",
+          "ruleAdded": "Rule Added",
+          "ruleAddedDraft": "Rule Added Draft",
+          "ruleRemoved": "Rule Removed",
+          "ruleRemovedDraft": "Rule Removed Draft",
+          "update": "Update"
+        },
+        "title": "Title"
+      },
+      "rules": {
+        "description": "Description",
+        "empty": "Nenhuma regra fiscal configurada.",
+        "form": {
+          "basis": "Base de Cálculo",
+          "basisHint": "Basis Hint",
+          "basisOptions": {
+            "netProfit": "Lucro Líquido",
+            "saleAmount": "Valor da Venda"
+          },
+          "cumulative": "Compensa Prejuízos",
+          "cumulativeHint": "Cumulative Hint",
+          "revenueCode": "Código da Receita",
+          "revenueCodePlaceholder": "Ex: 6015",
+          "revenueCodeHint": "Código DARF para o recolhimento (Ex: 6015, 3317).",
+          "save": "Salvar Regra",
+          "successSave": "Regra salva com sucesso!",
+          "titleEdit": "Editar Regra Fiscal",
+          "titleNew": "Nova Regra Fiscal",
+          "withholding": "IRRF (Dedo-duro)",
+          "withholdingHint": "Percentual retido na fonte que pode ser abatido.",
+          "withholdingBasis": "Base do Dedo-duro",
+          "withholdingBasisHint": "Define se o IRRF é calculado sobre o lucro ou sobre a venda.",
+          "withholdingBasisOptions": {
+            "profit": "Sobre o Lucro",
+            "sales": "Sobre o Valor da Venda"
+          }
+        },
+        "new": "Nova Regra",
+        "title": "Regras de Imposto"
+      },
+      "tabs": {
+        "mappings": "Atribuições",
+        "rules": "Regras de Imposto"
+      },
+      "title": "Regras Fiscais"
     },
     "accounts": {
       "balance": "SALDO",
@@ -1161,107 +1267,6 @@
       },
       "new": "Novo Perfil",
       "title": "Taxas e Custos Operacionais"
-    },
-    "fiscal": {
-      "assignments": {
-        "description": "Description",
-        "goToAssetTypes": "Go To Asset Types",
-        "table": {
-          "assetType": "Asset Type",
-          "empty": "Empty",
-          "market": "Market"
-        },
-        "tip": {
-          "text": "Text",
-          "title": "Title"
-        },
-        "title": "Title"
-      },
-      "description": "Configure as alíquotas de imposto (IRPF) para cada tipo de ativo e modalidade.",
-      "mappings": {
-        "assetType": "Tipo de Ativo",
-        "description": "Associe cada Tipo de Ativo e Modalidade a uma Regra Fiscal.",
-        "modality": "Modalidade",
-        "noRule": "Sem Regra (Isento/Ignorado)",
-        "rule": "Regra Aplicável"
-      },
-      "profiles": {
-        "create": "Create",
-        "description": "Description",
-        "empty": "Empty",
-        "error": {
-          "duplicateModality": "Duplicate Modality",
-          "errorAddEntry": "Error Add Entry",
-          "nameRequired": "Name Required",
-          "saveError": "Save Error",
-          "selectRequired": "Select Required"
-        },
-        "form": {
-          "addModalityHint": "Clique em + para adicionar uma regra a uma modalidade.",
-          "description": "Description",
-          "descriptionLabel": "Descrição",
-          "descriptionPlaceholder": "Descrição do perfil...",
-          "emptyRules": "Nenhuma regra adicionada.",
-          "modality": "Modalidade",
-          "name": "Name",
-          "namePlaceholder": "Ex: Perfil de Ações",
-          "rule": "Regra Fiscal",
-          "rulesByModality": "Regras por Modalidade",
-          "save": "Save",
-          "saving": "Saving",
-          "select": "Selecionar...",
-          "titleEdit": "Editar Perfil",
-          "titleNew": "Novo Perfil",
-          "update": "Update"
-        },
-        "linkedRules": "Linked Rules",
-        "new": "New",
-        "noLinkedRules": "No Linked Rules",
-        "success": {
-          "create": "Create",
-          "ruleAdded": "Rule Added",
-          "ruleAddedDraft": "Rule Added Draft",
-          "ruleRemoved": "Rule Removed",
-          "ruleRemovedDraft": "Rule Removed Draft",
-          "update": "Update"
-        },
-        "title": "Title"
-      },
-      "rules": {
-        "description": "Description",
-        "empty": "Nenhuma regra fiscal configurada.",
-        "form": {
-          "basis": "Base de Cálculo",
-          "basisHint": "Basis Hint",
-          "basisOptions": {
-            "netProfit": "Lucro Líquido",
-            "saleAmount": "Valor da Venda"
-          },
-          "cumulative": "Compensa Prejuízos",
-          "cumulativeHint": "Cumulative Hint",
-          "errorSave": "Error Save",
-          "exemption": "Limite de Isenção",
-          "exemptionHint": "Vendas mensais abaixo deste valor isentam o IR sobre lucros.",
-          "name": "Nome da Regra",
-          "namePlaceholder": "Ex: Day Trade Ações",
-          "nameRequired": "Name Required",
-          "rate": "Alíquota (%)",
-          "rateHint": "Taxa do imposto sobre o lucro líquido (Ex: 20%).",
-          "save": "Salvar Regra",
-          "successSave": "Success Save",
-          "titleEdit": "Editar Regra Fiscal",
-          "titleNew": "Nova Regra Fiscal",
-          "withholding": "IRRF (Dedo-duro)",
-          "withholdingHint": "Percentual retido na fonte que pode ser abatido."
-        },
-        "new": "Nova Regra",
-        "title": "Title"
-      },
-      "tabs": {
-        "mappings": "Atribuições",
-        "rules": "Regras de Imposto"
-      },
-      "title": "Regras Fiscais"
     },
     "general": {
       "checkUpdates": "Verificar Atualizações",
@@ -1755,20 +1760,23 @@
         "syncingTerminal": "Sincronizando Terminal",
         "waitingSurvivorData": "Aguardando dados do Survivor Hub...",
         "gann": {
-            "title": "Vibrações de Gann",
-            "subtitle": "Confluência Matemática e Ciclos",
-            "kpis": {
-                "nextCot": "Próxima Reversão (Janela)",
-                "cycleDay": "Dia do Ciclo",
-                "vibration": "Vibração Atual",
-                "masterCycle": "Ciclo Mestre"
-            },
-            "sq9": {
-                "expansion": "Alvos de Expansão",
-                "retracement": "Alvos de Retração",
-                "degrees": "{deg}°",
-                "reference": "Ref"
-            }
+          "title": "Vibrações de Gann",
+          "subtitle": "Confluência Matemática e Ciclos",
+          "kpis": {
+            "nextCot": "Próxima Reversão (Janela)",
+            "cycleDay": "Dia do Ciclo",
+            "vibration": "Vibração Atual",
+            "masterCycle": "Ciclo Mestre",
+            "days": "dias",
+            "hot_window": "JANELA QUENTE",
+            "neutral": "Neutro"
+          },
+          "sq9": {
+            "expansion": "Alvos de Expansão",
+            "retracement": "Alvos de Retração",
+            "degrees": "{deg}°",
+            "reference": "Ref"
+          }
         },
         "ready": "Tudo pronto",
         "savingProfile": "Salvando Perfil...",
@@ -2045,10 +2053,16 @@
     "actions": {
       "clear_filters": "Limpar Filtros",
       "delete": "Excluir",
+      "delete_day": "Excluir Dia",
       "edit": "Editar",
       "import": "Importar Trades",
+      "import_profit": "Importar Profit",
       "new_trade": "Novo Trade",
       "view": "Ver Detalhes"
+    },
+    "status": {
+      "open": "Aberto",
+      "closed": "Fechado"
     },
     "dashboard": {
       "weekOf": "Semana de {date}"
@@ -2056,6 +2070,7 @@
     "delete": {
       "confirmation": "Tem certeza que deseja excluir esta operação? Esta ação não pode ser desfeita.",
       "confirmation_with_closure": "Esta operação faz parte de um Fechamento Diário. O extrato será recalculado automaticamente após a exclusão. Tem certeza que deseja excluir?",
+      "day_confirmation": "Tem certeza que deseja excluir todas as {count} operações do dia {date}? Esta ação não pode ser desfeita.",
       "title": "Excluir Operação"
     },
     "details": {
@@ -2073,6 +2088,11 @@
       "no_notes": "Nenhuma nota registrada.",
       "no_records": "Nenhum registro",
       "notes": "Notas da Operação",
+      "partial_exits": "Saídas Parciais",
+      "partial_date": "Data/Hora",
+      "partial_price": "Preço",
+      "partial_qty": "Qtd",
+      "partial_notes": "Notas",
       "psychology": "Psicologia",
       "stop_loss": "Stop Loss",
       "take_profit": "Take Profit",
@@ -2212,6 +2232,7 @@
       "fields": {
         "account": "Conta",
         "asset": "Ativo / Contrato",
+        "asset_direction": "Ativo / Direção",
         "asset_type": "Tipo de Ativo",
         "buy": "Compra",
         "confirmation_signals": "Sinais de Confirmação",
@@ -2258,7 +2279,8 @@
         "select_asset": "Selecione um ativo",
         "update_error": "Erro ao atualizar operação.",
         "update_success": "Operação atualizada!",
-        "valid_asset_type": "Por favor, selecione um Tipo de Ativo válido."
+        "valid_asset_type": "Por favor, selecione um Tipo de Ativo válido.",
+        "complementary_darf_warning": "Atenção: Aumento de resultado detectado!"
       },
       "partials": {
         "add_partial": "Adicionar Parcial",
@@ -2346,6 +2368,8 @@
         "finish": "Finalizar Registro",
         "fixed_fee": "Corretagem Fixa",
         "gross_result": "Resultado Bruto",
+        "exchange_fees": "Taxas de Bolsa",
+        "irrf_estimated": "IRRF Estimado",
         "images": "Imagens",
         "n": "N",
         "na": "N/A",

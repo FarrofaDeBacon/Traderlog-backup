@@ -80,10 +80,10 @@ pub async fn seed_asset_types(db: &Surreal<Db>, filter: Option<Vec<String>>) -> 
             }
         }
         let asset_type_data = AssetType {
-            id: id.into(),
+            id: Some(id.into()),
             name: name.into(),
             code: code.into(),
-            market_id: market_id.into(),
+            market_id: Some(market_id.into()),
             default_fee_id: None,
             tax_profile_id: t_profile.map(|s| s.into()),
             unit_label: unit_label.into(),

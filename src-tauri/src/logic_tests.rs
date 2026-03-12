@@ -7,7 +7,7 @@ mod tests {
 
     fn create_mock_rule(trade_type: &str, rate: f64, exemption: f64) -> TaxRule {
         TaxRule {
-            id: "rule1".to_string(),
+            id: Some("rule1".to_string()),
             name: "Mock Rule".to_string(),
             tax_rate: rate,
             withholding_rate: 1.0,
@@ -16,7 +16,7 @@ mod tests {
             cumulative_losses: true,
             trade_type: trade_type.to_string(),
             withholding_basis: "Profit".to_string(),
-            revenue_code: "6015".to_string(),
+            revenue_code: Some("6015".to_string()),
         }
     }
 

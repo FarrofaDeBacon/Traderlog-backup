@@ -754,6 +754,44 @@
     const isLoading = $derived(
         tradesStore.isLoading || settingsStore.isLoadingData,
     );
+
+    let expandedMonths = $state(new Set<string>());
+    let expandedWeeks = $state(new Set<string>());
+
+    $effect(() => {
+        if (hierarchicalPsychologyData.length > 0) {
+            untrack(() => {
+                const today = new Date();
+                const currentMonthKey = today.toISOString().slice(0, 7);
+                const currentWeekKey = getWeekKey(today);
+
+                // Auto-expand current month and week if not already set
+                if (expandedMonths.size === 0) {
+                    // Try to find current month
+                    if (hierarchicalPsychologyData.some(m => m.key === currentMonthKey)) {
+                        expandedMonths.add(currentMonthKey);
+                    } else {
+                        // Fallback to latest month
+                        expandedMonths.add(hierarchicalPsychologyData[0].key);
+                    }
+                    
+                    // Try to find current week in the expanded month
+                    const month = hierarchicalPsychologyData.find(m => expandedMonths.has(m.key));
+                    if (month && month.weeks.length > 0) {
+                        const currentWeek = month.weeks.find((w: any) => w.key === currentWeekKey);
+                        if (currentWeek) {
+                            expandedWeeks.add(currentWeek.key);
+                        } else {
+                            expandedWeeks.add(month.weeks[0].key);
+                        }
+                    }
+                    
+                    expandedMonths = new Set(expandedMonths);
+                    expandedWeeks = new Set(expandedWeeks);
+                }
+            });
+        }
+    });
 </script>
 
 <DailyCheckinDialog bind:open={showCheckinDialog} />
@@ -1078,7 +1116,12 @@
                         {$t("general.noData")}
                     </div>
                 {:else}
-                    <HierarchicalList data={hierarchicalPsychologyData}>
+                    <HierarchicalList 
+                        data={hierarchicalPsychologyData}
+                        bind:expandedMonths
+                        bind:expandedWeeks
+                        mutualExclusion={true}
+                    >
                         {#snippet monthRight(month)}
                             <div class="flex items-center gap-2">
                                 {#if month.equivalentState}

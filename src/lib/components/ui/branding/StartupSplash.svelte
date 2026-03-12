@@ -44,9 +44,9 @@
 
                 <!-- Center Icon -->
                 <div
-                    class="absolute inset-0 flex items-center justify-center bg-primary/10 rounded-2xl border border-primary/20 backdrop-blur-sm shadow-[0_0_40px_-10px_rgba(59,130,246,0.5)]"
+                    class="absolute inset-0 flex items-center justify-center bg-primary/10 rounded-2xl border border-primary/20 backdrop-blur-sm shadow-[0_0_40px_-10px_rgba(59,130,246,0.5)] overflow-hidden p-3"
                 >
-                    <Rocket class="w-12 h-12 text-primary" />
+                    <img src="/branding/logo.png" alt="Logo" class="w-full h-full object-contain" />
                 </div>
             </div>
 

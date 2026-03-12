@@ -43,7 +43,7 @@
     >
         <Card.Title
             class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60"
-            >Estado Psicológico</Card.Title
+            >{$t("dashboard.mindset.title")}</Card.Title
         >
         <Brain class="h-3 w-3 text-indigo-500" />
     </Card.Header>
@@ -68,7 +68,7 @@
                     <p
                         class="text-[10px] text-muted-foreground uppercase font-medium line-clamp-1"
                     >
-                        Impacto {currentState.impact} detectado
+                        {$t("dashboard.mindset.impact_detected", { values: { impact: currentState.impact } })}
                     </p>
                 </div>
             </div>
@@ -77,7 +77,7 @@
                 class="flex items-center gap-3 text-muted-foreground italic text-xs"
             >
                 <Sparkles class="w-4 h-4 opacity-50" />
-                Sem registros recentes
+                {$t("dashboard.mindset.empty")}
             </div>
         {/if}
 
@@ -90,8 +90,7 @@
             <p
                 class="text-xs text-muted-foreground leading-relaxed italic line-clamp-3 pl-4"
             >
-                {lastEntry?.content ||
-                    "Comece seu dia registrando seu mindset no diário para uma análise completa."}
+                {lastEntry?.content || $t("dashboard.mindset.placeholder")}
             </p>
         </div>
 
@@ -106,8 +105,8 @@
                     )}
                 >
                     {lastEntry.followed_plan
-                        ? "Seguiu o Plano"
-                        : "Desviou do Plano"}
+                        ? $t("dashboard.mindset.followed_plan")
+                        : $t("dashboard.mindset.deviated_plan")}
                 </div>
             </div>
         {/if}

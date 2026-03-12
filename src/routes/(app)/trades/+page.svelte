@@ -45,6 +45,8 @@
     import TradeOutcomePieChart from "$lib/components/trades/TradeOutcomePieChart.svelte";
     import TradeEquityChart from "$lib/components/trades/TradeEquityChart.svelte";
     import { calculateAverageTimeBetweenTrades, formatDuration } from "$lib/utils/gann";
+    import { open } from "@tauri-apps/plugin-dialog";
+    import { invoke } from "@tauri-apps/api/core";
 
     import { untrack } from "svelte";
     import { format } from "date-fns/format";
@@ -52,7 +54,7 @@
     let searchQuery = $state("");
     let expandedMonths = $state<Set<string>>(new Set());
     let expandedWeeks = $state<Set<string>>(new Set());
-    let expandedDays = $state<Record<string, boolean>>({});
+    let expandedDays = $state<Set<string>>(new Set());
 
     // Filter states
     let filterStatus = $state("all"); // all, open, closed
@@ -66,6 +68,7 @@
     // Dialog/Modal states
     let isDeleteOpen = $state(false);
     let tradeToDelete = $state<string | null>(null);
+    let dayToDelete = $state<any>(null);
     let isEditOpen = $state(false);
     let isViewOpen = $state(false);
     let selectedTrade = $state<any>(null);
@@ -272,12 +275,31 @@
     $effect(() => {
         if (hierarchicalTradesData.length > 0) {
             untrack(() => {
+                const today = new Date();
+                const currentMonthKey = today.toISOString().slice(0, 7);
+                const currentWeekKey = getWeekKey(today);
+
+                // Auto-expand current month and week if not already set
                 if (expandedMonths.size === 0) {
-                    const firstMonth = hierarchicalTradesData[0];
-                    expandedMonths.add(firstMonth.key);
-                    if (firstMonth.weeks.length > 0) {
-                        expandedWeeks.add(firstMonth.weeks[0].key);
+                    // Try to find current month
+                    if (hierarchicalTradesData.some(m => m.key === currentMonthKey)) {
+                        expandedMonths.add(currentMonthKey);
+                    } else {
+                        // Fallback to latest month
+                        expandedMonths.add(hierarchicalTradesData[0].key);
                     }
+                    
+                    // Try to find current week in the expanded month
+                    const month = hierarchicalTradesData.find(m => expandedMonths.has(m.key));
+                    if (month && month.weeks.length > 0) {
+                        const currentWeek = month.weeks.find((w: any) => w.key === currentWeekKey);
+                        if (currentWeek) {
+                            expandedWeeks.add(currentWeek.key);
+                        } else {
+                            expandedWeeks.add(month.weeks[0].key);
+                        }
+                    }
+                    
                     expandedMonths = new Set(expandedMonths);
                     expandedWeeks = new Set(expandedWeeks);
                 }
@@ -285,63 +307,9 @@
         }
     });
 
-    function toggleMonth(key: string) {
-        if (expandedMonths.has(key)) {
-            expandedMonths.delete(key);
-            activeContext = {
-                type: "global",
-                key: null,
-                label: "Todo o Período",
-            };
-        } else {
-            expandedMonths.add(key);
-            const month = hierarchicalTradesData.find((m) => m.key === key);
-            if (month) {
-                activeContext = {
-                    type: "month",
-                    key: key,
-                    label: month.label,
-                };
-            }
-        }
-        expandedMonths = new Set(expandedMonths);
-    }
+    // activeContext is already defined above...
+    // Redundant togglers removed since HierarchicalList handles it now via bindable props and mutualExclusion.
 
-    function toggleWeek(key: string) {
-        if (expandedWeeks.has(key)) {
-            expandedWeeks.delete(key);
-            // Revert to month context if week closed
-            const month = hierarchicalTradesData.find((m) =>
-                m.weeks.some((w: any) => w.key === key),
-            );
-            if (month && expandedMonths.has(month.key)) {
-                activeContext = {
-                    type: "month",
-                    key: month.key,
-                    label: month.label,
-                };
-            } else {
-                activeContext = {
-                    type: "global",
-                    key: null,
-                    label: "Todo o Período",
-                };
-            }
-        } else {
-            expandedWeeks.add(key);
-            const week = hierarchicalTradesData
-                .flatMap((m) => m.weeks)
-                .find((w) => w.key === key);
-            if (week) {
-                activeContext = {
-                    type: "week",
-                    key: key,
-                    label: week.label,
-                };
-            }
-        }
-        expandedWeeks = new Set(expandedWeeks);
-    }
 
     function getDayResult(trades: any[]) {
         if (currencyMode === "main") {
@@ -432,22 +400,6 @@
         };
     });
 
-    function toggleDay(date: string) {
-        expandedDays[date] = !expandedDays[date];
-        if (expandedDays[date]) {
-            const day = hierarchicalTradesData
-                .flatMap((m) => m.weeks)
-                .flatMap((w) => w.days)
-                .find((d) => d.key === date);
-            if (day) {
-                activeContext = {
-                    type: "day",
-                    key: date,
-                    label: day.label,
-                };
-            }
-        }
-    }
 
     const filteredTradesForChart = $derived.by(() => {
         let baseTrades = [];
@@ -621,6 +573,18 @@
         isDeleteOpen = true;
     }
 
+    function requestDeleteDay(day: any) {
+        dayToDelete = day;
+        tradeToDelete = null;
+        deleteModalDescription = $t("trades.delete.day_confirmation", {
+            values: {
+                count: day.trades.length,
+                date: day.date
+            }
+        }) || `Tem certeza que deseja excluir todas as ${day.trades.length} operações do dia ${day.date}? Esta ação não pode ser desfeita.`;
+        isDeleteOpen = true;
+    }
+
     async function confirmDelete() {
         if (tradeToDelete) {
             const result = await tradesStore.removeTrade(tradeToDelete);
@@ -629,8 +593,21 @@
                     $t("trades.messages.delete_success") ||
                         "Operação excluída com sucesso.",
                 );
-
-                // Also trigger settings reload to ensure summary is perfectly synced
+                settingsStore.loadData();
+            } else {
+                toast.error(
+                    $t("trades.messages.delete_error") ||
+                        "Erro ao excluir. Tente novamente.",
+                );
+            }
+        } else if (dayToDelete) {
+            const ids = dayToDelete.trades.map((t: any) => t.id);
+            const result = await tradesStore.removeTrades(ids);
+            if (result.success) {
+                toast.success(
+                    $t("trades.messages.delete_success") ||
+                        "Operações excluídas com sucesso.",
+                );
                 settingsStore.loadData();
             } else {
                 toast.error(
@@ -641,6 +618,7 @@
         }
         isDeleteOpen = false;
         tradeToDelete = null;
+        dayToDelete = null;
     }
 
     function clearFilters() {
@@ -650,6 +628,47 @@
         filterAssetType = "all";
         filterCurrency = "all";
         searchQuery = "";
+    }
+
+    async function handleImportProfit() {
+        if (settingsStore.accounts.length === 0) {
+            toast.error($t("trades.messages.no_accounts") || "Nenhuma conta cadastrada.");
+            return;
+        }
+
+        try {
+            const selected = await open({
+                multiple: false,
+                filters: [{
+                    name: "CSV",
+                    extensions: ["csv"]
+                }]
+            });
+
+            if (!selected || Array.isArray(selected)) return;
+
+            // Simple account selection for now: pick the first real account or just the first one
+            const targetAccount = settingsStore.accounts.find(a => a.account_type === "Real") || settingsStore.accounts[0];
+
+            toast.promise(
+                invoke("import_profit_trades", {
+                    filePath: selected,
+                    accountId: targetAccount.id
+                }),
+                {
+                    loading: $t("trades.messages.importing") || "Importando trades...",
+                    success: (data: any) => {
+                        tradesStore.loadTrades();
+                        settingsStore.loadData();
+                        return data;
+                    },
+                    error: (err: any) => `Erro: ${err}`
+                }
+            );
+        } catch (err) {
+            console.error("Import failed:", err);
+            toast.error("Falha ao abrir seletor de arquivos.");
+        }
     }
 </script>
 
@@ -692,10 +711,18 @@
                         isEditOpen = true;
                     }}
                 >
-                    <Plus class="w-4 h-4 mr-2" />
                     {$t("trades.actions.new_trade") || "Novo Trade"}
                 </Button>
-                <!-- Importar Trades button hidden for now -->
+                
+                <Button
+                    size="sm"
+                    class="h-9"
+                    variant="outline"
+                    onclick={handleImportProfit}
+                >
+                    <ArrowRightLeft class="w-4 h-4 mr-2" />
+                    {$t("trades.actions.import_profit") || "Importar Profit"}
+                </Button>
             </div>
         </div>
 
@@ -1089,6 +1116,11 @@
                 {:else}
                     <HierarchicalList
                         data={hierarchicalTradesData}
+                        autoExpandDefault={true}
+                        bind:expandedMonths
+                        bind:expandedWeeks
+                        bind:expandedDays
+                        mutualExclusion={true}
                         onMonthToggle={(key, expanded) => {
                             if (expanded) {
                                 const month = hierarchicalTradesData.find(
@@ -1204,6 +1236,18 @@
                                     >
                                 </div>
                             {/each}
+                        {/snippet}
+                        {#snippet dayRight(day)}
+                            <button
+                                class="p-1.5 rounded-md hover:bg-rose-500/20 text-muted-foreground hover:text-rose-500 transition-all duration-200 cursor-pointer border-none bg-transparent group/del-day"
+                                title={$t("trades.actions.delete_day") || "Excluir Dia"}
+                                onclick={(e) => {
+                                    e.stopPropagation();
+                                    requestDeleteDay(day);
+                                }}
+                            >
+                                <Trash2 class="w-3.5 h-3.5" />
+                            </button>
                         {/snippet}
                         {#snippet dayContent(day)}
                             <Table.Root>

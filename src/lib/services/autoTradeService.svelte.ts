@@ -1,5 +1,6 @@
-import { rtdStore, type RTDQuote } from "$lib/stores/rtd.svelte";
+import { rtdStore, type RTDTradeEvent } from "$lib/stores/rtd.svelte";
 import { settingsStore } from "$lib/stores/settings.svelte";
+import { tradesStore } from "$lib/stores/trades.svelte";
 
 export interface PendingTrade {
     symbol: string;
@@ -7,6 +8,9 @@ export interface PendingTrade {
     sheet?: string;
     timestamp: Date;
     account_id: string;
+    isPartial: boolean;
+    type: 'new' | 'partial_entry' | 'partial_exit';
+    existingTradeId?: string;
 }
 
 class AutoTradeService {
@@ -15,17 +19,23 @@ class AutoTradeService {
 
     constructor() {
         if (typeof window !== 'undefined') {
-            rtdStore.onTradeExecuted((quote) => this.handleDetection(quote));
+            rtdStore.onTradeExecuted((event) => this.handleDetection(event));
         }
     }
 
-    private handleDetection(quote: RTDQuote) {
-        console.log("[AutoTradeService] NEW DETECTION RECEIVED:", quote.symbol, "Price:", quote.last, "Sheet:", quote.sheet);
+    private handleDetection(event: RTDTradeEvent) {
+        const { quote, type, isPartial } = event;
+        
+        // SANITY CHECK: Ignore detections with zero or negative price
+        if (quote.last <= 0) {
+            console.log("[AutoTradeService] Ignoring detection due to invalid price:", quote.symbol, quote.last);
+            return;
+        }
+
+        console.log("[AutoTradeService] DETECTION RECEIVED:", quote.symbol, "Price:", quote.last, "Type:", type, "Sheet:", quote.sheet);
 
         // Smart Account Detection
         let accountId = "";
-
-        // 1. Try to match sheet name with account nickname or type
         if (quote.sheet) {
             const sheetMatch = settingsStore.accounts.find(a =>
                 a.nickname.toLowerCase().includes(quote.sheet!.toLowerCase()) ||
@@ -34,9 +44,19 @@ class AutoTradeService {
             if (sheetMatch) accountId = sheetMatch.id;
         }
 
-        // 2. Fallback to active account from a global context (or just first one)
         if (!accountId && settingsStore.accounts.length > 0) {
             accountId = settingsStore.accounts[0].id;
+        }
+
+        // Search for existing trade to link if partial
+        let existingId = undefined;
+        if (isPartial) {
+            const openTrade = tradesStore.trades.find(t => 
+                (t.asset_symbol.toUpperCase() === quote.symbol.toUpperCase() || 
+                 quote.symbol.toUpperCase().startsWith(t.asset_symbol.toUpperCase())) && 
+                t.exit_price === null
+            );
+            existingId = openTrade?.id;
         }
 
         this.pendingTrade = {
@@ -44,7 +64,10 @@ class AutoTradeService {
             price: quote.last,
             sheet: quote.sheet,
             timestamp: new Date(),
-            account_id: accountId
+            account_id: accountId,
+            isPartial: isPartial,
+            type: type,
+            existingTradeId: existingId
         };
 
         this.isDialogOpen = true;

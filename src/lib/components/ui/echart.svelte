@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy } from "svelte";
+    import { onMount, onDestroy, untrack } from "svelte";
     import { mode } from "mode-watcher";
     import * as echarts from "echarts";
 
@@ -12,25 +12,26 @@
     // Determine effective theme
     const effectiveTheme = $derived(theme || mode.current || "light");
 
-    // Initialize/Update Chart when theme changes
+    // Initialize Chart when theme or container changes
     $effect(() => {
         if (!chartContainer || !effectiveTheme) return;
 
-        // Dispose and re-init to apply new theme properly (ECharts requirement)
-        if (chartInstance) chartInstance.dispose();
-        chartInstance = echarts.init(chartContainer, effectiveTheme);
-        chartInstance.setOption(options);
+        // Dispose and re-init to apply new theme properly
+        untrack(() => {
+            if (chartInstance && !chartInstance.isDisposed()) {
+                chartInstance.dispose();
+            }
+            chartInstance = echarts.init(chartContainer, effectiveTheme);
+            // After init, the second effect will handle loading the options
+        });
     });
 
-    // Use snapshot for all options passed to ECharts
-    let snapshottedOptions = $derived($state.snapshot(options));
-
-    // Update options when they change
+    // Update options when they change OR when chart instance is newly created
     $effect(() => {
-        if (chartInstance && snapshottedOptions) {
-            chartInstance.setOption(snapshottedOptions, {
+        if (chartInstance && !chartInstance.isDisposed() && options) {
+            chartInstance.setOption(options, {
                 notMerge: true,
-                lazyUpdate: false,
+                lazyUpdate: true, 
             });
         }
     });

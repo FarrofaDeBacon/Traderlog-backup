@@ -26,8 +26,14 @@ export interface RTDPlayer {
     saldo: number;
 }
 
+export interface RTDTradeEvent {
+    quote: RTDQuote;
+    type: 'new' | 'partial_entry' | 'partial_exit';
+    isPartial: boolean;
+}
+
 // Callback type for trade detection
-export type TradeExecutionCallback = (quote: RTDQuote) => void;
+export type TradeExecutionCallback = (event: RTDTradeEvent) => void;
 
 class RTDStore {
     quotes = $state<Record<string, RTDQuote>>({});
@@ -48,7 +54,7 @@ class RTDStore {
     private _isThrottling = false;
     private _throttleMs = 1000; // Update UI every 1s (reduced from 500ms to avoid UI lag)
     private _detectionDebounceTimer: any = null;
-    private _pendingDetections: RTDQuote[] = [];
+    private _pendingDetections: RTDTradeEvent[] = [];
 
     constructor() {
         if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
@@ -68,7 +74,13 @@ class RTDStore {
         });
     }
 
-    private triggerTradeCallback(sym: string, avgPrice: number, sheet?: string) {
+    private triggerTradeCallback(sym: string, avgPrice: number, type: 'new' | 'partial_entry' | 'partial_exit', isPartial: boolean, sheet?: string) {
+        // PRICE GUARD: Ignore 0.00 prices which are usually noise or uninitialized data
+        if (avgPrice <= 0) {
+            log(`Ignoring detection for ${sym} due to zero price.`);
+            return;
+        }
+
         const quote = this._quotesBuffer[sym] || {
             symbol: sym,
             last: avgPrice,
@@ -76,18 +88,19 @@ class RTDStore {
             sheet: sheet
         };
 
-        // Debounce detections: if multiple detections happen within 500ms, 
-        // only trigger once for the latest per symbol or just batch them.
-        // For now, let's do a simple batch/debounce to avoid UI spam.
-        this._pendingDetections.push(quote);
+        const event: RTDTradeEvent = {
+            quote,
+            type,
+            isPartial
+        };
+
+        this._pendingDetections.push(event);
 
         if (this._detectionDebounceTimer) clearTimeout(this._detectionDebounceTimer);
 
         this._detectionDebounceTimer = setTimeout(() => {
-            // Take only the last detection for actually alerting or just one alert
-            // if many symbols detected at exact same time.
-            const uniqueDetections = new Map<string, RTDQuote>();
-            this._pendingDetections.forEach(d => uniqueDetections.set(d.symbol, d));
+            const uniqueDetections = new Map<string, RTDTradeEvent>();
+            this._pendingDetections.forEach(d => uniqueDetections.set(d.quote.symbol, d));
 
             uniqueDetections.forEach(d => {
                 this.onTradeExecutedCallbacks.forEach(cb => cb(d));
@@ -95,7 +108,7 @@ class RTDStore {
 
             this._pendingDetections = [];
             this._detectionDebounceTimer = null;
-        }, 500); // 500ms group window
+        }, 500);
     }
 
     private parseCSV(content: string) {
@@ -131,6 +144,15 @@ class RTDStore {
                     sheet: sheet
                 };
 
+                const prevTradeCount = this.previousTrades[rawSym];
+                if (prevTradeCount !== undefined && trades > prevTradeCount) {
+                    log(`Trade count increase detected for ${rawSym}: ${prevTradeCount} -> ${trades}`);
+                    const isPartial = (this.previousPositions[rawSym] || 0) > 0;
+                    this.triggerTradeCallback(rawSym, last, isPartial ? 'partial_entry' : 'new', isPartial, sheet);
+                } else if (prevTradeCount === undefined) {
+                    log(`Initializing trade count for ${rawSym}: ${trades}`);
+                }
+
                 this.previousTrades[rawSym] = trades;
                 this._quotesBuffer[rawSym] = newQuote;
 
@@ -138,9 +160,13 @@ class RTDStore {
                 if (rawSym.startsWith('WIN') && rawSym.length > 3) {
                     this._quotesBuffer['WIN'] = { ...newQuote, symbol: 'WIN' };
                     this._quotesBuffer['WINFUT'] = { ...newQuote, symbol: 'WINFUT' };
+                    this.previousTrades['WIN'] = trades;
+                    this.previousTrades['WINFUT'] = trades;
                 } else if (rawSym.startsWith('WDO') && rawSym.length > 3) {
                     this._quotesBuffer['WDO'] = { ...newQuote, symbol: 'WDO' };
                     this._quotesBuffer['WDOFUT'] = { ...newQuote, symbol: 'WDOFUT' };
+                    this.previousTrades['WDO'] = trades;
+                    this.previousTrades['WDOFUT'] = trades;
                 }
 
             } else if (type === 'POS') {
@@ -156,16 +182,14 @@ class RTDStore {
                 symsToUpdate.forEach(sym => {
                     const prevQty = this.previousPositions[sym];
                     if (prevQty !== undefined) {
-                        // Trigger on any increase (Entry/Scale-in) 
-                        // or on full exit (qty === 0)
-                        // Decrease > 0 is a partial exit, also worth notifying for journaling
                         if (qty !== prevQty) {
                             log(`Position change detected for ${sym}: ${prevQty} -> ${qty}`);
-                            this.triggerTradeCallback(sym, avgPrice, sheet);
+                            const type = qty > prevQty ? 'partial_entry' : 'partial_exit';
+                            this.triggerTradeCallback(sym, avgPrice, type, true, sheet);
                         }
-                    } else if (qty > 0) {
-                        // First time seeing this position
-                        this.triggerTradeCallback(sym, avgPrice, sheet);
+                    } else {
+                        // INITIALIZATION GUARD: Don't trigger on first load to avoid ghost trades
+                        log(`Initializing position for ${sym}: ${qty}`);
                     }
                     this.previousPositions[sym] = qty;
                 });

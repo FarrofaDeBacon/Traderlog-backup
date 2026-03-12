@@ -37,7 +37,7 @@
   import { format } from "date-fns/format";
   import { parseISO } from "date-fns/parseISO";
   import PerformanceCalendar from "$lib/components/dashboard/PerformanceCalendar.svelte";
-  import { ptBR } from "date-fns/locale";
+  import { ptBR } from "date-fns/locale/pt-BR";
   import { cn, parseSafeDate } from "$lib/utils";
   import {
     Select,
@@ -376,6 +376,7 @@
       <!-- ELITE KPI LINE: 7 Professional Horizontal Cards -->
       <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4">
         {#each [{ label: $t("general.balance") + " (Est.)", val: formatCurrency(totalBalanceBRL), icon: Wallet, color: "text-emerald-500", borderColor: "border-l-emerald-500" }, { label: $t("dashboard.kpis.netResult"), val: formatCurrency(stats.net), icon: TrendingUp, color: stats.net >= 0 ? "text-emerald-500" : "text-rose-500", borderColor: stats.net >= 0 ? "border-l-emerald-500" : "border-l-rose-500" }, { label: $t("dashboard.kpis.winRate"), val: `${stats.winRate.toFixed(1)}%`, icon: Trophy, color: "text-blue-500", borderColor: "border-l-blue-500" }, { label: $t("dashboard.kpis.profitFactor"), val: stats.profitFactor.toFixed(2), icon: Activity, color: "text-amber-500", borderColor: "border-l-amber-500" }, { label: $t("dashboard.kpis.discipline"), val: `${stats.discipline.toFixed(0)}%`, icon: Zap, color: "text-indigo-500", borderColor: "border-l-indigo-500" }, { label: $t("dashboard.kpis.payoff"), val: stats.payoff.toFixed(2), icon: ArrowUpRight, color: "text-cyan-400", borderColor: "border-l-cyan-400" }, { label: $t("dashboard.kpis.maxDrawdown"), val: `${(stats.drawdown || 0).toFixed(1)}%`, icon: Activity, color: "text-rose-500", borderColor: "border-l-rose-500" }] as kpi}
+          {@const Icon = kpi.icon}
           <Card class="card-glass border-l-2 {kpi.borderColor}">
             <CardContent class="py-0.5 px-2.5">
               <div class="flex items-center justify-between space-y-0">
@@ -383,7 +384,7 @@
                   class="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 leading-none"
                   >{kpi.label}</span
                 >
-                <kpi.icon class={cn("w-3 h-3", kpi.color)} />
+                <Icon class={cn("w-3 h-3", kpi.color)} />
               </div>
               <div class="mt-0">
                 <h3

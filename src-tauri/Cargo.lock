@@ -5969,11 +5969,12 @@ dependencies = [
 
 [[package]]
 name = "tauri-apptraderlogpro"
-version = "0.1.0"
+version = "0.2.0-beta.2"
 dependencies = [
  "base64 0.22.1",
  "bcrypt 0.18.0",
  "chrono",
+ "encoding_rs",
  "hex",
  "hmac",
  "machine-uid",
@@ -5991,6 +5992,7 @@ dependencies = [
  "tauri-plugin-log",
  "tauri-plugin-opener",
  "tokio",
+ "uuid",
 ]
 
 [[package]]

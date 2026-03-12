@@ -1,6 +1,6 @@
 [package]
 name = "tauri-apptraderlogpro"
-version = "0.1.0"
+version = "0.2.0-beta.2"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -37,4 +37,6 @@ hmac = "0.12"
 sha2 = "0.10"
 hex = "0.4"
 base64 = "0.22"
+encoding_rs = "0.8"
+uuid = { version = "1", features = ["v4", "serde"] }
 

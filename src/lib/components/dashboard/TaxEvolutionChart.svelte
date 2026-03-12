@@ -2,6 +2,7 @@
     import { onMount, tick } from "svelte";
     import * as echarts from "echarts";
     import { formatCurrency } from "$lib/utils";
+    import { t, locale } from "svelte-i18n";
 
     interface TaxData {
         month: string;
@@ -65,6 +66,11 @@
     }
 
     function updateChart() {
+        if (!chartInstance) return;
+
+        const taxDueLabel = $t("fiscal.irpf.table.toPay");
+        const taxPaidLabel = $t("fiscal.irpf.table.paid");
+
         const option = {
             backgroundColor: "transparent",
             tooltip: {
@@ -78,14 +84,14 @@
                         tooltip += `
                         <div class="flex justify-between items-center gap-4">
                             <span style="color:${item.color}">● ${item.seriesName}</span>
-                            <span class="font-mono">${formatCurrency(item.value)}</span>
+                            <span class="font-mono">${formatCurrency(item.value, "BRL", $locale || "pt-BR")}</span>
                         </div>`;
                     });
                     return tooltip;
                 },
             },
             legend: {
-                data: ["Imposto Devido", "Imposto Pago"],
+                data: [taxDueLabel, taxPaidLabel],
                 bottom: 0,
                 textStyle: { color: "#a1a1aa" },
             },
@@ -111,7 +117,7 @@
                 axisLabel: {
                     color: "#a1a1aa",
                     formatter: (value: number) =>
-                        new Intl.NumberFormat("pt-BR", {
+                        new Intl.NumberFormat($locale || "pt-BR", {
                             notation: "compact",
                             compactDisplay: "short",
                             style: "currency",
@@ -121,7 +127,7 @@
             },
             series: [
                 {
-                    name: "Imposto Devido",
+                    name: taxDueLabel,
                     type: "bar",
                     data: data.map((d) => d.taxDue),
                     itemStyle: { color: "#ef4444" }, // Red
@@ -129,7 +135,7 @@
                     animationDuration: 1000,
                 },
                 {
-                    name: "Imposto Pago",
+                    name: taxPaidLabel,
                     type: "bar",
                     data: data.map((d) => d.taxPaid),
                     itemStyle: { color: "#22c55e" }, // Green
@@ -138,9 +144,8 @@
                 },
             ],
         };
-        if (chartInstance) {
-            chartInstance.setOption(option, true);
-        }
+
+        chartInstance.setOption(option, true);
     }
 </script>
 

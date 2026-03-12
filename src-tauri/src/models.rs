@@ -148,9 +148,13 @@ impl<'de> Deserialize<'de> for SurrealId {
                     };
                     Ok(SurrealId(format!("{}:{}", tb_str, id_str)))
                 } else {
-                    Ok(SurrealId(val.to_string()))
+                    match val {
+                        serde_json::Value::Null => Ok(SurrealId(String::new())),
+                        _ => Ok(SurrealId(val.to_string())),
+                    }
                 }
             }
+            serde_json::Value::Null => Ok(SurrealId(String::new())),
             _ => Ok(SurrealId(val.to_string())),
         }
     }
@@ -171,7 +175,7 @@ where
     match val {
         serde_json::Value::Null => Ok(None),
         serde_json::Value::String(ref s) => {
-            if s.is_empty() {
+            if s.is_empty() || s == "null" {
                 Ok(None)
             } else {
                 Ok(Some(s.clone()))
@@ -184,17 +188,42 @@ where
                     serde_json::Value::String(ref s) => s.clone(),
                     _ => id.to_string(),
                 };
-                Ok(Some(format!("{}:{}", tb_str, id_str)))
+                if id_str == "null" {
+                    Ok(None)
+                } else {
+                    Ok(Some(format!("{}:{}", tb_str, id_str)))
+                }
             } else {
-                Ok(Some(val.to_string()))
+                let s = val.to_string();
+                if s == "null" || s == "\"null\"" { Ok(None) } else { Ok(Some(s)) }
             }
         }
-        _ => Ok(Some(val.to_string())),
+        _ => {
+            let s = val.to_string();
+            if s == "null" || s == "\"null\"" { Ok(None) } else { Ok(Some(s)) }
+        }
+    }
+}
+
+pub fn deserialize_string_opt<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let val = deserializer.deserialize_any(UniversalVisitor)?;
+    match val {
+        serde_json::Value::Null => Ok(String::new()),
+        serde_json::Value::String(s) => {
+            if s == "null" { Ok(String::new()) } else { Ok(s) }
+        }
+        _ => {
+            let s = val.to_string();
+            if s == "null" || s == "\"null\"" { Ok(String::new()) } else { Ok(s) }
+        }
     }
 }
 
 #[allow(dead_code)]
-fn surreal_to_json(v: SurrealValue) -> serde_json::Value {
+pub fn surreal_to_json(v: SurrealValue) -> serde_json::Value {
     match v {
         SurrealValue::None | SurrealValue::Null => serde_json::Value::Null,
         SurrealValue::Bool(b) => serde_json::Value::Bool(b),
@@ -361,14 +390,24 @@ pub struct ApiConfig {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Account {
-    #[serde(deserialize_with = "deserialize_id")]
-    pub id: String,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_id_opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub nickname: String,
-    pub account_type: String, // "Real" | "Demo" | "Prop"
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
+    pub account_type: String, // "Checking", "Savings", "Brokerage", etc.
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub broker: String,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub account_number: String,
-    pub currency: String,
+    #[serde(default, deserialize_with = "deserialize_id_opt")]
+    pub currency_id: Option<String>,
     pub balance: f64,
+    #[serde(default, deserialize_with = "deserialize_id_opt")]
     pub custom_logo: Option<String>,
 }
 
@@ -381,7 +420,7 @@ impl ToDto for Account {
             account_type: self.account_type.clone(),
             broker: self.broker.clone(),
             account_number: self.account_number.clone(),
-            currency: self.currency.clone(),
+            currency: "".to_string(), // Placeholder or from internal state
             balance: self.balance,
             custom_logo: self.custom_logo.clone(),
         }
@@ -406,12 +445,19 @@ pub struct TradingSession {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Market {
-    #[serde(deserialize_with = "deserialize_id")]
-    pub id: String,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_id_opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub code: String,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub name: String,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub timezone: String,
-    pub trading_days: Vec<i32>,
+    #[serde(default)]
     pub trading_sessions: Vec<TradingSession>,
 }
 
@@ -429,17 +475,25 @@ impl ToDto for Market {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AssetType {
-    #[serde(deserialize_with = "deserialize_id")]
-    pub id: String,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_id_opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub name: String,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub code: String,
-    #[serde(deserialize_with = "deserialize_id")]
-    pub market_id: String,
+    #[serde(default, deserialize_with = "deserialize_id_opt")]
+    pub market_id: Option<String>,
     #[serde(default, deserialize_with = "deserialize_id_opt")]
     pub default_fee_id: Option<String>,
     #[serde(default, deserialize_with = "deserialize_id_opt")]
-    pub tax_profile_id: Option<String>, // New field
+    pub tax_profile_id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub unit_label: String,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub result_type: String, // "points" | "currency"
 }
 
@@ -460,17 +514,27 @@ impl ToDto for AssetType {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Asset {
-    #[serde(deserialize_with = "deserialize_id")]
-    pub id: String,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_id_opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub symbol: String,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub name: String,
-    #[serde(deserialize_with = "deserialize_id")]
-    pub asset_type_id: String,
+    #[serde(default, deserialize_with = "deserialize_id_opt")]
+    pub asset_type_id: Option<String>,
     pub point_value: f64,
     #[serde(default, deserialize_with = "deserialize_id_opt")]
     pub default_fee_id: Option<String>,
     #[serde(default, deserialize_with = "deserialize_id_opt")]
     pub tax_profile_id: Option<String>,
+    #[serde(default)]
+    pub is_root: bool,
+    #[serde(default, deserialize_with = "deserialize_id_opt")]
+    pub root_id: Option<String>,
 }
 
 impl ToDto for Asset {
@@ -483,17 +547,27 @@ impl ToDto for Asset {
             asset_type_id: self.asset_type_id.clone(),
             point_value: self.point_value,
             tax_profile_id: self.tax_profile_id.clone(),
+            is_root: self.is_root,
+            root_id: self.root_id.clone(),
         }
     }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct EmotionalState {
-    #[serde(deserialize_with = "deserialize_id")]
-    pub id: String,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_id_opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub name: String,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub impact: String, // "Positive" | "Negative" | "Neutral"
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub description: String,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub potential_impact: String,
     #[serde(default = "default_weight")]
     pub weight: f64,
@@ -541,8 +615,8 @@ pub struct CashTransaction {
     pub amount: f64,
     pub r#type: String, // "Deposit" | "Withdraw" | "Adjustment"
     pub description: String,
-    #[serde(deserialize_with = "crate::models::deserialize_id")]
-    pub account_id: String,
+    #[serde(default, deserialize_with = "crate::models::deserialize_id_opt")]
+    pub account_id: Option<String>,
     pub trade_ids: Option<Vec<String>>,
     #[serde(default)]
     pub category: Option<String>,
@@ -605,12 +679,12 @@ pub struct Trade {
     pub date: String,
     #[serde(default)]
     pub asset_symbol: String,
-    #[serde(deserialize_with = "deserialize_id")]
-    pub asset_type_id: String,
-    #[serde(deserialize_with = "deserialize_id")]
-    pub strategy_id: String,
-    #[serde(deserialize_with = "deserialize_id")]
-    pub account_id: String,
+    #[serde(default, deserialize_with = "deserialize_id_opt")]
+    pub asset_type_id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_id_opt")]
+    pub strategy_id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_id_opt")]
+    pub account_id: Option<String>,
     #[serde(default)]
     pub result: f64,
     #[serde(default)]
@@ -722,9 +796,11 @@ pub struct FeeProfile {
     pub currency_spread: f64,
     pub withholding_tax: f64,
     pub income_tax_rate: f64,
+    #[serde(default)]
     pub custom_items: Vec<FeeCustomItem>,
     #[serde(default, deserialize_with = "deserialize_id_opt")]
     pub tax_rule_id: Option<String>,
+    #[serde(default)]
     pub notes: String,
 }
 
@@ -809,9 +885,15 @@ fn default_psyc_strategy() -> String {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Modality {
-    #[serde(deserialize_with = "deserialize_id")]
-    pub id: String,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_id_opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub name: String,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub description: String,
 }
 
@@ -871,20 +953,26 @@ pub struct ChartType {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TaxRule {
-    #[serde(deserialize_with = "deserialize_id")]
-    pub id: String,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_id_opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub name: String,
     pub tax_rate: f64,
     pub withholding_rate: f64,
     pub exemption_threshold: f64,
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub basis: String, // "NetProfit" | "GrossProfit"
     pub cumulative_losses: bool,
-    #[serde(default = "default_trade_type")]
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub trade_type: String, // "DayTrade" | "SwingTrade"
-    #[serde(default = "default_withholding_basis")]
+    #[serde(default, deserialize_with = "deserialize_string_opt")]
     pub withholding_basis: String, // "Profit" | "SalesVolume"
     #[serde(default)]
-    pub revenue_code: String, // e.g., "6015", "3317"
+    pub revenue_code: Option<String>, // e.g., "6015", "3317"
 }
 
 impl ToDto for TaxRule {
@@ -914,14 +1002,18 @@ fn default_withholding_basis() -> String {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TaxMapping {
-    #[serde(deserialize_with = "deserialize_id")]
-    pub id: String,
-    #[serde(deserialize_with = "deserialize_id")]
-    pub asset_type_id: String,
-    #[serde(deserialize_with = "deserialize_id")]
-    pub modality_id: String,
-    #[serde(deserialize_with = "deserialize_id")]
-    pub tax_rule_id: String,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_id_opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_id_opt")]
+    pub asset_type_id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_id_opt")]
+    pub modality_id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_id_opt")]
+    pub tax_rule_id: Option<String>,
 }
 
 impl ToDto for TaxMapping {
@@ -938,8 +1030,12 @@ impl ToDto for TaxMapping {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TaxProfile {
-    #[serde(deserialize_with = "deserialize_id")]
-    pub id: String,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_id_opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub id: Option<String>,
     pub name: String,
     pub description: Option<String>,
 }
@@ -957,14 +1053,18 @@ impl ToDto for TaxProfile {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TaxProfileEntry {
-    #[serde(deserialize_with = "deserialize_id")]
-    pub id: String,
-    #[serde(deserialize_with = "deserialize_id")]
-    pub tax_profile_id: String,
-    #[serde(deserialize_with = "deserialize_id")]
-    pub modality_id: String,
-    #[serde(deserialize_with = "deserialize_id")]
-    pub tax_rule_id: String,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_id_opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_id_opt")]
+    pub tax_profile_id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_id_opt")]
+    pub modality_id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_id_opt")]
+    pub tax_rule_id: Option<String>,
 }
 
 impl ToDto for TaxProfileEntry {

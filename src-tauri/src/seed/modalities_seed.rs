@@ -26,7 +26,7 @@ pub async fn seed_modalities(db: &Surreal<Db>, filter: Option<Vec<String>>) -> R
             }
         }
         let modality_data = Modality {
-            id: id.into(),
+            id: Some(id.into()),
             name: name.into(),
             description: description.into(),
         };

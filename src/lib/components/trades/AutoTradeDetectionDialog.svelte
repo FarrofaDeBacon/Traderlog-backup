@@ -20,11 +20,16 @@
     // Map autoTradeService.pendingTrade to the format NewTradeWizard expects
     const prefilledTrade = $derived.by(() => {
         if (!autoTradeService.pendingTrade) return null;
+        
         return {
+            id: autoTradeService.pendingTrade.existingTradeId,
             asset_symbol: autoTradeService.pendingTrade.symbol,
             entry_price: autoTradeService.pendingTrade.price,
             account_id: autoTradeService.pendingTrade.account_id,
             date: autoTradeService.pendingTrade.timestamp.toISOString(),
+            _isAutoPartial: autoTradeService.pendingTrade.isPartial,
+            _autoPrice: autoTradeService.pendingTrade.price,
+            _autoType: autoTradeService.pendingTrade.type,
         };
     });
 </script>
@@ -43,12 +48,18 @@
                         </div>
                         <div>
                             <h2 class="text-xl font-bold">
-                                {$t("trades.wizard.auto_detection.title")}
+                                {autoTradeService.pendingTrade.type === 'partial_entry' 
+                                    ? "Aumento de Posição" 
+                                    : autoTradeService.pendingTrade.type === 'partial_exit'
+                                        ? "Parcial Detectada"
+                                        : $t("trades.wizard.auto_detection.title")}
                             </h2>
                             <p
                                 class="text-xs text-muted-foreground uppercase tracking-widest"
                             >
-                                {$t("trades.wizard.auto_detection.source")}
+                                {autoTradeService.pendingTrade.isPartial 
+                                    ? "Atualização de Posição via RTD" 
+                                    : $t("trades.wizard.auto_detection.source")}
                             </p>
                         </div>
                     </div>
@@ -93,7 +104,9 @@
                             class="flex-1 bg-emerald-600 hover:bg-emerald-700"
                             onclick={handleConfirm}
                         >
-                            {$t("trades.wizard.auto_detection.register")}
+                            {autoTradeService.pendingTrade.isPartial 
+                                ? "Atualizar Trade" 
+                                : $t("trades.wizard.auto_detection.register")}
                         </Button>
                     </div>
                 </div>

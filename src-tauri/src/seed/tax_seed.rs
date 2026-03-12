@@ -74,7 +74,7 @@ pub async fn seed_tax_rules(db: &Surreal<Db>) -> Result<(), String> {
 
     for (id, name, rate, w_rate, exemption, basis, cumulative, t_type, w_basis, rev_code) in rules {
         let rule = TaxRule {
-            id: id.into(),
+            id: Some(id.into()),
             name: name.into(),
             tax_rate: rate,
             withholding_rate: w_rate,
@@ -83,7 +83,7 @@ pub async fn seed_tax_rules(db: &Surreal<Db>) -> Result<(), String> {
             cumulative_losses: cumulative,
             trade_type: t_type.into(),
             withholding_basis: w_basis.into(),
-            revenue_code: rev_code.into(),
+            revenue_code: Some(rev_code.into()),
         };
 
         let mut data = serde_json::to_value(&rule).unwrap();
@@ -117,7 +117,7 @@ pub async fn seed_tax_rules(db: &Surreal<Db>) -> Result<(), String> {
 
     for (id, name, desc) in profiles {
         let profile = TaxProfile {
-            id: id.into(),
+            id: Some(id.into()),
             name: name.into(),
             description: Some(desc.into()),
         };
@@ -166,10 +166,10 @@ pub async fn seed_tax_rules(db: &Surreal<Db>) -> Result<(), String> {
 
     for (id, p_id, m_id, r_id) in entries {
         let entry = TaxProfileEntry {
-            id: id.into(),
-            tax_profile_id: p_id.into(),
-            modality_id: m_id.into(),
-            tax_rule_id: r_id.into(),
+            id: Some(id.into()),
+            tax_profile_id: Some(p_id.into()),
+            modality_id: Some(m_id.into()),
+            tax_rule_id: Some(r_id.into()),
         };
         let mut data = serde_json::to_value(&entry).unwrap();
         if let Some(obj) = data.as_object_mut() {
@@ -280,8 +280,8 @@ pub async fn seed_initial_tax_records(db: &Surreal<Db>) -> Result<(), String> {
             period_month: m,
             period_year: y,
             trade_type: t_type.into(),
-            tax_rule_id: rule_id.into(),
-            revenue_code: r_code.into(),
+            tax_rule_id: Some(rule_id.into()),
+            revenue_code: Some(r_code.into()),
             gross_profit: gross,
             loss,
             net_profit: net,
@@ -328,8 +328,8 @@ pub async fn seed_initial_tax_records(db: &Surreal<Db>) -> Result<(), String> {
 
             let darf = TaxDarf {
                 id: Some(darf_id.clone()),
-                appraisal_id: id.clone(),
-                revenue_code: r_code.into(),
+                appraisal_id: Some(id.clone()),
+                revenue_code: Some(r_code.into()),
                 period: format!("{:02}/{}", m, y),
                 principal_value: payable,
                 fine: 0.0,

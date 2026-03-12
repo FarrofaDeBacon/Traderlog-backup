@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { t, locale } from "svelte-i18n";
+
     interface Props {
         buy: number;
         sell: number;
@@ -35,7 +37,7 @@
     <div
         class="flex justify-between text-[10px] text-muted-foreground uppercase tracking-wider"
     >
-        <span>C: {buy.toLocaleString()}</span>
-        <span>V: {sell.toLocaleString()}</span>
+        <span>{$t("dashboard.dailyDetail.buyShort")}: {buy.toLocaleString($locale || 'pt-BR')}</span>
+        <span>{$t("dashboard.dailyDetail.sellShort")}: {sell.toLocaleString($locale || 'pt-BR')}</span>
     </div>
 </div>

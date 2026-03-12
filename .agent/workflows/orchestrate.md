@@ -11,15 +11,15 @@ $ARGUMENTS
 
 ---
 
-## 🔴 CRITICAL: Minimum Agent Requirement
+## ðŸ”´ CRITICAL: Minimum Agent Requirement
 
-> ⚠️ **ORCHESTRATION = MINIMUM 3 DIFFERENT AGENTS**
+> âš ï¸ **ORCHESTRATION = MINIMUM 3 DIFFERENT AGENTS**
 > 
 > If you use fewer than 3 agents, you are NOT orchestrating - you're just delegating.
 > 
 > **Validation before completion:**
 > - Count invoked agents
-> - If `agent_count < 3` → STOP and invoke more agents
+> - If `agent_count < 3` â†’ STOP and invoke more agents
 > - Single agent = FAILURE of orchestration
 
 ### Agent Selection Matrix
@@ -40,14 +40,14 @@ $ARGUMENTS
 
 | Current Mode | Task Type | Action |
 |--------------|-----------|--------|
-| **plan** | Any | ✅ Proceed with planning-first approach |
-| **edit** | Simple execution | ✅ Proceed directly |
-| **edit** | Complex/multi-file | ⚠️ Ask: "This task requires planning. Switch to plan mode?" |
-| **ask** | Any | ⚠️ Ask: "Ready to orchestrate. Switch to edit or plan mode?" |
+| **plan** | Any | âœ… Proceed with planning-first approach |
+| **edit** | Simple execution | âœ… Proceed directly |
+| **edit** | Complex/multi-file | âš ï¸ Ask: "This task requires planning. Switch to plan mode?" |
+| **ask** | Any | âš ï¸ Ask: "Ready to orchestrate. Switch to edit or plan mode?" |
 
 ---
 
-## 🔴 STRICT 2-PHASE ORCHESTRATION
+## ðŸ”´ STRICT 2-PHASE ORCHESTRATION
 
 ### PHASE 1: PLANNING (Sequential - NO parallel agents)
 
@@ -56,21 +56,21 @@ $ARGUMENTS
 | 1 | `project-planner` | Create docs/PLAN.md |
 | 2 | (optional) `explorer-agent` | Codebase discovery if needed |
 
-> 🔴 **NO OTHER AGENTS during planning!** Only project-planner and explorer-agent.
+> ðŸ”´ **NO OTHER AGENTS during planning!** Only project-planner and explorer-agent.
 
-### ⏸️ CHECKPOINT: User Approval
+### â¸ï¸ CHECKPOINT: User Approval
 
 ```
 After PLAN.md is complete, ASK:
 
-"✅ Plan created: docs/PLAN.md
+"âœ… Plan created: docs/PLAN.md
 
 Do you approve? (Y/N)
 - Y: Start implementation
 - N: I'll revise the plan"
 ```
 
-> 🔴 **DO NOT proceed to Phase 2 without explicit user approval!**
+> ðŸ”´ **DO NOT proceed to Phase 2 without explicit user approval!**
 
 ### PHASE 2: IMPLEMENTATION (Parallel agents after approval)
 
@@ -80,7 +80,7 @@ Do you approve? (Y/N)
 | Core | `backend-specialist`, `frontend-specialist` |
 | Polish | `test-engineer`, `devops-engineer` |
 
-> ✅ After user approval, invoke multiple agents in PARALLEL.
+> âœ… After user approval, invoke multiple agents in PARALLEL.
 
 ## Available Agents (17 total)
 
@@ -110,32 +110,32 @@ Do you approve? (Y/N)
 ### Step 1: Analyze Task Domains
 Identify ALL domains this task touches:
 ```
-□ Security     → security-auditor, penetration-tester
-□ Backend/API  → backend-specialist
-□ Frontend/UI  → frontend-specialist
-□ Database     → database-architect
-□ Testing      → test-engineer
-□ DevOps       → devops-engineer
-□ Mobile       → mobile-developer
-□ Performance  → performance-optimizer
-□ SEO          → seo-specialist
-□ Planning     → project-planner
+â–¡ Security     â†’ security-auditor, penetration-tester
+â–¡ Backend/API  â†’ backend-specialist
+â–¡ Frontend/UI  â†’ frontend-specialist
+â–¡ Database     â†’ database-architect
+â–¡ Testing      â†’ test-engineer
+â–¡ DevOps       â†’ devops-engineer
+â–¡ Mobile       â†’ mobile-developer
+â–¡ Performance  â†’ performance-optimizer
+â–¡ SEO          â†’ seo-specialist
+â–¡ Planning     â†’ project-planner
 ```
 
 ### Step 2: Phase Detection
 
 | If Plan Exists | Action |
 |----------------|--------|
-| NO `docs/PLAN.md` | → Go to PHASE 1 (planning only) |
-| YES `docs/PLAN.md` + user approved | → Go to PHASE 2 (implementation) |
+| NO `docs/PLAN.md` | â†’ Go to PHASE 1 (planning only) |
+| YES `docs/PLAN.md` + user approved | â†’ Go to PHASE 2 (implementation) |
 
 ### Step 3: Execute Based on Phase
 
 **PHASE 1 (Planning):**
 ```
 Use the project-planner agent to create PLAN.md
-→ STOP after plan is created
-→ ASK user for approval
+â†’ STOP after plan is created
+â†’ ASK user for approval
 ```
 
 **PHASE 2 (Implementation - after approval):**
@@ -146,7 +146,7 @@ Use the backend-specialist agent to [task]
 Use the test-engineer agent to [task]
 ```
 
-**🔴 CRITICAL: Context Passing (MANDATORY)**
+**ðŸ”´ CRITICAL: Context Passing (MANDATORY)**
 
 When invoking ANY subagent, you MUST include:
 
@@ -168,7 +168,7 @@ Use the project-planner agent to create PLAN.md:
 **TASK:** Create detailed PLAN.md based on ABOVE decisions. Do NOT infer from folder name.
 ```
 
-> ⚠️ **VIOLATION:** Invoking subagent without full context = subagent will make wrong assumptions!
+> âš ï¸ **VIOLATION:** Invoking subagent without full context = subagent will make wrong assumptions!
 
 
 ### Step 4: Verification (MANDATORY)
@@ -186,7 +186,7 @@ Combine all agent outputs into unified report.
 ## Output Format
 
 ```markdown
-## 🎼 Orchestration Report
+## ðŸŽ¼ Orchestration Report
 
 ### Task
 [Original task summary]
@@ -197,13 +197,13 @@ Combine all agent outputs into unified report.
 ### Agents Invoked (MINIMUM 3)
 | # | Agent | Focus Area | Status |
 |---|-------|------------|--------|
-| 1 | project-planner | Task breakdown | ✅ |
-| 2 | frontend-specialist | UI implementation | ✅ |
-| 3 | test-engineer | Verification scripts | ✅ |
+| 1 | project-planner | Task breakdown | âœ… |
+| 2 | frontend-specialist | UI implementation | âœ… |
+| 3 | test-engineer | Verification scripts | âœ… |
 
 ### Verification Scripts Executed
-- [x] security_scan.py → Pass/Fail
-- [x] lint_runner.py → Pass/Fail
+- [x] security_scan.py â†’ Pass/Fail
+- [x] lint_runner.py â†’ Pass/Fail
 
 ### Key Findings
 1. **[Agent 1]**: Finding
@@ -222,15 +222,15 @@ Combine all agent outputs into unified report.
 
 ---
 
-## 🔴 EXIT GATE
+## ðŸ”´ EXIT GATE
 
 Before completing orchestration, verify:
 
-1. ✅ **Agent Count:** `invoked_agents >= 3`
-2. ✅ **Scripts Executed:** At least `security_scan.py` ran
-3. ✅ **Report Generated:** Orchestration Report with all agents listed
+1. âœ… **Agent Count:** `invoked_agents >= 3`
+2. âœ… **Scripts Executed:** At least `security_scan.py` ran
+3. âœ… **Report Generated:** Orchestration Report with all agents listed
 
-> **If any check fails → DO NOT mark orchestration complete. Invoke more agents or run scripts.**
+> **If any check fails â†’ DO NOT mark orchestration complete. Invoke more agents or run scripts.**
 
 ---
 

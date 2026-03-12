@@ -37,7 +37,7 @@ When `/brainstorm` is triggered:
 ## Output Format
 
 ```markdown
-## 🧠 Brainstorm: [Topic]
+## ðŸ§  Brainstorm: [Topic]
 
 ### Context
 [Brief problem statement]
@@ -47,45 +47,45 @@ When `/brainstorm` is triggered:
 ### Option A: [Name]
 [Description]
 
-✅ **Pros:**
+âœ… **Pros:**
 - [benefit 1]
 - [benefit 2]
 
-❌ **Cons:**
+âŒ **Cons:**
 - [drawback 1]
 
-📊 **Effort:** Low | Medium | High
+ðŸ“Š **Effort:** Low | Medium | High
 
 ---
 
 ### Option B: [Name]
 [Description]
 
-✅ **Pros:**
+âœ… **Pros:**
 - [benefit 1]
 
-❌ **Cons:**
+âŒ **Cons:**
 - [drawback 1]
 - [drawback 2]
 
-📊 **Effort:** Low | Medium | High
+ðŸ“Š **Effort:** Low | Medium | High
 
 ---
 
 ### Option C: [Name]
 [Description]
 
-✅ **Pros:**
+âœ… **Pros:**
 - [benefit 1]
 
-❌ **Cons:**
+âŒ **Cons:**
 - [drawback 1]
 
-📊 **Effort:** Low | Medium | High
+ðŸ“Š **Effort:** Low | Medium | High
 
 ---
 
-## 💡 Recommendation
+## ðŸ’¡ Recommendation
 
 **Option [X]** because [reasoning].
 

@@ -150,6 +150,34 @@ class TradesStore {
         }
     }
 
+    async removeTrades(ids: string[]) {
+        try {
+            console.log("[TradesStore] removeTrades: count=", ids.length);
+            await invoke("delete_trades_by_ids", { ids });
+
+            const normalizedIds = ids.map(id => this.normalizeId(id));
+
+            // Optimistic local update
+            this.trades = this.trades.filter(t => {
+                const tid = this.normalizeId(t.id);
+                return !normalizedIds.includes(tid);
+            });
+
+            await this.loadTrades();
+            await settingsStore.loadCashTransactions();
+
+            // Sync account balances
+            invoke("get_accounts").then(res => {
+                if (res) settingsStore.accounts = res as Account[];
+            }).catch(e => console.error("Failed to sync accounts after batch trade deletion", e));
+
+            return { success: true };
+        } catch (e: any) {
+            console.error("[TradesStore] Error deleting trades:", e);
+            return { success: false, error: e.toString() };
+        }
+    }
+
     getDailyResultByAccount(date: string, accounts: Account[]) {
         const normalizedTargetDate = getLocalDatePart(date);
         console.log(`[TradesStore] getDailyResultByAccount for date: ${date} (normalized: ${normalizedTargetDate})`);

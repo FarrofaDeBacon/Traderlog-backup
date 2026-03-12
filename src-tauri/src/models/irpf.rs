@@ -1,4 +1,4 @@
-use crate::models::{deserialize_id, deserialize_id_opt, deserialize_vec_id, dto, ToDto};
+use crate::models::{deserialize_id_opt, deserialize_vec_id, dto, ToDto};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -14,9 +14,10 @@ pub struct TaxAppraisal {
     #[serde(rename = "period_year", alias = "year", alias = "appraisal_year")]
     pub period_year: u16,
     pub trade_type: String, // "DayTrade" or "SwingTrade" (Category)
-    #[serde(deserialize_with = "deserialize_id")]
-    pub tax_rule_id: String, // Link to the specific rule used
-    pub revenue_code: String, // "6015" or "3317"
+    #[serde(default, deserialize_with = "deserialize_id_opt")]
+    pub tax_rule_id: Option<String>, // Link to the specific rule used
+    #[serde(default)]
+    pub revenue_code: Option<String>, // "6015" or "3317"
     pub gross_profit: f64,
     pub loss: f64,
     pub net_profit: f64,
@@ -115,9 +116,10 @@ pub struct TaxDarf {
         skip_serializing_if = "Option::is_none"
     )]
     pub id: Option<String>,
-    #[serde(deserialize_with = "deserialize_id")]
-    pub appraisal_id: String,
-    pub revenue_code: String,
+    #[serde(deserialize_with = "deserialize_id_opt")]
+    pub appraisal_id: Option<String>,
+    #[serde(default)]
+    pub revenue_code: Option<String>,
     pub period: String,
     pub principal_value: f64,
     pub fine: f64,

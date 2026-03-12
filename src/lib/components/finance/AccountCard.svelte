@@ -140,7 +140,7 @@
             <div class="flex-1 min-w-0">
                 <span
                     class="text-[8px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5 block"
-                    >Saldo</span
+                    >{$t("dashboard.account.balance")}</span
                 >
                 <div class="flex items-baseline gap-1">
                     <h2 class="text-lg font-bold tracking-tight">
@@ -183,7 +183,7 @@
                 <div class="flex items-center gap-1.5">
                     <span
                         class="text-[8px] font-medium text-muted-foreground uppercase tracking-tighter"
-                        >{account.account_number || "NO-ID"}</span
+                        >{account.account_number || $t("general.noData")}</span
                     >
                     <div class="w-1 h-1 rounded-full bg-border"></div>
                     <span class="text-[8px] font-bold text-primary"

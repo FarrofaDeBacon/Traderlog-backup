@@ -6,8 +6,8 @@ pub struct TaxAppraisalDto {
     pub period_month: u8,
     pub period_year: u16,
     pub trade_type: String,
-    pub tax_rule_id: String,
-    pub revenue_code: String,
+    pub tax_rule_id: Option<String>,
+    pub revenue_code: Option<String>,
     pub gross_profit: f64,
     pub loss: f64,
     pub net_profit: f64,
@@ -40,8 +40,8 @@ pub struct TaxLossDto {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TaxDarfDto {
     pub id: Option<String>,
-    pub appraisal_id: String,
-    pub revenue_code: String,
+    pub appraisal_id: Option<String>,
+    pub revenue_code: Option<String>,
     pub period: String,
     pub principal_value: f64,
     pub fine: f64,
@@ -74,7 +74,7 @@ pub struct UserProfileDto {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AccountDto {
-    pub id: String,
+    pub id: Option<String>,
     pub nickname: String,
     pub account_type: String,
     pub broker: String,
@@ -86,20 +86,22 @@ pub struct AccountDto {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AssetDto {
-    pub id: String,
+    pub id: Option<String>,
     pub symbol: String,
     pub name: String,
-    pub asset_type_id: String,
+    pub asset_type_id: Option<String>,
     pub point_value: f64,
     pub tax_profile_id: Option<String>,
+    pub is_root: bool,
+    pub root_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AssetTypeDto {
-    pub id: String,
+    pub id: Option<String>,
     pub name: String,
     pub code: String,
-    pub market_id: String,
+    pub market_id: Option<String>,
     pub unit_label: String,
     pub result_type: String,
     pub tax_profile_id: Option<String>,
@@ -107,7 +109,7 @@ pub struct AssetTypeDto {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MarketDto {
-    pub id: String,
+    pub id: Option<String>,
     pub code: String,
     pub name: String,
     pub timezone: String,
@@ -115,7 +117,7 @@ pub struct MarketDto {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ModalityDto {
-    pub id: String,
+    pub id: Option<String>,
     pub name: String,
     pub description: String,
 }
@@ -125,9 +127,9 @@ pub struct TradeDto {
     pub id: String,
     pub date: String,
     pub asset_symbol: String,
-    pub asset_type_id: String,
-    pub strategy_id: String,
-    pub account_id: String,
+    pub asset_type_id: Option<String>,
+    pub strategy_id: Option<String>,
+    pub account_id: Option<String>,
     pub result: f64,
     pub quantity: f64,
     pub direction: String,
@@ -158,11 +160,11 @@ pub struct CashTransactionDto {
     pub amount: f64,
     pub r#type: String,
     pub description: String,
-    pub account_id: String,
+    pub account_id: Option<String>,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TaxRuleDto {
-    pub id: String,
+    pub id: Option<String>,
     pub name: String,
     pub tax_rate: f64,
     pub withholding_rate: f64,
@@ -171,28 +173,28 @@ pub struct TaxRuleDto {
     pub cumulative_losses: bool,
     pub trade_type: String,
     pub withholding_basis: String,
-    pub revenue_code: String,
+    pub revenue_code: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TaxMappingDto {
-    pub id: String,
-    pub asset_type_id: String,
-    pub modality_id: String,
-    pub tax_rule_id: String,
+    pub id: Option<String>,
+    pub asset_type_id: Option<String>,
+    pub modality_id: Option<String>,
+    pub tax_rule_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TaxProfileDto {
-    pub id: String,
+    pub id: Option<String>,
     pub name: String,
     pub description: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TaxProfileEntryDto {
-    pub id: String,
-    pub tax_profile_id: String,
-    pub modality_id: String,
-    pub tax_rule_id: String,
+    pub id: Option<String>,
+    pub tax_profile_id: Option<String>,
+    pub modality_id: Option<String>,
+    pub tax_rule_id: Option<String>,
 }

@@ -20,11 +20,14 @@
 
     let formData = $state<Omit<TaxRule, "id">>({
         name: "",
+        trade_type: "DayTrade",
         tax_rate: 0,
         withholding_rate: 0,
         exemption_threshold: 0,
         basis: "NetProfit",
         cumulative_losses: true,
+        revenue_code: "",
+        withholding_basis: "Profit",
     });
 
     // --- RULES LOGIC ---
@@ -32,11 +35,14 @@
     function resetForm() {
         formData = {
             name: "",
+            trade_type: "DayTrade",
             tax_rate: 15,
             withholding_rate: 0.005,
             exemption_threshold: 0,
             basis: "NetProfit",
             cumulative_losses: true,
+            revenue_code: "",
+            withholding_basis: "Profit",
         };
         editingId = null;
     }
@@ -162,6 +168,16 @@
                         >
                         <span class="font-mono">{rule.withholding_rate}%</span>
                     </div>
+                    <div class="flex justify-between items-center text-[10px] italic -mt-1 mb-2">
+                        <span class="text-muted-foreground"
+                            >{$t("settings.fiscal.rules.form.withholdingBasis")}:</span
+                        >
+                        <span class="text-primary/70">
+                            {rule.withholding_basis === "Profit"
+                                ? $t("settings.fiscal.rules.form.withholdingBasisOptions.profit")
+                                : $t("settings.fiscal.rules.form.withholdingBasisOptions.sales")}
+                        </span>
+                    </div>
                     {#if rule.exemption_threshold > 0}
                         <div
                             class="flex justify-between items-center text-sm text-green-500"
@@ -192,6 +208,14 @@
                                 : $t("general.no")}
                         </span>
                     </div>
+                    {#if rule.revenue_code}
+                        <div class="flex justify-between items-center text-sm pt-2 border-t border-dashed mt-2">
+                            <span class="text-muted-foreground"
+                                >{$t("settings.fiscal.rules.form.revenueCode")}:</span
+                            >
+                            <span class="font-mono font-bold bg-primary/5 px-1.5 rounded">{rule.revenue_code}</span>
+                        </div>
+                    {/if}
                 </div>
 
                 <!-- Actions -->
@@ -292,6 +316,28 @@
                 </div>
             </div>
 
+            {#if formData.withholding_rate > 0}
+                <div class="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <Label>{$t("settings.fiscal.rules.form.withholdingBasis")}</Label>
+                    <Select.Root type="single" bind:value={formData.withholding_basis}>
+                        <Select.Trigger>
+                            {formData.withholding_basis === "Profit"
+                                ? $t("settings.fiscal.rules.form.withholdingBasisOptions.profit")
+                                : $t("settings.fiscal.rules.form.withholdingBasisOptions.sales")}
+                        </Select.Trigger>
+                        <Select.Content>
+                            <Select.Item value="Profit"
+                                >{$t("settings.fiscal.rules.form.withholdingBasisOptions.profit")}</Select.Item>
+                            <Select.Item value="SalesVolume"
+                                >{$t("settings.fiscal.rules.form.withholdingBasisOptions.sales")}</Select.Item>
+                        </Select.Content>
+                    </Select.Root>
+                    <p class="text-[10px] text-muted-foreground">
+                        {$t("settings.fiscal.rules.form.withholdingBasisHint")}
+                    </p>
+                </div>
+            {/if}
+
             <div class="space-y-2">
                 <Label>{$t("settings.fiscal.rules.form.basis")}</Label>
                 <Select.Root type="single" bind:value={formData.basis}>
@@ -338,6 +384,30 @@
                 </div>
                 <p class="text-[10px] text-muted-foreground">
                     {$t("settings.fiscal.rules.form.exemptionHint")}
+                </p>
+            </div>
+
+            <div class="space-y-2">
+                <Label>{$t("fiscal.irpf.table.type")}</Label>
+                <Select.Root type="single" bind:value={formData.trade_type}>
+                    <Select.Trigger>
+                        {formData.trade_type === "DayTrade" ? "Day Trade" : "Swing Trade"}
+                    </Select.Trigger>
+                    <Select.Content>
+                        <Select.Item value="DayTrade">Day Trade</Select.Item>
+                        <Select.Item value="SwingTrade">Swing Trade</Select.Item>
+                    </Select.Content>
+                </Select.Root>
+            </div>
+
+            <div class="space-y-2">
+                <Label>{$t("settings.fiscal.rules.form.revenueCode")}</Label>
+                <Input
+                    bind:value={formData.revenue_code}
+                    placeholder={$t("settings.fiscal.rules.form.revenueCodePlaceholder")}
+                />
+                <p class="text-[10px] text-muted-foreground">
+                    {$t("settings.fiscal.rules.form.revenueCodeHint")}
                 </p>
             </div>
 

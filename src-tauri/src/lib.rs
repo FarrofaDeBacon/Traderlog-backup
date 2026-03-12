@@ -4,6 +4,7 @@ mod hardware;
 mod models;
 mod seed;
 mod logic;
+mod services;
 #[cfg(test)]
 mod logic_tests;
 
@@ -224,6 +225,7 @@ pub fn run() {
             commands::get_trades,
             commands::save_trade,
             commands::delete_trade,
+            commands::delete_trades_by_ids,
             commands::get_cash_transactions,
             commands::save_cash_transaction,
             commands::delete_cash_transaction,
@@ -310,6 +312,7 @@ pub fn run() {
             commands::diagnostic_dump_trades,
             commands::diagnostic_closure_dump,
             commands::open_detached_trade_window,
+            commands::profit_import::import_profit_trades,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

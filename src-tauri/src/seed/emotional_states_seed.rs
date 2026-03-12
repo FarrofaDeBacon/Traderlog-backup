@@ -116,7 +116,7 @@ pub async fn seed_emotional_states(
         }
 
         let es_struct = EmotionalState {
-            id: id.into(),
+            id: Some(id.into()),
             name: name.into(),
             impact: impact.into(),
             description: description.into(),

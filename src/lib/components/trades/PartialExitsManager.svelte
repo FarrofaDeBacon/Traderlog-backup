@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { t } from "svelte-i18n";
+    import { t, locale } from "svelte-i18n";
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
@@ -11,6 +11,9 @@
         partials = $bindable([]),
         entryPrice = 0,
         totalQuantity = 0,
+        direction = "buy",
+        pointValue = 1.0,
+        currencySymbol = "R$",
         unitLabel = $t("trades.wizard.unit_labels.contracts"),
         resultSuffix = "pts",
         resultPrefix = "",
@@ -18,6 +21,9 @@
         partials: any[];
         entryPrice: number;
         totalQuantity: number;
+        direction?: string;
+        pointValue?: number;
+        currencySymbol?: string;
         unitLabel?: string;
         resultSuffix?: string;
         resultPrefix?: string;
@@ -54,12 +60,54 @@
 
     let remaining = $derived(totalQuantity - totalExited);
 
-    function calculateResult(partial: any) {
-        if (!partial.price || !entryPrice || !partial.quantity) return 0;
-        const diff = partial.price - entryPrice;
-        // Direction multiplier logic should ideally come from parent,
-        // but for display points, raw diff is usually expected.
-        return diff * partial.quantity;
+    function getMovingAvgAt(index: number) {
+        let currentAvg = entryPrice;
+        let currentQty = totalQuantity;
+
+        // Sort partials by date to ensure chronological consistency
+        const sorted = [...partials].sort((a, b) => {
+            return new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime();
+        });
+
+        // Loop until the current partial's index (we need to find where the original index ended up in the sorted list)
+        const targetPartial = partials[index];
+        
+        for (const p of sorted) {
+            if (p.type === "entry") {
+                const newQty = currentQty + (p.quantity || 0);
+                if (newQty > 0) {
+                    currentAvg = ((currentAvg * currentQty) + ((p.price || 0) * (p.quantity || 0))) / newQty;
+                }
+                currentQty = newQty;
+            } else {
+                currentQty -= (p.quantity || 0);
+            }
+            
+            // Stop if we reached the target partial
+            if (p === targetPartial) break;
+        }
+
+        return currentAvg;
+    }
+
+    function calculateResultAt(index: number) {
+        const partial = partials[index];
+        if (!partial || !partial.price || !partial.quantity || partial.type === "entry") return 0;
+        
+        const avgAtMoment = getMovingAvgAt(index);
+        const multiplier = (direction || "").toLowerCase() === "buy" ? 1 : -1;
+        const diff = partial.price - avgAtMoment;
+        
+        return diff * partial.quantity * pointValue * multiplier;
+    }
+
+    function calculatePointsAt(index: number) {
+        const partial = partials[index];
+        if (!partial || !partial.price || !partial.quantity || partial.type === "entry") return 0;
+        
+        const avgAtMoment = getMovingAvgAt(index);
+        const multiplier = (direction || "").toLowerCase() === "buy" ? 1 : -1;
+        return (partial.price - avgAtMoment) * (partial.quantity || 0) * multiplier;
     }
 </script>
 
@@ -77,9 +125,6 @@
                         "trades.wizard.sections.partial_management.volume_executed",
                     )}
                 </p>
-                <p
-                    class="text-sm font-mono font-bold text-primary flex items-center gap-2"
-                ></p>
                 <p
                     class="text-sm font-mono font-bold text-primary flex items-center gap-2"
                 >
@@ -163,11 +208,15 @@
                         >{$t("trades.wizard.partials.price")}</Table.Head
                     >
                     <Table.Head
+                        class="w-[90px] h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground/80 text-right"
+                        >MÉDIO</Table.Head
+                    >
+                    <Table.Head
                         class="w-[80px] h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground/80 text-center"
                         >{$t("trades.wizard.partials.quantity")}</Table.Head
                     >
                     <Table.Head
-                        class="w-[120px] h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground/80 text-right"
+                        class="w-[130px] h-8 text-[10px] font-bold uppercase tracking-tight text-muted-foreground/80 text-right"
                         >{$t("trades.wizard.partials.result")}</Table.Head
                     >
                     <Table.Head
@@ -238,6 +287,11 @@
                                 />
                             </Table.Cell>
                             <Table.Cell class="py-1">
+                                <div class="text-[10px] font-mono text-right text-muted-foreground pr-2">
+                                    {getMovingAvgAt(i).toFixed(2)}
+                                </div>
+                            </Table.Cell>
+                            <Table.Cell class="py-1">
                                 <Input
                                     type="number"
                                     bind:value={partial.quantity}
@@ -245,20 +299,35 @@
                                 />
                             </Table.Cell>
                             <Table.Cell class="py-1 text-right">
+                                {@const res = calculateResultAt(i)}
+                                {@const pts = calculatePointsAt(i)}
                                 <div
-                                    class="text-[10px] font-mono font-bold {calculateResult(
-                                        partial,
-                                    ) > 0
-                                        ? 'text-emerald-500'
-                                        : calculateResult(partial) < 0
-                                          ? 'text-rose-500'
-                                          : 'text-muted-foreground'}"
+                                    class="flex flex-col items-end leading-tight"
                                 >
-                                    {resultPrefix}
-                                    {calculateResult(partial).toFixed(2)}
-                                    <span class="text-[8px] opacity-50"
-                                        >{resultSuffix}</span
+                                    <div
+                                        class="text-[10px] font-mono font-bold {res > 0
+                                            ? 'text-emerald-500'
+                                            : res < 0
+                                              ? 'text-rose-500'
+                                              : 'text-muted-foreground'}"
                                     >
+                                        {#if resultSuffix === "pts"}
+                                            {pts.toLocaleString($locale || 'pt-BR', { maximumFractionDigits: 2 })}
+                                            <span class="text-[8px] opacity-70">pts</span>
+                                        {:else}
+                                            {currencySymbol} {Math.abs(res).toLocaleString($locale || 'pt-BR', { minimumFractionDigits: 2 })}
+                                        {/if}
+                                    </div>
+                                    
+                                    {#if resultSuffix === "pts" && res !== 0}
+                                        <div class="text-[9px] font-mono font-bold {res > 0 ? 'text-emerald-500/60' : 'text-rose-500/60'}">
+                                            {currencySymbol} {Math.abs(res).toLocaleString($locale || 'pt-BR', { minimumFractionDigits: 2 })}
+                                        </div>
+                                    {:else if resultPrefix !== "" && pts !== 0}
+                                        <div class="text-[9px] font-mono font-bold {pts > 0 ? 'text-emerald-500/60' : 'text-rose-500/60'}">
+                                            {pts.toLocaleString($locale || 'pt-BR', { maximumFractionDigits: 2 })} <span class="text-[7px]">pts</span>
+                                        </div>
+                                    {/if}
                                 </div>
                             </Table.Cell>
                             <Table.Cell class="py-1">

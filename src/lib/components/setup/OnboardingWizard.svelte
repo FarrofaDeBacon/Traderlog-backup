@@ -334,7 +334,7 @@
             >
                 <div class="flex items-center gap-3">
                     <div class="bg-primary/10 p-2 rounded-lg">
-                        <Rocket class="w-5 h-5 text-primary" />
+                        <img src="/branding/navbar-logo.png" alt="Logo" class="w-5 h-5 object-contain" />
                     </div>
                     <div>
                         <h2
@@ -1035,9 +1035,7 @@
                                 <div
                                     class="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center relative"
                                 >
-                                    <Rocket
-                                        class="w-12 h-12 text-primary animate-bounce"
-                                    />
+                                    <img src="/branding/logo.png" alt="Logo" class="w-12 h-12 object-contain animate-bounce" />
                                     <div
                                         class="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary animate-spin"
                                     ></div>

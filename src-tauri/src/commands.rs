@@ -15,6 +15,7 @@ type HmacSha256 = Hmac<Sha256>;
 use base64::Engine as _;
 
 pub mod irpf;
+pub mod profit_import;
 
 const LICENSE_SECRET_KEY: &[u8] = b"TRADERLOGPRO_SECRET_KEY_2026";
 
@@ -278,26 +279,27 @@ pub async fn get_accounts(db: State<'_, DbState>) -> Result<Vec<Account>, String
 #[tauri::command]
 pub async fn save_account(db: State<'_, DbState>, account: Account) -> Result<(), String> {
     println!("[COMMAND] save_account: {:?}", account.id);
-    let id = account.id.clone();
+    let id_opt = account.id.clone();
+    
     let mut json = serde_json::to_value(&account).map_err(|e| e.to_string())?;
     if let Some(obj) = json.as_object_mut() {
         obj.remove("id");
     }
-    let clean_id = id
+
+    let id_str = id_opt.unwrap_or_default();
+    let clean_id = id_str
         .split(':')
         .last()
-        .unwrap_or(&id)
+        .unwrap_or(&id_str)
         .replace("⟨", "")
         .replace("⟩", "");
+        
     upsert_record(&db.0, "account", &clean_id, json).await
 }
 
 #[tauri::command]
 pub async fn delete_account(db: State<'_, DbState>, id: String) -> Result<(), String> {
-    let clean_id = id
-        .split(':')
-        .last()
-        .unwrap_or(&id)
+    let clean_id = id.split(':').last().unwrap_or(id.as_str())
         .replace("⟨", "")
         .replace("⟩", "");
     delete_record(&db.0, "account", &clean_id).await
@@ -357,10 +359,11 @@ pub async fn save_market(db: State<'_, DbState>, market: Market) -> Result<(), S
     if let Some(obj) = json.as_object_mut() {
         obj.remove("id");
     }
-    let clean_id = id
+    let id_str = id.unwrap_or_default();
+    let clean_id = id_str
         .split(':')
         .last()
-        .unwrap_or(&id)
+        .unwrap_or(&id_str)
         .replace("⟨", "")
         .replace("⟩", "");
     upsert_record(&db.0, "market", &clean_id, json).await
@@ -371,7 +374,7 @@ pub async fn delete_market(db: State<'_, DbState>, id: String) -> Result<(), Str
     let clean_id = id
         .split(':')
         .last()
-        .unwrap_or(&id)
+        .unwrap_or(id.as_str())
         .replace("⟨", "")
         .replace("⟩", "");
     delete_record(&db.0, "market", &clean_id).await
@@ -394,12 +397,12 @@ pub async fn get_asset_types(db: State<'_, DbState>) -> Result<Vec<AssetType>, S
 
 #[tauri::command]
 pub async fn save_asset_type(db: State<'_, DbState>, asset_type: AssetType) -> Result<(), String> {
-    let id = asset_type.id.clone();
     let mut json = serde_json::to_value(&asset_type).map_err(|e| e.to_string())?;
     if let Some(obj) = json.as_object_mut() {
         obj.remove("id");
     }
-    let clean_id = id.split(':').last().unwrap_or(&id);
+    let id_str = asset_type.id.clone().unwrap_or_default();
+    let clean_id = id_str.split(':').last().unwrap_or(&id_str);
     upsert_record(&db.0, "asset_type", clean_id, json).await
 }
 
@@ -431,13 +434,34 @@ pub async fn save_asset(db: State<'_, DbState>, asset: Asset) -> Result<(), Stri
     if let Some(obj) = json.as_object_mut() {
         obj.remove("id");
     }
-    let clean_id = id
+    let id_str = id.unwrap_or_default();
+    let clean_id = id_str
         .split(':')
         .last()
-        .unwrap_or(&id)
+        .unwrap_or(&id_str)
         .replace("⟨", "")
-        .replace("⟩", "");
-    upsert_record(&db.0, "asset", &clean_id, json).await
+        .replace("⟩", "")
+        .replace("`", "")
+        .trim()
+        .to_string();
+
+    // Standard upsert
+    upsert_record(&db.0, "asset", &clean_id, json).await?;
+
+    // Relational field conversion (ensures they are Things, not Strings)
+    let full_id = format!("asset:⟨{}⟩", clean_id);
+    let sql = format!("
+        UPDATE {} SET 
+            asset_type_id = type::thing(asset_type_id),
+            default_fee_id = (IF default_fee_id THEN type::thing(default_fee_id) ELSE null END),
+            tax_profile_id = (IF tax_profile_id THEN type::thing(tax_profile_id) ELSE null END),
+            root_id = (IF root_id THEN type::thing(root_id) ELSE null END)
+        WHERE id = {};
+    ", full_id, full_id);
+
+    db.0.query(&sql).await.map_err(|e| e.to_string())?;
+    
+    Ok(())
 }
 
 #[tauri::command]
@@ -445,7 +469,7 @@ pub async fn delete_asset(db: State<'_, DbState>, id: String) -> Result<(), Stri
     let clean_id = id
         .split(':')
         .last()
-        .unwrap_or(&id)
+        .unwrap_or(id.as_str())
         .replace("⟨", "")
         .replace("⟩", "");
     delete_record(&db.0, "asset", &clean_id).await
@@ -473,7 +497,8 @@ pub async fn save_emotional_state(
     if let Some(obj) = json.as_object_mut() {
         obj.remove("id");
     }
-    let clean_id = id.split(':').last().unwrap_or(&id);
+    let id_str = id.clone().unwrap_or_default();
+    let clean_id = id_str.split(':').last().unwrap_or(&id_str);
     upsert_record(&db.0, "emotional_state", clean_id, json).await
 }
 
@@ -505,7 +530,7 @@ pub async fn save_strategy(db: State<'_, DbState>, strategy: Strategy) -> Result
     let clean_id = id
         .split(':')
         .last()
-        .unwrap_or(&id)
+        .unwrap_or(id.as_str())
         .replace("⟨", "")
         .replace("⟩", "");
     upsert_record(&db.0, "strategy", &clean_id, json).await
@@ -516,7 +541,7 @@ pub async fn delete_strategy(db: State<'_, DbState>, id: String) -> Result<(), S
     let clean_id = id
         .split(':')
         .last()
-        .unwrap_or(&id)
+        .unwrap_or(id.as_str())
         .replace("⟨", "")
         .replace("⟩", "");
     delete_record(&db.0, "strategy", &clean_id).await
@@ -601,12 +626,13 @@ pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), Stri
     let full_trade_id = format!("trade:⟨{}⟩", clean_id);
     let sql = format!("
         UPDATE {} SET 
-            account_id = type::thing(account_id),
-            asset_type_id = type::thing(asset_type_id),
-            strategy_id = type::thing(strategy_id),
-            modality_id = type::thing(modality_id),
-            entry_emotional_state_id = type::thing(entry_emotional_state_id),
-            exit_emotional_state_id = type::thing(exit_emotional_state_id)
+            account_id = (IF account_id THEN type::thing(account_id) ELSE null END),
+            asset_type_id = (IF asset_type_id THEN type::thing(asset_type_id) ELSE null END),
+            asset_id = (IF asset_id THEN type::thing(asset_id) ELSE null END),
+            strategy_id = (IF strategy_id THEN type::thing(strategy_id) ELSE null END),
+            modality_id = (IF modality_id THEN type::thing(modality_id) ELSE null END),
+            entry_emotional_state_id = (IF entry_emotional_state_id THEN type::thing(entry_emotional_state_id) ELSE null END),
+            exit_emotional_state_id = (IF exit_emotional_state_id THEN type::thing(exit_emotional_state_id) ELSE null END)
         WHERE id = {};
     ", full_trade_id, full_trade_id);
 
@@ -623,9 +649,11 @@ pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), Stri
 
     let acc_clean_current = trade
         .account_id
+        .as_deref()
+        .unwrap_or("")
         .split(':')
         .last()
-        .unwrap_or(&trade.account_id)
+        .unwrap_or(trade.account_id.as_deref().unwrap_or(""))
         .replace("⟨", "")
         .replace("⟩", "")
         .replace("`", "")
@@ -646,7 +674,8 @@ pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), Stri
             let mut target_closure_found = false;
 
             for c in all_system_closures {
-                let c_acc_clean = c.account_id.split(':').last().unwrap_or(&c.account_id)
+            let c_acc_clean = c.account_id.as_deref().unwrap_or("")
+                    .split(':').last().unwrap_or(c.account_id.as_deref().unwrap_or(""))
                     .replace("⟨", "").replace("⟩", "").replace("`", "").trim().to_string();
                 let c_date_only = c.date.split('T').next().unwrap_or(&c.date).split(' ').next().unwrap_or(&c.date);
                 
@@ -655,7 +684,7 @@ pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), Stri
 
                 if let Some(ref tids) = c.trade_ids {
                     contains_trade = tids.iter().any(|tid| {
-                        let tid_clean = tid.split(':').last().unwrap_or(tid)
+                        let tid_clean = tid.as_str().split(':').last().unwrap_or(tid.as_str())
                             .replace("⟨", "").replace("⟩", "").replace("`", "");
                         tid_clean == clean_id
                     });
@@ -679,7 +708,8 @@ pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), Stri
                 if let Ok(mut target_res) = db.0.query(&find_target_sql).await {
                     if let Ok(target_closures) = target_res.take::<Vec<crate::models::CashTransaction>>(0) {
                         for c in target_closures {
-                            let c_acc_clean = c.account_id.split(':').last().unwrap_or(&c.account_id)
+                            let c_acc_clean = c.account_id.as_deref().unwrap_or("")
+                                .split(':').last().unwrap_or(c.account_id.as_deref().unwrap_or(""))
                                 .replace("⟨", "").replace("⟩", "").replace("`", "").trim().to_string();
                             if c_acc_clean == acc_clean_current {
                                 closures_to_process.push((c, true));
@@ -696,7 +726,8 @@ pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), Stri
                     .replace("⟨", "").replace("⟩", "").replace("`", "").to_string();
                 let ct_full = format!("cash_transaction:⟨{}⟩", ct_clean);
                 
-                let cur_acc_clean = closure.account_id.split(':').last().unwrap_or(&closure.account_id)
+                let cur_acc_clean = closure.account_id.as_deref().unwrap_or("")
+                    .split(':').last().unwrap_or(closure.account_id.as_deref().unwrap_or(""))
                     .replace("⟨", "").replace("⟩", "").replace("`", "").trim().to_string();
                 let cur_acc_full = format!("account:⟨{}⟩", cur_acc_clean);
 
@@ -706,7 +737,7 @@ pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), Stri
                 if is_target {
                     // Ensure linked
                     let already_linked = trade_ids.iter().any(|tid| {
-                        let tid_clean = tid.split(':').last().unwrap_or(tid)
+                        let tid_clean = tid.as_str().split(':').last().unwrap_or(tid.as_str())
                             .replace("⟨", "").replace("⟩", "").replace("`", "");
                         tid_clean == clean_id
                     });
@@ -718,7 +749,8 @@ pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), Stri
                     // Remove from old closure
                     let original_len = trade_ids.len();
                     trade_ids.retain(|tid| {
-                        let tid_clean = tid.split(':').last().unwrap_or(tid)
+                        let tid_clean = tid.as_str()
+                            .split(':').last().unwrap_or(tid.as_str())
                             .replace("⟨", "").replace("⟩", "").replace("`", "");
                         tid_clean != clean_id
                     });
@@ -731,7 +763,7 @@ pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), Stri
                     // Recalculate Total
                     let mut new_total = 0.0_f64;
                     for tid in &trade_ids {
-                        let tid_clean_loop = tid.split(':').last().unwrap_or(tid)
+                        let tid_clean_loop = tid.as_str().split(':').last().unwrap_or(tid.as_str())
                             .replace("⟨", "").replace("⟩", "").replace("`", "").trim().to_string();
                         
                         if tid_clean_loop == clean_id {
@@ -773,8 +805,7 @@ pub async fn save_trade(db: State<'_, DbState>, trade: Trade) -> Result<(), Stri
     Ok(())
 }
 
-#[tauri::command]
-pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), String> {
+async fn internal_delete_trade(db: &Surreal<Db>, id: String) -> Result<(), String> {
     let clean_id = id
         .split(':')
         .last()
@@ -789,39 +820,37 @@ pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), Stri
     // 1. Get the trade result BEFORE deleting (must use ⟨UUID⟩ direct interpolation)
     let sql_trade = format!("SELECT result FROM {} LIMIT 1", full_id);
     println!(
-        "[COMMAND] delete_trade: id='{}' clean_id='{}' full_id='{}'",
+        "[COMMAND] internal_delete_trade: id='{}' clean_id='{}' full_id='{}'",
         id, clean_id, full_id
     );
 
     let mut trade_result = 0.0_f64;
-    if let Ok(mut trade_res) = db.0.query(&sql_trade).await {
+    if let Ok(mut trade_res) = db.query(&sql_trade).await {
         if let Ok(results) = trade_res.take::<Vec<crate::models::SurrealJson>>(0) {
             println!(
-                "[COMMAND] delete_trade: trade result query returned {} rows: {:?}",
-                results.len(),
-                results
+                "[COMMAND] internal_delete_trade: trade result query returned {} rows",
+                results.len()
             );
             if let Some(first) = results.first() {
                 trade_result = first.0.get("result").and_then(|v| v.as_f64()).unwrap_or(0.0);
             }
         }
     }
-    println!("[COMMAND] delete_trade: trade_result={}", trade_result);
+    println!("[COMMAND] internal_delete_trade: trade_result={}", trade_result);
 
     // 2. Find associated daily closures (cash_transactions with this trade in trade_ids)
-    // Search with multiple ID formats to handle legacy data
     let sql_ct =
         "SELECT *, type::string(id) as id, type::string(account_id) as account_id FROM cash_transaction WHERE system_linked = true AND category = 'Trading'";
     let mut cashflow_to_update: Vec<crate::models::CashTransaction> = Vec::new();
-    if let Ok(mut ct_res) = db.0.query(sql_ct).await {
+    if let Ok(mut ct_res) = db.query(sql_ct).await {
         if let Ok(all_cts) = ct_res.take::<Vec<crate::models::CashTransaction>>(0) {
             for ct in all_cts {
                 if let Some(ref tids) = ct.trade_ids {
                     let linked = tids.iter().any(|tid| {
-                        let tid_clean = tid
+                        let tid_clean = tid.as_str()
                             .split(':')
                             .last()
-                            .unwrap_or(tid)
+                            .unwrap_or(tid.as_str())
                             .replace("⟨", "")
                             .replace("⟩", "")
                             .replace("`", "");
@@ -835,7 +864,7 @@ pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), Stri
         }
     }
     println!(
-        "[COMMAND] delete_trade: found {} linked cash_transactions",
+        "[COMMAND] internal_delete_trade: found {} linked cash_transactions",
         cashflow_to_update.len()
     );
 
@@ -854,10 +883,10 @@ pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), Stri
         if let Some(mut t_ids) = ct.trade_ids.take() {
             // Remove this trade from the list
             t_ids.retain(|tid| {
-                let tid_clean = tid
+                let tid_clean = tid.as_str()
                     .split(':')
                     .last()
-                    .unwrap_or(tid)
+                    .unwrap_or(tid.as_str())
                     .replace("⟨", "")
                     .replace("⟩", "")
                     .replace("`", "");
@@ -867,9 +896,11 @@ pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), Stri
             // Update account balance: subtract the deleted trade's result
             let acc_clean = ct
                 .account_id
+                .as_deref()
+                .unwrap_or("")
                 .split(':')
                 .last()
-                .unwrap_or(&ct.account_id)
+                .unwrap_or(ct.account_id.as_deref().unwrap_or(""))
                 .replace("⟨", "")
                 .replace("⟩", "")
                 .replace("`", "")
@@ -877,17 +908,17 @@ pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), Stri
             let acc_full = format!("account:⟨{}⟩", acc_clean);
             let sql_acc = format!("UPDATE {} SET balance -= $trade_result", acc_full);
             let _ =
-                db.0.query(&sql_acc)
+                db.query(&sql_acc)
                     .bind(("trade_result", trade_result))
                     .await;
 
             if t_ids.is_empty() {
                 // Last trade in the closure → delete the closure
                 println!(
-                    "[COMMAND] delete_trade: deleting empty closure {}",
+                    "[COMMAND] internal_delete_trade: deleting empty closure {}",
                     ct_full_id
                 );
-                let _ = delete_record(&db.0, "cash_transaction", &ct_clean_id).await;
+                let _ = delete_record(db, "cash_transaction", &ct_clean_id).await;
             } else {
                 // Multiple trades → recalculate total based on REMAINING trades
                 let mut new_total = 0.0_f64;
@@ -903,7 +934,7 @@ pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), Stri
                         .to_string();
                     
                     let sql_res = format!("SELECT result FROM trade:⟨{}⟩ LIMIT 1", tid_clean_rem);
-                    if let Ok(mut res_query) = db.0.query(&sql_res).await {
+                    if let Ok(mut res_query) = db.query(&sql_res).await {
                         if let Ok(results) = res_query.take::<Vec<crate::models::SurrealJson>>(0) {
                             if let Some(first) = results.first() {
                                 new_total +=
@@ -919,7 +950,7 @@ pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), Stri
                     "Withdraw"
                 };
                 println!(
-                    "[COMMAND] delete_trade: updating closure {} new_amount={}",
+                    "[COMMAND] internal_delete_trade: updating closure {} new_amount={}",
                     ct_full_id, new_total
                 );
                 let sql_update = format!(
@@ -927,7 +958,7 @@ pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), Stri
                     ct_full_id
                 );
                 let _ =
-                    db.0.query(&sql_update)
+                    db.query(&sql_update)
                         .bind(("amount", new_total))
                         .bind(("t_ids", t_ids))
                         .bind(("tx_type", tx_type.to_string()))
@@ -937,9 +968,24 @@ pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), Stri
     }
 
     // 3. Delete the trade itself
-    println!("[COMMAND] delete_trade: deleting trade {}", full_id);
-    delete_record(&db.0, "trade", &clean_id).await
+    println!("[COMMAND] internal_delete_trade: deleting trade {}", full_id);
+    delete_record(db, "trade", &clean_id).await
 }
+
+#[tauri::command]
+pub async fn delete_trade(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    internal_delete_trade(&db.0, id).await
+}
+
+#[tauri::command]
+pub async fn delete_trades_by_ids(db: State<'_, DbState>, ids: Vec<String>) -> Result<(), String> {
+    println!("[COMMAND] delete_trades_by_ids: count={}", ids.len());
+    for id in ids {
+        internal_delete_trade(&db.0, id).await?;
+    }
+    Ok(())
+}
+
 
 // --- Cash Transactions ---
 
@@ -963,7 +1009,7 @@ pub async fn get_cash_transactions(db: State<'_, DbState>) -> Result<Vec<CashTra
     );
     for tx in transactions.iter().take(10) {
         println!(
-            "  - id: {}, date: {}, type: {:?}, desc: {}, amt: {}, acc: {}, cat: {:?}",
+            "  - id: {}, date: {}, type: {:?}, desc: {}, amt: {}, acc: {:?}, cat: {:?}",
             tx.id, tx.date, tx.r#type, tx.description, tx.amount, tx.account_id, tx.category
         );
     }
@@ -1111,7 +1157,7 @@ pub async fn save_journal_entry(db: State<'_, DbState>, entry: JournalEntry) -> 
     let clean_id = id
         .split(':')
         .last()
-        .unwrap_or(&id)
+        .unwrap_or(id.as_str())
         .replace("⟨", "")
         .replace("⟩", "");
     upsert_record(&db.0, "journal_entry", &clean_id, json).await
@@ -1190,7 +1236,7 @@ pub async fn save_fee(db: State<'_, DbState>, fee: FeeProfile) -> Result<(), Str
     if let Some(obj) = json.as_object_mut() {
         obj.remove("id");
     }
-    let clean_id = id.split(':').last().unwrap_or(&id);
+    let clean_id = id.split(':').last().unwrap_or(id.as_str());
     upsert_record(&db.0, "fee_profile", clean_id, json).await
 }
 
@@ -1224,7 +1270,7 @@ pub async fn save_risk_profile(db: State<'_, DbState>, profile: RiskProfile) -> 
     if let Some(obj) = json.as_object_mut() {
         obj.remove("id");
     }
-    let clean_id = id.split(':').last().unwrap_or(&id);
+    let clean_id = id.split(':').last().unwrap_or(id.as_str());
     upsert_record(&db.0, "risk_profile", clean_id, json).await
 }
 
@@ -1258,7 +1304,8 @@ pub async fn save_modality(db: State<'_, DbState>, modality: Modality) -> Result
     if let Some(obj) = json.as_object_mut() {
         obj.remove("id");
     }
-    let clean_id = id.split(':').last().unwrap_or(&id);
+    let id_str = id.unwrap_or_default();
+    let clean_id = id_str.split(':').last().unwrap_or(&id_str);
     upsert_record(&db.0, "modality", clean_id, json).await
 }
 
@@ -1288,7 +1335,7 @@ pub async fn save_tag(db: State<'_, DbState>, tag: Tag) -> Result<(), String> {
     if let Some(obj) = json.as_object_mut() {
         obj.remove("id");
     }
-    let clean_id = id.split(':').last().unwrap_or(&id);
+    let clean_id = id.split(':').last().unwrap_or(id.as_str());
     upsert_record(&db.0, "tag", clean_id, json).await
 }
 
@@ -1317,7 +1364,7 @@ pub async fn save_indicator(db: State<'_, DbState>, indicator: Indicator) -> Res
     if let Some(obj) = json.as_object_mut() {
         obj.remove("id");
     }
-    let clean_id = id.split(':').last().unwrap_or(&id);
+    let clean_id = id.split(':').last().unwrap_or(id.as_str());
     upsert_record(&db.0, "indicator", clean_id, json).await
 }
 
@@ -1346,7 +1393,7 @@ pub async fn save_timeframe(db: State<'_, DbState>, timeframe: Timeframe) -> Res
     if let Some(obj) = json.as_object_mut() {
         obj.remove("id");
     }
-    let clean_id = id.split(':').last().unwrap_or(&id);
+    let clean_id = id.split(':').last().unwrap_or(id.as_str());
     upsert_record(&db.0, "timeframe", clean_id, json).await
 }
 
@@ -1375,7 +1422,7 @@ pub async fn save_chart_type(db: State<'_, DbState>, chart_type: ChartType) -> R
     if let Some(obj) = json.as_object_mut() {
         obj.remove("id");
     }
-    let clean_id = id.split(':').last().unwrap_or(&id);
+    let clean_id = id.split(':').last().unwrap_or(id.as_str());
     upsert_record(&db.0, "chart_type", clean_id, json).await
 }
 

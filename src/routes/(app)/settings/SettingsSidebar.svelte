@@ -172,6 +172,7 @@
                 {item.title}
             </div>
         {:else}
+            {@const Icon = item.icon}
             <a
                 href={item.href}
                 class={cn(
@@ -182,8 +183,7 @@
                     "justify-start w-full",
                 )}
             >
-                <!-- @ts-ignore -->
-                <item.icon class="w-4 h-4 shrink-0" />
+                <Icon class="w-4 h-4 shrink-0" />
                 <span class="truncate">{item.title}</span>
             </a>
         {/if}

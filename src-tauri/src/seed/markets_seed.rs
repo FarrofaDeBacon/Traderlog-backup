@@ -63,18 +63,17 @@ pub async fn seed_markets(db: &Surreal<Db>, filter: Option<Vec<String>>) -> Resu
         ),
     ];
 
-    for (id, code, name, timezone, trading_days, start, end) in markets {
+    for (id, code, name, timezone, _trading_days, start, end) in markets {
         if let Some(ref f) = filter {
             if !f.contains(&id.to_string()) {
                 continue;
             }
         }
         let market_data = Market {
-            id: id.into(),
+            id: Some(id.into()),
             code: code.into(),
             name: name.into(),
             timezone: timezone.into(),
-            trading_days: trading_days.clone(),
             trading_sessions: vec![TradingSession {
                 start_time: start.into(),
                 end_time: end.into(),

@@ -87,7 +87,7 @@
                 <h2
                     class="text-lg font-bold tracking-tight text-primary flex items-center gap-2"
                 >
-                    <TrendingUp class="h-6 w-6" />
+                    <img src="/branding/navbar-logo.png" alt="Logo" class="h-6 w-6 object-contain" />
                     <span
                         >TraderLog <span
                             class="text-[9px] font-black uppercase text-primary px-1 rounded border border-primary/20 bg-primary/5 align-top"
@@ -193,7 +193,7 @@
             href="/"
             class="flex items-center gap-2 font-semibold overflow-hidden"
         >
-            <TrendingUp class="h-6 w-6 shrink-0" />
+            <img src="/branding/navbar-logo.png" alt="Logo" class="h-6 w-6 shrink-0 object-contain" />
             {#if !sidebarState.isCollapsed}
                 <div class="flex items-center gap-2 overflow-hidden">
                     <span class="truncate">TraderLog Pro</span>

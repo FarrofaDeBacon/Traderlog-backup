@@ -243,6 +243,29 @@
         const idStr = irpfStore.getId(id);
         await irpfStore.deleteLoss(idStr);
     }
+
+    let expandedMonths = $state(new Set<string>());
+
+    $effect(() => {
+        if (hierarchicalAppraisals.length > 0) {
+            untrack(() => {
+                const today = new Date();
+                const currentMonth = today.getMonth() + 1;
+                const currentYear = today.getFullYear();
+                const currentMonthKey = `month-${currentMonth}-${currentYear}`;
+
+                if (expandedMonths.size === 0) {
+                    if (hierarchicalAppraisals.some(m => m.key === currentMonthKey)) {
+                        expandedMonths.add(currentMonthKey);
+                    } else {
+                        // Fallback to latest month
+                        expandedMonths.add(hierarchicalAppraisals[0].key);
+                    }
+                    expandedMonths = new Set(expandedMonths);
+                }
+            });
+        }
+    });
 </script>
 
 <div
@@ -573,6 +596,8 @@
                     data={hierarchicalAppraisals}
                     flatMode={true}
                     omitDays={true}
+                    bind:expandedMonths
+                    mutualExclusion={true}
                 >
                     {#snippet monthBadges(month: any)}
                         {@const totalPayable = month.originalItems.reduce(

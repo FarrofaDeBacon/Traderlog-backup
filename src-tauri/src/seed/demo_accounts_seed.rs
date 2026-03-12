@@ -60,7 +60,7 @@ pub async fn seed_accounts(db: &Surreal<Db>, _filter: Option<Vec<String>>) -> Re
             account_type: account_type.into(),
             broker: "Demo Broker".into(),
             account_number: format!("DEMO-{}", id_suffix.to_uppercase()),
-            currency: currency.into(),
+            currency_id: Some(format!("currency:{}", currency)),
             balance: balance,
             custom_logo: None,
         };
@@ -86,7 +86,7 @@ pub async fn seed_accounts(db: &Surreal<Db>, _filter: Option<Vec<String>>) -> Re
                 amount: balance,
                 r#type: "Deposit".into(),
                 description: "Initial Balance".into(),
-                account_id: id_part.clone(),
+                account_id: Some(id_part.clone()),
                 trade_ids: None,
                 category: None,
                 system_linked: None,

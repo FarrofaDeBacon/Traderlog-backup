@@ -31,7 +31,7 @@ This command handles production deployment with pre-flight checks, deployment ex
 Before any deployment:
 
 ```markdown
-## 🚀 Pre-Deploy Checklist
+## ðŸš€ Pre-Deploy Checklist
 
 ### Code Quality
 - [ ] No TypeScript errors (`npx tsc --noEmit`)
@@ -61,42 +61,42 @@ Before any deployment:
 ## Deployment Flow
 
 ```
-┌─────────────────┐
-│  /deploy        │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Pre-flight     │
-│  checks         │
-└────────┬────────┘
-         │
-    Pass? ──No──► Fix issues
-         │
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚  /deploy        â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+         â”‚
+         â–¼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚  Pre-flight     â”‚
+â”‚  checks         â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+         â”‚
+    Pass? â”€â”€Noâ”€â”€â–º Fix issues
+         â”‚
         Yes
-         │
-         ▼
-┌─────────────────┐
-│  Build          │
-│  application    │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Deploy to      │
-│  platform       │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Health check   │
-│  & verify       │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  ✅ Complete    │
-└─────────────────┘
+         â”‚
+         â–¼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚  Build          â”‚
+â”‚  application    â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+         â”‚
+         â–¼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚  Deploy to      â”‚
+â”‚  platform       â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+         â”‚
+         â–¼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚  Health check   â”‚
+â”‚  & verify       â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+         â”‚
+         â–¼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚  âœ… Complete    â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ---
@@ -106,7 +106,7 @@ Before any deployment:
 ### Successful Deploy
 
 ```markdown
-## 🚀 Deployment Complete
+## ðŸš€ Deployment Complete
 
 ### Summary
 - **Version:** v1.2.3
@@ -115,8 +115,8 @@ Before any deployment:
 - **Platform:** Vercel
 
 ### URLs
-- 🌐 Production: https://app.example.com
-- 📊 Dashboard: https://vercel.com/project
+- ðŸŒ Production: https://app.example.com
+- ðŸ“Š Dashboard: https://vercel.com/project
 
 ### What Changed
 - Added user profile feature
@@ -124,15 +124,15 @@ Before any deployment:
 - Updated dependencies
 
 ### Health Check
-✅ API responding (200 OK)
-✅ Database connected
-✅ All services healthy
+âœ… API responding (200 OK)
+âœ… Database connected
+âœ… All services healthy
 ```
 
 ### Failed Deploy
 
 ```markdown
-## ❌ Deployment Failed
+## âŒ Deployment Failed
 
 ### Error
 Build failed at step: TypeScript compilation

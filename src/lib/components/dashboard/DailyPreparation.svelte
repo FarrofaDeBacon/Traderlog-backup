@@ -87,9 +87,9 @@
                 }
                 return item;
             });
-            toast.success("Notícias atualizadas via IA!");
+            toast.success($t("strategy.dashboard.checklist.newsUpdateSuccess"));
         } catch (e) {
-            toast.error("Erro ao buscar notícias: " + (e as Error).message);
+            toast.error($t("strategy.dashboard.checklist.newsUpdateError") + ": " + (e as Error).message);
         } finally {
             newsLoading = false;
         }
@@ -173,7 +173,7 @@
             return { ...i, checked: false, inputValue: "" };
         });
         showWidget = false;
-        toast.info("Checklist resetado para hoje.");
+        toast.info($t("strategy.dashboard.checklist.resetSuccess"));
     }
 
     function startTrading() {
