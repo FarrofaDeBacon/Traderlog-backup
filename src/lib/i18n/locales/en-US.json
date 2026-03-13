@@ -747,8 +747,11 @@
                 "goToAssetTypes": "Go To Asset Types",
                 "table": {
                     "assetType": "Asset Type",
-                    "empty": "Empty",
-                    "market": "Market"
+                    "empty": "No assignments found.",
+                    "market": "Market",
+                    "fiscalProfile": "Tax Profile",
+                    "unknownProfile": "Unknown Profile",
+                    "defaultExempt": "Default / Exempt"
                 },
                 "tip": {
                     "text": "Tax assignments help in automatic calculation.",
@@ -1054,7 +1057,10 @@
                 "symbolPlaceholder": "WIN",
                 "type": "Type",
                 "typePlaceholder": "Select",
-                "useTypeDefault": "Use from Asset Type"
+                "useTypeDefault": "Use from Asset Type",
+                "isRoot": "Root Asset",
+                "rootAsset": "Link to Root",
+                "rootAssetPlaceholder": "Select a root asset"
             },
             "groups": {
                 "others": "Others"
@@ -1069,7 +1075,9 @@
                 "suggestedName": "Suggested Name",
                 "symbol": "Symbol",
                 "title": "Import Assets from Profit RTD",
-                "type": "Type"
+                "type": "Type",
+                "alreadyRegistered": "Already Registered",
+                "success": "{count} assets imported successfully!"
             },
             "importRTD": "Import from RTD",
             "labels": {

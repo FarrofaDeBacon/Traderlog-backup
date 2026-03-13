@@ -748,7 +748,10 @@
                 "table": {
                     "assetType": "Tipo de Activo",
                     "empty": "No hay tipos de activos configurados.",
-                    "market": "Mercado"
+                    "market": "Mercado",
+                    "fiscalProfile": "Perfil Fiscal",
+                    "unknownProfile": "Perfil Desconocido",
+                    "defaultExempt": "Predeterminado / Exento"
                 },
                 "tip": {
                     "text": "El cambio del perfil fiscal solo afecta a los nuevos cálculos y cierres de operaciones.",
@@ -1054,7 +1057,10 @@
                 "symbolPlaceholder": "WIN",
                 "type": "Tipo",
                 "typePlaceholder": "Selecciona",
-                "useTypeDefault": "Usar del Tipo de Activo"
+                "useTypeDefault": "Usar del Tipo de Activo",
+                "isRoot": "Activo Raíz",
+                "rootAsset": "Vincular a la Raíz",
+                "rootAssetPlaceholder": "Seleccione un activo raíz"
             },
             "groups": {
                 "others": "Others"
@@ -1069,7 +1075,9 @@
                 "suggestedName": "Nome Sugerido",
                 "symbol": "Símbolo",
                 "title": "Importar Ativos do Profit RTD",
-                "type": "Tipo"
+                "type": "Tipo",
+                "alreadyRegistered": "Ya Registrado",
+                "success": "¡{count} activos importados con éxito!"
             },
             "importRTD": "Importar do RTD",
             "labels": {

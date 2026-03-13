@@ -170,7 +170,7 @@
 <!-- Desktop Sidebar -->
 <!-- Desktop Sidebar -->
 <aside
-    class="hidden border-r bg-sidebar/70 backdrop-blur-xl md:flex md:flex-col h-screen sticky top-0 transition-all duration-300 relative group"
+    class="hidden border-r bg-sidebar/40 backdrop-blur-xl md:flex md:flex-col min-h-screen transition-all duration-300 relative group"
 >
     <!-- Floating Toggle Button -->
     <Button
@@ -208,7 +208,7 @@
             <ModeToggle />
         </div>
     </div>
-    <div class="flex-1 overflow-y-auto overflow-x-hidden">
+    <div class="flex-1 overflow-x-hidden">
         <nav class="grid gap-1 px-2 pt-4">
             {#if !sidebarState.isCollapsed}
                 <div

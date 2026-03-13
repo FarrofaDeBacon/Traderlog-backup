@@ -120,6 +120,7 @@
                     asset_type_id: item.typeId,
                     point_value: pointValue,
                     default_fee_id: "",
+                    is_root: false,
                 },
                 false, // Don't save individually
             );
@@ -129,7 +130,7 @@
         await settingsStore.saveAssets();
         await settingsStore.loadData(true); // Refresh to ensure sync (silent mode)
 
-        toast.success(`${toImport.length} ativos importados com sucesso!`);
+        toast.success($t("settings.assets.importDialog.success", { values: { count: toImport.length } }));
         open = false;
     }
 </script>
@@ -244,7 +245,7 @@
                                             class="text-xs text-muted-foreground flex items-center justify-end"
                                         >
                                             <Check class="w-3 h-3 mr-1" />
-                                            Já Cadastrado
+                                            {$t("settings.assets.importDialog.alreadyRegistered")}
                                         </span>
                                     {/if}
                                 </Table.Cell>

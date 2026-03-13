@@ -1071,11 +1071,13 @@
         "fileSelected": "Arquivo selecionado: {path}",
         "importSelected": "Importar Selecionados ({count})",
         "noAssets": "Nenhum ativo novo detectado no RTD.",
-        "selectExcel": "Selecionar Arquivo Excel",
+      "selectExcel": "Selecionar Arquivo Excel",
         "suggestedName": "Nome Sugerido",
         "symbol": "Símbolo",
         "title": "Importar Ativos do Profit RTD",
-        "type": "Tipo"
+        "type": "Tipo",
+        "alreadyRegistered": "Já Cadastrado",
+        "success": "{count} ativos importados com sucesso!"
       },
       "importRTD": "Importar do RTD",
       "labels": {
