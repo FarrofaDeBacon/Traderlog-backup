@@ -743,18 +743,21 @@
   "settings": {
     "fiscal": {
       "assignments": {
-        "description": "Description",
-        "goToAssetTypes": "Go To Asset Types",
+        "description": "Atribua perfis fiscais aos tipos de ativos para automatizar o cálculo de impostos.",
+        "goToAssetTypes": "Ir para Tipos de Ativo",
         "table": {
-          "assetType": "Asset Type",
-          "empty": "Empty",
-          "market": "Market"
+          "assetType": "Tipo de Ativo",
+          "empty": "Nenhuma atribuição encontrada.",
+          "market": "Mercado",
+          "fiscalProfile": "Perfil Fiscal",
+          "unknownProfile": "Perfil Desconhecido",
+          "defaultExempt": "Padrão / Isento"
         },
         "tip": {
-          "text": "Text",
-          "title": "Title"
+          "text": "As atribuições são baseadas nos Tipos de Ativo. Você pode alterar o perfil fiscal editando o Tipo de Ativo correspondente.",
+          "title": "Dica:"
         },
-        "title": "Title"
+        "title": "Atribuições Fiscais"
       },
       "description": "Configure as alíquotas de imposto (IRPF) para cada tipo de ativo e modalidade.",
       "mappings": {
@@ -1042,11 +1045,11 @@
       "edit": "Editar Ativo",
       "empty": "Nenhum ativo encontrado",
       "form": {
-        "brokerageProfile": "Brokerage Profile",
-        "fiscalProfile": "Fiscal Profile",
+        "brokerageProfile": "Perfil de Corretagem",
+        "fiscalProfile": "Perfil Fiscal",
         "name": "Nome",
         "namePlaceholder": "Mini Índice",
-        "pointValue": "Valor Ponto",
+        "pointValue": "Valor do Ponto",
         "save": "Salvar",
         "specificFee": "Taxa Específica",
         "specificFeePlaceholder": "Usar do Tipo de Ativo",
@@ -1054,7 +1057,10 @@
         "symbolPlaceholder": "WIN",
         "type": "Tipo",
         "typePlaceholder": "Selecione",
-        "useTypeDefault": "Usar do Tipo de Ativo"
+        "useTypeDefault": "Usar do Tipo de Ativo",
+        "isRoot": "Ativo Raiz",
+        "rootAsset": "Vincular à Raiz",
+        "rootAssetPlaceholder": "Selecione um ativo raiz"
       },
       "groups": {
         "others": "Others"
