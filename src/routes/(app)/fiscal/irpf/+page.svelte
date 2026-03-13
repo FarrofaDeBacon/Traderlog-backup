@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { onMount, untrack } from "svelte";
     import { toast } from "svelte-sonner";
     import { _ as t } from "svelte-i18n";
     import * as Card from "$lib/components/ui/card";
@@ -22,6 +22,8 @@
         ChevronRight,
         CheckCircle2,
         AlertCircle,
+        Search,
+        Filter,
     } from "lucide-svelte";
     import { irpfStore } from "$lib/stores/irpfStore.svelte";
     import TaxEvolutionChart from "$lib/components/dashboard/TaxEvolutionChart.svelte";
@@ -47,6 +49,8 @@
 
     let currentMonth = new Date().getMonth() + 1;
     let selectedMonth = $state<number | null>(null); // null = "Todos"
+    let statusFilter = $state<"all" | "pending">("all");
+    let searchText = $state("");
 
     // Define months *before* using in derived stores
     const months = [
@@ -108,16 +112,35 @@
     });
 
     // Filter appraisals by selected month and hide paid ones
-    let filteredAppraisals = $derived(
-        (selectedMonth === null
-            ? irpfStore.appraisals
-            : irpfStore.appraisals.filter(
-                  (a) => Number(a.period_month) === selectedMonth,
-              )
-        ).filter(
+    let filteredAppraisals = $derived.by(() => {
+        let list = irpfStore.appraisals.filter(
             (a) => Number(a.period_year) === Number(irpfStore.selectedYear),
-        ),
-    );
+        );
+
+        // Apply Month Filter + Carry-over Pending
+        if (selectedMonth !== null) {
+            list = list.filter(a => 
+                Number(a.period_month) === selectedMonth || 
+                (a.status === 'Pending' && a.total_payable > 0)
+            );
+        }
+
+        // Apply Status Filter
+        if (statusFilter === "pending") {
+            list = list.filter(a => a.status === 'Pending');
+        }
+
+        // Apply Search
+        if (searchText.trim()) {
+            const q = searchText.toLowerCase();
+            list = list.filter(a => 
+                (a.trade_type || "").toLowerCase().includes(q) ||
+                (a.revenue_code || "").toLowerCase().includes(q)
+            );
+        }
+
+        return list;
+    });
 
     let hierarchicalAppraisals = $derived.by(() => {
         const dataByMonth: Record<number, any> = {};
@@ -565,6 +588,34 @@
                     {/each}
                 </Tabs.List>
             </Tabs.Root>
+
+            <!-- Search and Status Filters -->
+            <div class="flex flex-col md:flex-row gap-4 mb-6 items-center">
+                <div class="relative w-full md:w-96 group">
+                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                    <Input 
+                        placeholder="Buscar por tipo ou código..."
+                        bind:value={searchText}
+                        class="pl-10 bg-muted/20 border-border/30 focus-visible:ring-primary/20"
+                    />
+                </div>
+
+                <div class="flex items-center gap-2 ml-auto">
+                    <span class="text-[10px] font-black uppercase text-muted-foreground tracking-widest hidden sm:block">Filtro:</span>
+                    <Select.Root type="single" bind:value={statusFilter}>
+                        <Select.Trigger class="w-40 bg-muted/20 border-border/30 h-10">
+                            <span class="flex items-center gap-2">
+                                <Filter class="w-3.5 h-3.5 text-muted-foreground" />
+                                {statusFilter === 'all' ? 'Todas' : 'Somente Pendentes'}
+                            </span>
+                        </Select.Trigger>
+                        <Select.Content>
+                            <Select.Item value="all">Todas</Select.Item>
+                            <Select.Item value="pending">Pendentes</Select.Item>
+                        </Select.Content>
+                    </Select.Root>
+                </div>
+            </div>
             {#if irpfStore.loading}
                 <div class="p-8 text-center text-muted-foreground">
                     {$t("general.loading")}
@@ -652,6 +703,19 @@
 
                     {#snippet monthContent(month: any)}
                         <div class="space-y-2">
+                            <!-- Column Headers -->
+                            <div class="hidden md:flex items-center justify-between p-3 border-b border-border/10 bg-muted/5 rounded-t-lg">
+                                <div class="flex items-center gap-3 w-32">
+                                    <span class="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Tipo de Operação</span>
+                                </div>
+                                <div class="flex items-center gap-8 pr-4">
+                                    <span class="text-[9px] font-black uppercase text-muted-foreground tracking-widest w-24 text-right">Lucro Líquido</span>
+                                    <span class="text-[9px] font-black uppercase text-muted-foreground tracking-widest w-24 text-right">Total a Pagar</span>
+                                    <span class="text-[9px] font-black uppercase text-muted-foreground tracking-widest w-24 text-right">Compensado</span>
+                                    <span class="text-[9px] font-black uppercase text-muted-foreground tracking-widest w-24 text-center">Status</span>
+                                    <span class="text-[9px] font-black uppercase text-muted-foreground tracking-widest w-24 text-right">Ações</span>
+                                </div>
+                            </div>
                             {#each month.originalItems as item}
                                 {@const revenueCode =
                                     item.trade_type === "DayTrade"

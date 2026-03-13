@@ -872,7 +872,16 @@
                                     <div
                                         class="flex items-center justify-end gap-1"
                                     >
-                                        {#if tx.trade_ids && tx.trade_ids.length > 0}
+                                        {#if tx.category === 'TaxPayment' || tx.category === 'TaxRefund'}
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                class="h-7 w-7 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
+                                                onclick={() => openDarfDetails(tx.id)}
+                                            >
+                                                <Eye class="h-3.5 w-3.5" />
+                                            </Button>
+                                        {:else if tx.trade_ids && tx.trade_ids.length > 0}
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
