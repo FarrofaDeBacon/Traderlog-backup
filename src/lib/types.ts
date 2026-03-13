@@ -85,6 +85,7 @@ export type Account = {
     broker: string;
     account_number: string;
     currency: string;
+    currency_id?: string;
     balance: number;
     custom_logo: string | null;
 };

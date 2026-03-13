@@ -4,8 +4,8 @@ use chrono::{Duration, Utc};
 use surrealdb::engine::local::Db;
 use surrealdb::Surreal;
 
-pub async fn seed_accounts(db: &Surreal<Db>, _filter: Option<Vec<String>>) -> Result<(), String> {
-    println!("[SEED] Criando Contas de Demonstração (B3 Only)...");
+pub async fn seed_accounts(db: &Surreal<Db>, filter: Option<Vec<String>>) -> Result<(), String> {
+    println!("[SEED] Criando Contas de Demonstração (Filter: {:?})...", filter);
 
     let accounts = vec![
         (
@@ -54,6 +54,21 @@ pub async fn seed_accounts(db: &Surreal<Db>, _filter: Option<Vec<String>>) -> Re
 
     for (id_suffix, name, currency, account_type, balance) in accounts {
         let id_part = format!("account:{}", id_suffix);
+        
+        // Skip if filter is present and doesn't contain this ID
+        if let Some(ref f) = filter {
+            if !f.contains(&id_part) {
+                // If filter is "account:real", we include all "Real" accounts
+                if f.contains(&"account:real".to_string()) && account_type == "Real" {
+                    // keep going
+                } else if f.contains(&"account:demo".to_string()) && account_type == "Demo" {
+                    // keep going
+                } else {
+                    continue;
+                }
+            }
+        }
+
         let account = Account {
             id: id_part.clone().into(),
             nickname: name.into(),
@@ -61,6 +76,7 @@ pub async fn seed_accounts(db: &Surreal<Db>, _filter: Option<Vec<String>>) -> Re
             broker: "Demo Broker".into(),
             account_number: format!("DEMO-{}", id_suffix.to_uppercase()),
             currency_id: Some(format!("currency:{}", currency)),
+            currency: None,
             balance: balance,
             custom_logo: None,
         };

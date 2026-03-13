@@ -754,9 +754,9 @@
                                     </div>
 
                                     <div
-                                        class="flex flex-col sm:flex-row items-end sm:items-center gap-4 sm:gap-8 flex-wrap justify-end"
+                                        class="flex items-center gap-8 pr-4"
                                     >
-                                        <div class="flex flex-col items-end">
+                                        <div class="flex flex-col items-end w-24">
                                             <span
                                                 class="text-[9px] text-muted-foreground uppercase font-bold"
                                                 >Líquido</span
@@ -772,7 +772,7 @@
                                                 )}
                                             </span>
                                         </div>
-                                        <div class="flex flex-col items-end">
+                                        <div class="flex flex-col items-end w-24">
                                             <span
                                                 class="text-[9px] text-muted-foreground uppercase font-bold"
                                                 title={item.tax_accumulated > 0
@@ -790,7 +790,7 @@
                                             </span>
                                         </div>
                                         <div
-                                            class="flex flex-col items-end hidden md:flex"
+                                            class="flex flex-col items-end hidden md:flex w-24"
                                         >
                                             <span
                                                 class="text-[9px] text-muted-foreground uppercase font-bold"
@@ -807,10 +807,7 @@
                                             </span>
                                         </div>
 
-                                        <div
-                                            class="flex items-center gap-3 min-w-[150px] justify-between border-l border-border/50 pl-4 ml-2"
-                                        >
-                                            <div class="text-center">
+                                        <div class="w-24 text-center">
                                                 {#if item.status === "Paid"}
                                                     <span
                                                         class="px-2 py-1 rounded text-[10px] font-bold bg-green-500/10 text-green-500 border border-green-500/20 uppercase"
@@ -836,11 +833,10 @@
                                                         )}
                                                     </span>
                                                 {/if}
-                                            </div>
-
-                                            <div
-                                                class="flex items-center gap-1"
-                                            >
+                                        </div>
+                                        <div
+                                            class="w-24 flex items-center justify-end gap-1"
+                                        >
                                                 {#if item.status !== "Paid" && item.total_payable > 0}
                                                     {#if existingDarf}
                                                         <Button
@@ -923,7 +919,6 @@
                                                         />
                                                     </Button>
                                                 {/if}
-                                            </div>
                                         </div>
                                     </div>
                                 </div>

@@ -407,6 +407,8 @@ pub struct Account {
     pub account_number: String,
     #[serde(default, deserialize_with = "deserialize_id_opt")]
     pub currency_id: Option<String>,
+    #[serde(default)]
+    pub currency: Option<String>, // Virtual field for code during reads
     pub balance: f64,
     #[serde(default, deserialize_with = "deserialize_id_opt")]
     pub custom_logo: Option<String>,
@@ -421,7 +423,7 @@ impl ToDto for Account {
             account_type: self.account_type.clone(),
             broker: self.broker.clone(),
             account_number: self.account_number.clone(),
-            currency: "".to_string(), // Placeholder or from internal state
+            currency: self.currency.clone().unwrap_or_default(),
             balance: self.balance,
             custom_logo: self.custom_logo.clone(),
         }

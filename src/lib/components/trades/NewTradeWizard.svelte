@@ -41,6 +41,7 @@
         ExternalLink,
         Maximize2,
     } from "lucide-svelte";
+    import { ensureLocalOffset } from "$lib/utils";
 
     let {
         trade = null,
@@ -937,10 +938,8 @@
         isSubmitting = true;
         try {
             const tradeData: any = {
-                // Save as ISO string to preserve time for editing later
-                date: (formData.entry_date as string)?.includes("T")
-                    ? formData.entry_date + ":00Z"
-                    : formData.entry_date + "T00:00:00Z",
+                // Use ensureLocalOffset to preserve local time intent and avoid timezone shifts
+                date: ensureLocalOffset(formData.entry_date as string),
                 asset_symbol: cleanAsset,
                 asset_type_id: selectedAssetTypeId,
                 strategy_id: formData.strategy_id,
@@ -951,11 +950,9 @@
                 entry_price: formData.entry_price,
                 exit_price: formData.exit_price,
                 exit_date: formData.exit_date
-                    ? (formData.exit_date as string).includes("T")
-                        ? formData.exit_date + ":00Z"
-                        : formData.exit_date + "T00:00:00Z"
+                    ? ensureLocalOffset(formData.exit_date as string)
                     : formData.exit_price !== null
-                      ? new Date().toISOString() // Fallback to now if closed but no date
+                      ? ensureLocalOffset(new Date().toISOString()) // Current local ISO with offset
                       : null,
                 fee_total: formData.fees,
                 notes: formData.entry_rationale,

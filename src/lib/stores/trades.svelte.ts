@@ -236,7 +236,12 @@ class TradesStore {
 
     getTotalBalanceBRL(accounts: Account[], currencies: Currency[]) {
         return accounts.reduce((acc, curr) => {
-            const currencyObj = currencies.find(c => c.code === curr.currency);
+            // Find currency by code or by ID
+            const currencyObj = currencies.find(c => 
+                c.code === curr.currency || 
+                c.id === curr.currency_id ||
+                c.id === (curr.currency_id?.includes(":") ? curr.currency_id : `currency:${curr.currency_id}`)
+            );
             const rate = currencyObj?.exchange_rate || 1;
             return acc + (Number(curr.balance) || 0) * rate;
         }, 0);
@@ -245,20 +250,19 @@ class TradesStore {
     getConvertedTradeResult(trade: Trade, accounts: Account[], currencies: Currency[]): number {
         const account = accounts.find(a => a.id === trade.account_id);
 
-        // Robust parsing for result, handling potential string formats like "R$ 1.000,00"
         let rawResult = trade.result;
         if (typeof rawResult === 'string') {
-            // Remove non-numeric chars except minus and dot/comma
-            // Assuming standard format, we might need to handle localization more carefully if mixed
-            // But for now, stripping currency symbols is key.
-            // If comma is used as decimal separator (pt-BR), replace with dot
             rawResult = parseFloat(String(rawResult).replace(/[^\d,-]/g, "").replace(",", "."));
         }
         const numericResult = Number(rawResult) || 0;
 
         if (!account) return numericResult;
 
-        const currency = currencies.find(c => c.code === account.currency);
+        const currency = currencies.find(c => 
+            c.code === account.currency || 
+            c.id === account.currency_id ||
+            c.id === (account.currency_id?.includes(":") ? account.currency_id : `currency:${account.currency_id}`)
+        );
         const rate = currency?.exchange_rate || 1.0;
 
         return numericResult * rate;

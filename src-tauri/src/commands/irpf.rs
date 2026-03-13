@@ -4,7 +4,7 @@ use crate::logic::RuleBucket;
 use crate::models::irpf::{TaxAppraisal, TaxDarf, TaxLoss};
 use crate::models::{Asset, AssetType, TaxMapping, TaxProfile, TaxProfileEntry, TaxRule, SurrealJson};
 use chrono::{Datelike, NaiveDate};
-use serde_json::{self, Value};
+use serde_json;
 use surrealdb::engine::local::Db;
 use surrealdb::Surreal;
 use crate::services::position_service::{PositionService, Position};
@@ -112,7 +112,7 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
 
     println!("[IRPF] Loaded: {} assets, {} types, {} profile_entries, {} rules", assets.len(), asset_types.len(), profile_entries.len(), rules.len());
 
-    // 6. Normalize IDs from SurrealDB format
+    // 6. Normalize IDs and Symbols
     let normalize_id = |label: &str, s: &str| -> String {
         let mut clean = s.to_string();
         if clean.contains("String:") { clean = clean.split("String:").last().unwrap_or(&clean).to_string(); }
@@ -120,6 +120,21 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
         let res = clean.split(':').last().unwrap_or(clean.as_str()).to_string();
         if !s.is_empty() { println!("[IRPF] normalize_id({}): '{}' -> '{}'", label, s, res); }
         res
+    };
+
+    let normalize_symbol = |s: &str| -> String {
+        if s.len() < 4 { return s.to_string(); }
+        // Matches WINJ24 (ABC X 24)
+        // Check if ends with [A-Z][0-9][0-9]
+        let bytes = s.as_bytes();
+        let len = bytes.len();
+        if len >= 3 {
+            let last_3 = &bytes[len-3..];
+            if last_3[0].is_ascii_uppercase() && last_3[1].is_ascii_digit() && last_3[2].is_ascii_digit() {
+                return s[..len-3].to_string();
+            }
+        }
+        s.to_string()
     };
 
     // 7. Find tax rule for (profile, modality) pair
@@ -139,7 +154,6 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
         }
     };
 
-    // 8. Group trades into rule buckets
     // 8. Group trades into rule buckets using PM from PositionService
     let mut positions: HashMap<String, Position> = HashMap::new();
     let mut buckets: HashMap<String, RuleBucket> = HashMap::new();
@@ -162,19 +176,36 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
                 trade_mod_id = if !ed.is_empty() && ed == xd { "mod1".to_string() } else { "mod2".to_string() };
             }
 
+            // Find point_value for this asset (ID match or Symbol fallback with normalization)
+            let norm_symbol = normalize_symbol(&symbol);
+            let point_value = assets.iter().find(|a| {
+                if let Some(aid) = &trade.asset_id {
+                    let clean_aid = normalize_id("AssetId", aid);
+                    normalize_id("AssetTblId", a.id.as_deref().unwrap_or("")) == clean_aid || a.symbol == symbol || normalize_symbol(&a.symbol) == norm_symbol
+                } else {
+                    a.symbol == symbol || normalize_symbol(&a.symbol) == norm_symbol
+                }
+            }).map(|a| a.point_value).unwrap_or(1.0);
+
             // Calculate ACTUAL result using PM (if SwingTrade) or Entry (if DayTrade)
             let basis = if trade_mod_id == "mod1" { trade.entry_price } else { current_pm };
-            let real_result = PositionService::calculate_trade_result(&trade, basis);
+            let real_result = PositionService::calculate_trade_result(&trade, basis, point_value);
             
-            println!("[IRPF] Trade {} result calculated: basis={}, result={}", trade.id, basis, real_result);
+            println!("[IRPF] Trade {} result calculated: symbol={}, basis={}, point_value={}, result={}", trade.id, symbol, basis, point_value, real_result);
 
             // Find tax profile
             let mut final_profile_id: Option<String> = None;
-            if let Some(aid) = &trade.asset_id {
-                let clean_aid = normalize_id("AssetId", aid);
-                if let Some(asset) = assets.iter().find(|a| normalize_id("AssetTblId", a.id.as_deref().unwrap_or("")) == clean_aid || a.symbol == symbol) {
-                    if let Some(pid) = &asset.tax_profile_id { final_profile_id = Some(pid.clone()); }
+            let asset_match = assets.iter().find(|a| {
+                if let Some(aid) = &trade.asset_id {
+                    let clean_aid = normalize_id("AssetId", aid);
+                    normalize_id("AssetTblId", a.id.as_deref().unwrap_or("")) == clean_aid || a.symbol == symbol || normalize_symbol(&a.symbol) == norm_symbol
+                } else {
+                    a.symbol == symbol || normalize_symbol(&a.symbol) == norm_symbol
                 }
+            });
+
+            if let Some(asset) = asset_match {
+                if let Some(pid) = &asset.tax_profile_id { final_profile_id = Some(pid.clone()); }
             }
             if final_profile_id.is_none() {
                 if let Some(atid) = &trade.asset_type_id {
@@ -200,11 +231,6 @@ pub async fn calculate_monthly_tax(db: State<'_, DbState>, month: u8, year: u16)
                     else { entry.gross_loss += real_result.abs(); }
 
                     if rule.trade_type != "DayTrade" {
-                        let point_value = trade.asset_id.as_ref().and_then(|aid| {
-                            let clean_aid = normalize_id("AssetId", aid);
-                            assets.iter().find(|a| normalize_id("AssetTblId", a.id.as_deref().unwrap_or("")) == clean_aid).map(|a| a.point_value)
-                        }).unwrap_or(1.0);
-                        
                         if let Some(price) = trade.exit_price {
                              entry.sales_total += price * trade.quantity * point_value;
                         }
@@ -444,7 +470,8 @@ pub async fn save_appraisal(
         let clean_id = id_str.split(':').last().unwrap_or(id_str).to_string();
         println!("[IRPF] Updating existing record: {}", clean_id);
         
-        client.update(("tax_appraisal", clean_id))
+        data_to_save.sanitize();
+        client.update::<Option<TaxAppraisal>>(("tax_appraisal", clean_id))
             .merge(data_to_save)
             .await
             .map_err(|e| {
@@ -877,9 +904,9 @@ pub async fn mark_darf_paid(
             };
             let a_id = if a_parts.len() > 1 { a_parts[1] } else { aid };
 
-            // CRITICAL FIX: Strip ID to prevent SurrealDB error
+            // CRITICAL FIX: Strip ID and internal metadata to prevent SurrealDB error
             let mut appraisal_content = appraisal.clone();
-            appraisal_content.id = None;
+            appraisal_content.sanitize();
 
             let _: Option<TaxAppraisal> =
                 db.0.update((a_tb, a_id))
@@ -1192,9 +1219,9 @@ pub async fn unpay_darf(db: State<'_, DbState>, id: String) -> Result<crate::mod
     darf.account_id = None;
     darf.transaction_id = None;
 
-    // CRITICAL FIX: Strip ID
+    // CRITICAL FIX: Strip ID and internal metadata
     let mut darf_content = darf.clone();
-    darf_content.id = None;
+    darf_content.sanitize();
 
     let clean_id = id.split(':').last().unwrap_or(&id).to_string();
     let updated: Option<TaxDarf> =
@@ -1226,9 +1253,9 @@ pub async fn unpay_darf(db: State<'_, DbState>, id: String) -> Result<crate::mod
             };
             let a_id = if a_parts.len() > 1 { a_parts[1] } else { aid };
 
-            // CRITICAL FIX: Strip ID
+            // CRITICAL FIX: Strip ID and internal metadata
             let mut appraisal_content = appraisal.clone();
-            appraisal_content.id = None;
+            appraisal_content.sanitize();
 
             let _: Option<TaxAppraisal> =
                 db.0.update((a_tb, a_id))

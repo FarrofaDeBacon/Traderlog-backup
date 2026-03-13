@@ -10,6 +10,8 @@
     } from "lucide-svelte";
     import { t, locale } from "svelte-i18n";
     import type { TaxDarf } from "$lib/stores/irpfStore.svelte";
+    import { tradesStore } from "$lib/stores/trades.svelte";
+    import TradeDetailView from "./TradeDetailView.svelte";
 
     let { darf, appraisal, isComplementary } = $props<{
         darf: TaxDarf | null;
@@ -23,6 +25,18 @@
             currency: "BRL",
         }).format(value);
     }
+
+    const filteredTrades = $derived.by(() => {
+        if (!appraisal?.trade_ids) return [];
+        
+        // Match trades from store by their normalized IDs
+        const appraisalTradeIds = appraisal.trade_ids.map((id: string) => tradesStore.normalizeId(id));
+        
+        return tradesStore.trades.filter(t => {
+            const normalizedId = tradesStore.normalizeId(t.id);
+            return appraisalTradeIds.includes(normalizedId);
+        }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    });
 </script>
 
 <div class="space-y-6">
@@ -197,6 +211,30 @@
             </span>
         </div>
     </div>
+
+    <!-- Operations Table -->
+    {#if appraisal}
+        <div class="space-y-3">
+            <h4 class="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                <Wallet class="w-3.5 h-3.5" />
+                {$t("finance.darfDetails.operations")}
+            </h4>
+            
+            <TradeDetailView 
+                trades={filteredTrades} 
+                currency="BRL" 
+            />
+            
+            {#if filteredTrades.length === 0 && appraisal.trade_ids?.length > 0}
+                <div class="p-4 bg-amber-500/5 border border-amber-500/20 rounded-lg flex items-center gap-2">
+                    <Info class="w-4 h-4 text-amber-500" />
+                    <span class="text-[10px] font-bold text-amber-500 uppercase">
+                        Aviso: {appraisal.trade_ids.length} operações vinculadas, mas não encontradas no histórico local.
+                    </span>
+                </div>
+            {/if}
+        </div>
+    {/if}
 
     <!-- Payment Info -->
     {#if darf && darf.status === "Paid"}

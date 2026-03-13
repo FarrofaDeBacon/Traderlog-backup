@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
-  import { t } from "svelte-i18n";
+  import { t, locale } from "svelte-i18n";
   import { settingsStore } from "$lib/stores/settings.svelte";
   import { tradesStore } from "$lib/stores/trades.svelte";
   import EChart from "$lib/components/ui/echart.svelte";
@@ -139,7 +139,11 @@
         rFactorCount = 0;
 
       const equity = sorted.map((t) => {
-        const res = Number(t.result) || 0;
+        const res = tradesStore.getConvertedTradeResult(
+          t,
+          settingsStore.accounts,
+          settingsStore.currencies,
+        );
         current += res;
 
         // Drawdown Logic
@@ -233,9 +237,10 @@
   }
 
   function formatCurrency(val: number) {
-    return new Intl.NumberFormat("pt-BR", {
+    const mainCurrency = settingsStore.userProfile.main_currency || "BRL";
+    return new Intl.NumberFormat($locale || "pt-BR", {
       style: "currency",
-      currency: "BRL",
+      currency: mainCurrency,
     }).format(val);
   }
 

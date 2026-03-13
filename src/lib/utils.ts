@@ -119,3 +119,36 @@ export const formatLocalISO = (dateStr: string): string => {
 
 	return `${dateStr}T${timePart}${sign}${hours}:${minutes}`;
 };
+
+/**
+ * Garante que uma string de data (possivelmente de um input datetime-local) 
+ * tenha o offset do fuso horário local correto.
+ */
+export const ensureLocalOffset = (dateStr: string): string => {
+    if (!dateStr) return "";
+    
+    // Se já tiver offset ou for UTC, não mexe
+    if (dateStr.includes("+") || (dateStr.includes("-") && dateStr.lastIndexOf("-") > 10) || dateStr.endsWith("Z")) {
+        return dateStr;
+    }
+
+    // Se for apenas YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        return formatLocalISO(dateStr);
+    }
+
+    // Se for YYYY-MM-DDTHH:mm ou YYYY-MM-DDTHH:mm:ss
+    const now = new Date();
+    const offset = -now.getTimezoneOffset();
+    const sign = offset >= 0 ? '+' : '-';
+    const absOffset = Math.abs(offset);
+    const offHours = String(Math.floor(absOffset / 60)).padStart(2, "0");
+    const offMinutes = String(absOffset % 60).padStart(2, "0");
+
+    // Garante segundos se faltar
+    const normalized = dateStr.split("T").length === 2 && dateStr.split(":").length === 2 
+        ? `${dateStr}:00` 
+        : dateStr;
+
+    return `${normalized}${sign}${offHours}:${offMinutes}`;
+};

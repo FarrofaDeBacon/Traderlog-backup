@@ -1,5 +1,15 @@
 use crate::models::Trade;
+use serde::{Deserialize, Serialize};
+use serde_json;
 use std::collections::HashMap;
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct PartialExit {
+    pub date: Option<String>,
+    pub price: f64,
+    pub quantity: f64,
+    pub r#type: String, // "entry" | "exit"
+}
 
 #[derive(Debug, Clone)]
 pub struct Position {
@@ -55,26 +65,77 @@ impl PositionService {
         positions
     }
 
-    /// Calcula o lucro líquido de uma operação baseada no PM atual.
-    /// Funciona tanto para Vendas (Exit) quanto para Compras (Exit - Short).
-    pub fn calculate_trade_result(trade: &Trade, current_pm: f64) -> f64 {
-        if let Some(exit_price) = trade.exit_price {
-            // Se temos preço de saída, é uma operação completa (ex: DayTrade do Profit)
-            // Resultado = Qtd * (Preço de Saída - Preço de Entrada) - Taxas
-            // Nota: Se for Buy, entrada é entry_price. Se for Sell (Short), entrada é entry_price.
-            // Para simplificar: exit - entry sempre dá o lucro se direction for respeitado.
-            let gross = if trade.direction == "Buy" {
-                exit_price - trade.entry_price
+    /// Calculates the profit or loss for a single trade.
+    /// Incorporates Moving Average logic for partial exits/additions if they exist.
+    pub fn calculate_trade_result(trade: &Trade, current_pm: f64, point_value: f64) -> f64 {
+        // Parse partial exits if any
+        let partials: Vec<PartialExit> = serde_json::from_value(trade.partial_exits.0.clone())
+            .unwrap_or_default();
+
+        let multiplier = if trade.direction == "Buy" { 1.0 } else { -1.0 };
+        
+        // Complex case: Moving Average calculation
+        // If partials exist, we follow the chronological moving average realization.
+        if !partials.is_empty() {
+            let mut current_avg_price = if trade.modality_id.as_deref() == Some("mod2") {
+                current_pm
             } else {
-                trade.entry_price - exit_price
+                trade.entry_price
             };
-            (trade.quantity * gross) - trade.fee_total
+            
+            let mut current_qty = trade.quantity;
+            let mut total_entry_qty = trade.quantity;
+            let mut total_exit_qty = 0.0;
+            let mut gross_currency_total = 0.0;
+
+            let mut sorted_partials = partials;
+            sorted_partials.sort_by(|a, b| a.date.cmp(&b.date));
+
+            for p in sorted_partials {
+                if p.r#type == "entry" {
+                    let new_qty = current_qty + p.quantity;
+                    if new_qty > 0.0 {
+                        current_avg_price = ((current_avg_price * current_qty) + (p.price * p.quantity)) / new_qty;
+                    }
+                    current_qty = new_qty;
+                    total_entry_qty += p.quantity;
+                } else {
+                    let diff = (p.price - current_avg_price) * multiplier;
+                    gross_currency_total += diff * p.quantity * point_value;
+                    current_qty -= p.quantity;
+                    total_exit_qty += p.quantity;
+                }
+            }
+
+            // Final exit portion
+            let remaining_qty = total_entry_qty - total_exit_qty;
+            if let Some(exit_price) = trade.exit_price {
+                if remaining_qty > 0.0 {
+                    let diff = (exit_price - current_avg_price) * multiplier;
+                    gross_currency_total += diff * remaining_qty * point_value;
+                }
+            }
+
+            return gross_currency_total - trade.fee_total;
+        }
+
+        // Base case: No partial exits
+        if let Some(exit_price) = trade.exit_price {
+            // Complete trade (usually DayTrade)
+            let basis = if trade.modality_id.as_deref() == Some("mod2") {
+                current_pm
+            } else {
+                trade.entry_price
+            };
+
+            let gross_pts = (exit_price - basis) * multiplier;
+            (trade.quantity * gross_pts * point_value) - trade.fee_total
         } else if trade.direction == "Sell" {
-            // Venda parcial ou saída de posição SwingTrade usando o PM acumulado
-            // Resultado = Qtd * (Preço de Venda - PM) - Taxas
-            (trade.quantity * (trade.entry_price - current_pm)) - trade.fee_total
+            // Standalone Sell operation (SwingTrade exit)
+            // Result = (SellingPrice - PM) * Quantity
+            (trade.quantity * (trade.entry_price - current_pm) * point_value) - trade.fee_total
         } else {
-            // Compras comuns não geram resultado imediato no SwingTrade
+            // Standalone Buy operation in SwingTrade (doesn't realize result)
             0.0
         }
     }

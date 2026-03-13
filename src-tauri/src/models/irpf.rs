@@ -47,6 +47,16 @@ pub struct TaxAppraisal {
     pub metadata: std::collections::HashMap<String, serde_json::Value>,
 }
 
+impl TaxAppraisal {
+    pub fn sanitize(&mut self) {
+        self.id = None;
+        self.metadata.remove("id");
+        self.metadata.remove("revision");
+        self.metadata.remove("_rev");
+        self.metadata.remove("time");
+    }
+}
+
 impl ToDto for TaxAppraisal {
     type Dto = dto::TaxAppraisalDto;
     fn to_dto(&self) -> Self::Dto {
@@ -99,6 +109,16 @@ pub struct TaxLoss {
     pub metadata: std::collections::HashMap<String, serde_json::Value>,
 }
 
+impl TaxLoss {
+    pub fn sanitize(&mut self) {
+        self.id = None;
+        self.metadata.remove("id");
+        self.metadata.remove("revision");
+        self.metadata.remove("_rev");
+        self.metadata.remove("time");
+    }
+}
+
 impl ToDto for TaxLoss {
     type Dto = dto::TaxLossDto;
     fn to_dto(&self) -> Self::Dto {
@@ -141,6 +161,16 @@ pub struct TaxDarf {
     pub is_complementary: bool,
     #[serde(flatten)]
     pub metadata: std::collections::HashMap<String, serde_json::Value>,
+}
+
+impl TaxDarf {
+    pub fn sanitize(&mut self) {
+        self.id = None;
+        self.metadata.remove("id");
+        self.metadata.remove("revision");
+        self.metadata.remove("_rev");
+        self.metadata.remove("time");
+    }
 }
 
 impl ToDto for TaxDarf {

@@ -259,9 +259,18 @@ pub async fn save_api_config(db: State<'_, DbState>, config: ApiConfig) -> Resul
 pub async fn get_accounts(db: State<'_, DbState>) -> Result<Vec<Account>, String> {
     println!("[COMMAND] get_accounts called");
 
-    // Explicitly cast ID to string - Original Logic
     let mut result =
-        db.0.query("SELECT *, type::string(id) as id FROM account")
+        db.0.query("SELECT 
+                type::string(id) as id, 
+                nickname, 
+                account_type, 
+                broker, 
+                account_number, 
+                type::string(currency_id) as currency_id, 
+                balance, 
+                custom_logo, 
+                currency_id.code as currency 
+            FROM account")
             .await
             .map_err(|e| e.to_string())?;
     let accounts: Vec<Account> = result.take(0).map_err(|e| {
@@ -277,20 +286,29 @@ pub async fn get_accounts(db: State<'_, DbState>) -> Result<Vec<Account>, String
 }
 
 #[tauri::command]
-pub async fn save_account(db: State<'_, DbState>, account: Account) -> Result<(), String> {
-    println!("[COMMAND] save_account: {:?}", account.id);
-    let id_opt = account.id.clone();
-    
+pub async fn save_account(db: State<'_, DbState>, mut account: Account) -> Result<(), String> {
+    println!("[COMMAND] save_account called: {:?}", account);
+
+    let id = if let Some(ref id_str) = account.id {
+        id_str.clone()
+    } else {
+        format!("account:{}", uuid::Uuid::new_v4())
+    };
+
+    // Normalize currency_id: if it's a 3-letter code, prefix with 'currency:'
+    if let Some(ref curr) = account.currency_id {
+        if curr.len() == 3 && !curr.contains(':') {
+            account.currency_id = Some(format!("currency:{}", curr));
+        }
+    }
+
     let mut json = serde_json::to_value(&account).map_err(|e| e.to_string())?;
     if let Some(obj) = json.as_object_mut() {
         obj.remove("id");
+        obj.remove("currency"); // Don't persist virtual field
     }
 
-    let id_str = id_opt.unwrap_or_default();
-    let clean_id = id_str
-        .split(':')
-        .last()
-        .unwrap_or(&id_str)
+    let clean_id = id.split(':').last().unwrap_or(&id)
         .replace("⟨", "")
         .replace("⟩", "");
         
@@ -1487,9 +1505,27 @@ pub async fn factory_reset(db: State<'_, DbState>) -> Result<(), String> {
 #[tauri::command]
 pub async fn ensure_defaults(db: State<'_, DbState>) -> Result<(), String> {
     crate::seed::run_base_seeds(&db.0).await?;
-    // Ensure at least an empty Real account exists for new users (no trades)
-    crate::seed::demo_accounts_seed::seed_accounts(&db.0, Some(vec!["account:real".to_string()]))
-        .await?;
+    
+    // Check if any account exists
+    let mut response = db.0.query("SELECT count() FROM account GROUP ALL")
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    let count: Option<i64> = response.take(0).map_err(|e| e.to_string())
+        .and_then(|v: Vec<serde_json::Value>| {
+            v.first()
+                .and_then(|val| val.get("count"))
+                .and_then(|c| c.as_i64())
+                .ok_or_else(|| "Failed to parse count".to_string())
+        })
+        .ok();
+
+    if count.unwrap_or(0) == 0 {
+        println!("[SEED] No accounts found, seeding base real account...");
+        crate::seed::demo_accounts_seed::seed_accounts(&db.0, Some(vec!["account:real".to_string()]))
+            .await?;
+    }
+    
     Ok(())
 }
 
@@ -1503,9 +1539,25 @@ pub async fn finish_custom_onboarding(
     println!("[ONBOARDING] Executando rotina restrita de seeds customizadas...");
     crate::seed::run_custom_seeds(&db.0, currencies, markets, asset_types).await?;
     
-    // Ensure at least an empty Real account exists
-    crate::seed::demo_accounts_seed::seed_accounts(&db.0, Some(vec!["account:real".to_string()]))
-        .await?;
+    // Ensure at least one account exists
+    let mut response = db.0.query("SELECT count() FROM account GROUP ALL")
+        .await
+        .map_err(|e| e.to_string())?;
+        
+    let count: Option<i64> = response.take(0).map_err(|e| e.to_string())
+        .and_then(|v: Vec<serde_json::Value>| {
+            v.first()
+                .and_then(|val| val.get("count"))
+                .and_then(|c| c.as_i64())
+                .ok_or_else(|| "Failed to parse count".to_string())
+        })
+        .ok();
+
+    if count.unwrap_or(0) == 0 {
+        println!("[ONBOARDING] No accounts selected or found, seeding base real account...");
+        crate::seed::demo_accounts_seed::seed_accounts(&db.0, Some(vec!["account:real".to_string()]))
+            .await?;
+    }
 
     // CRITICAL: Mark onboarding as completed in the database
     db.0.query("UPDATE user_profile:main SET onboarding_completed = true RETURN NONE")
