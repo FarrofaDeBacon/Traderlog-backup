@@ -111,6 +111,7 @@ impl<'de> Visitor<'de> for UniversalVisitor {
                 Ok(serde_json::Value::Null)
             }
             _ => {
+                println!("[DEBUG] UniversalVisitor::visit_enum UNKNOWN tag: {}", tag);
                 // For other enums, we assume they are simple unit variants (like categories).
                 // If they carry data, we might miss it here, but this prevents "moved value" errors.
                 match variant.unit_variant() {
@@ -973,6 +974,8 @@ pub struct TaxRule {
     pub withholding_basis: String, // "Profit" | "SalesVolume"
     #[serde(default)]
     pub revenue_code: Option<String>, // e.g., "6015", "3317"
+    #[serde(flatten)]
+    pub metadata: std::collections::HashMap<String, serde_json::Value>,
 }
 
 impl ToDto for TaxRule {
@@ -1014,6 +1017,8 @@ pub struct TaxMapping {
     pub modality_id: Option<String>,
     #[serde(default, deserialize_with = "deserialize_id_opt")]
     pub tax_rule_id: Option<String>,
+    #[serde(flatten)]
+    pub metadata: std::collections::HashMap<String, serde_json::Value>,
 }
 
 impl ToDto for TaxMapping {
@@ -1038,6 +1043,8 @@ pub struct TaxProfile {
     pub id: Option<String>,
     pub name: String,
     pub description: Option<String>,
+    #[serde(flatten)]
+    pub metadata: std::collections::HashMap<String, serde_json::Value>,
 }
 
 impl ToDto for TaxProfile {
@@ -1065,6 +1072,8 @@ pub struct TaxProfileEntry {
     pub modality_id: Option<String>,
     #[serde(default, deserialize_with = "deserialize_id_opt")]
     pub tax_rule_id: Option<String>,
+    #[serde(flatten)]
+    pub metadata: std::collections::HashMap<String, serde_json::Value>,
 }
 
 impl ToDto for TaxProfileEntry {
@@ -1092,4 +1101,6 @@ pub struct TaxPayment {
     pub payment_date: Option<String>,
     pub status: String, // "Pending" | "Paid"
     pub notes: String,
+    #[serde(flatten)]
+    pub metadata: std::collections::HashMap<String, serde_json::Value>,
 }

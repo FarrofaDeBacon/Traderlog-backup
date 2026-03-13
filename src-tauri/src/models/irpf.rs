@@ -43,6 +43,8 @@ pub struct TaxAppraisal {
     pub trade_ids: Vec<String>,
     #[serde(default)]
     pub is_complementary: bool,
+    #[serde(flatten)]
+    pub metadata: std::collections::HashMap<String, serde_json::Value>,
 }
 
 impl ToDto for TaxAppraisal {
@@ -93,6 +95,8 @@ pub struct TaxLoss {
     pub amount: f64,
     pub origin_date: String,
     pub balance: f64,
+    #[serde(flatten)]
+    pub metadata: std::collections::HashMap<String, serde_json::Value>,
 }
 
 impl ToDto for TaxLoss {
@@ -135,6 +139,8 @@ pub struct TaxDarf {
     pub transaction_id: Option<String>,
     #[serde(default)]
     pub is_complementary: bool,
+    #[serde(flatten)]
+    pub metadata: std::collections::HashMap<String, serde_json::Value>,
 }
 
 impl ToDto for TaxDarf {

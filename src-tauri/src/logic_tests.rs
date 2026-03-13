@@ -17,6 +17,7 @@ mod tests {
             trade_type: trade_type.to_string(),
             withholding_basis: "Profit".to_string(),
             revenue_code: Some("6015".to_string()),
+            metadata: std::collections::HashMap::new(),
         }
     }
 

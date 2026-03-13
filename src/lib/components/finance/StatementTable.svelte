@@ -28,6 +28,8 @@
     import { untrack } from "svelte";
     import DarfDetailsDialog from "./DarfDetailsDialog.svelte";
     import HierarchicalList from "$lib/components/shared/HierarchicalList.svelte";
+    import DetailModal from "$lib/components/shared/DetailModal.svelte";
+    import TradeDetailView from "./TradeDetailView.svelte";
 
     let selectedTransaction = $state<any>(null);
     let showDetailsDialog = $state(false);
@@ -1104,138 +1106,56 @@
     </Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root bind:open={showDetailsDialog}>
-    <Dialog.Content class="sm:max-w-[700px] glass border-border">
-        <Dialog.Header>
-            <Dialog.Title class="text-foreground"
-                >{$t("finance.details.title")}</Dialog.Title
-            >
-        </Dialog.Header>
-        {#if selectedTransaction}
-            {@const acc = getAccount(selectedTransaction.account_id)}
-            <div class="space-y-6 py-4">
-                <div class="grid grid-cols-3 gap-6 text-sm">
-                    <div class="space-y-1">
-                        <span
-                            class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
-                            >{$t("finance.details.date")}</span
-                        >
-                        <div class="text-foreground/80 font-medium font-mono">
-                            {new Date(
-                                selectedTransaction.date.includes("T")
-                                    ? selectedTransaction.date
-                                    : selectedTransaction.date + "T12:00:00",
-                            ).toLocaleDateString()}
-                        </div>
-                    </div>
-                    <div class="space-y-1">
-                        <span
-                            class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
-                            >{$t("finance.details.account")}</span
-                        >
-                        <div class="text-foreground/80 font-medium">
-                            {acc?.nickname}
-                        </div>
-                    </div>
-                    <div class="space-y-1">
-                        <span
-                            class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
-                            >{$t("finance.transactionDialog.amount")} ({acc?.currency})</span
-                        >
-                        <div class="text-xl font-black text-foreground">
-                            {formatCurrencyValue(
-                                selectedTransaction.amount,
-                                acc?.currency || "BRL",
-                            )}
-                        </div>
+<DetailModal
+    bind:open={showDetailsDialog}
+    title={$t("finance.details.title")}
+    icon={Eye}
+    size="lg"
+>
+    {#if selectedTransaction}
+        {@const acc = getAccount(selectedTransaction.account_id)}
+        <div class="space-y-6">
+            <div class="grid grid-cols-3 gap-6">
+                <div class="space-y-1">
+                    <span class="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">
+                        {$t("finance.details.date")}
+                    </span>
+                    <div class="text-foreground/80 font-bold font-mono text-sm">
+                        {new Date(
+                            selectedTransaction.date.includes("T")
+                                ? selectedTransaction.date
+                                : selectedTransaction.date + "T12:00:00",
+                        ).toLocaleDateString()}
                     </div>
                 </div>
-
-                <div
-                    class="border border-border rounded-xl overflow-hidden bg-muted/40"
-                >
-                    <Table.Root>
-                        <Table.Header class="bg-muted/50">
-                            <Table.Row
-                                class="hover:bg-transparent border-border"
-                            >
-                                <Table.Head
-                                    class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
-                                    >{$t(
-                                        "finance.details.columns.asset",
-                                    )}</Table.Head
-                                >
-                                <Table.Head
-                                    class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
-                                    >{$t(
-                                        "finance.details.columns.side",
-                                    )}</Table.Head
-                                >
-                                <Table.Head
-                                    class="text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
-                                    >{$t(
-                                        "finance.details.columns.result",
-                                    )}</Table.Head
-                                >
-                            </Table.Row>
-                        </Table.Header>
-                        <Table.Body>
-                            {#if selectedTransaction.trade_ids}
-                                {#each selectedTransaction.trade_ids as tradeId}
-                                    {@const trade = findTradeById(tradeId)}
-                                    {#if trade}
-                                        <Table.Row
-                                            class="border-border/50 hover:bg-muted/20"
-                                        >
-                                            <Table.Cell
-                                                class="font-bold text-foreground/80"
-                                                >{trade.asset_symbol}</Table.Cell
-                                            >
-                                            <Table.Cell>
-                                                <Badge
-                                                    variant="outline"
-                                                    class={cn(
-                                                        "text-[10px] font-bold",
-                                                        trade.direction ===
-                                                            "Buy"
-                                                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                                            : "bg-rose-500/10 text-rose-500 border-rose-500/20",
-                                                    )}
-                                                >
-                                                    {trade.direction.toUpperCase()}
-                                                </Badge>
-                                            </Table.Cell>
-                                            <Table.Cell
-                                                class="text-right font-mono font-bold {trade.result >=
-                                                0
-                                                    ? 'text-emerald-500'
-                                                    : 'text-rose-500'}"
-                                            >
-                                                {formatCurrencyValue(
-                                                    trade.result,
-                                                    acc?.currency || "BRL",
-                                                )}
-                                            </Table.Cell>
-                                        </Table.Row>
-                                    {/if}
-                                {/each}
-                            {:else}
-                                <Table.Row>
-                                    <Table.Cell
-                                        colspan={3}
-                                        class="text-center h-12 text-muted-foreground"
-                                    >
-                                        {$t("finance.details.noTrades")}
-                                    </Table.Cell>
-                                </Table.Row>
-                            {/if}
-                        </Table.Body>
-                    </Table.Root>
+                <div class="space-y-1">
+                    <span class="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">
+                        {$t("finance.details.account")}
+                    </span>
+                    <div class="text-foreground/80 font-bold text-sm">
+                        {acc?.nickname}
+                    </div>
+                </div>
+                <div class="space-y-1 text-right">
+                    <span class="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">
+                        {$t("finance.transactionDialog.amount")}
+                    </span>
+                    <div class="text-xl font-black text-foreground font-mono tracking-tighter">
+                        {formatCurrencyValue(
+                            selectedTransaction.amount,
+                            acc?.currency || "BRL",
+                        )}
+                    </div>
                 </div>
             </div>
-        {/if}
-    </Dialog.Content>
-</Dialog.Root>
+
+            <TradeDetailView 
+                trades={selectedTransaction.trade_ids?.map(id => findTradeById(id)).filter(Boolean) || []} 
+                currency={acc?.currency || "BRL"} 
+            />
+        </div>
+    {/if}
+</DetailModal>
 
 <DarfDetailsDialog
     bind:open={isDarfDetailOpen}

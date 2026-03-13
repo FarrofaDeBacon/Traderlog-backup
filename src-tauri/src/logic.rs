@@ -140,5 +140,6 @@ pub fn calculate_appraisal(
         status: "Pending".to_string(),
         trade_ids: bucket_trades.clone(),
         is_complementary: already_paid > 0.0,
+        metadata: std::collections::HashMap::new(),
     }
 }

@@ -55,13 +55,26 @@ impl PositionService {
         positions
     }
 
-    /// Calcula o lucro líquido de uma venda específica baseada no PM atual.
+    /// Calcula o lucro líquido de uma operação baseada no PM atual.
+    /// Funciona tanto para Vendas (Exit) quanto para Compras (Exit - Short).
     pub fn calculate_trade_result(trade: &Trade, current_pm: f64) -> f64 {
-        if trade.direction == "Sell" {
+        if let Some(exit_price) = trade.exit_price {
+            // Se temos preço de saída, é uma operação completa (ex: DayTrade do Profit)
+            // Resultado = Qtd * (Preço de Saída - Preço de Entrada) - Taxas
+            // Nota: Se for Buy, entrada é entry_price. Se for Sell (Short), entrada é entry_price.
+            // Para simplificar: exit - entry sempre dá o lucro se direction for respeitado.
+            let gross = if trade.direction == "Buy" {
+                exit_price - trade.entry_price
+            } else {
+                trade.entry_price - exit_price
+            };
+            (trade.quantity * gross) - trade.fee_total
+        } else if trade.direction == "Sell" {
+            // Venda parcial ou saída de posição SwingTrade usando o PM acumulado
             // Resultado = Qtd * (Preço de Venda - PM) - Taxas
-            (trade.quantity * (trade.exit_price.unwrap_or(trade.entry_price) - current_pm)) - trade.fee_total
+            (trade.quantity * (trade.entry_price - current_pm)) - trade.fee_total
         } else {
-            // Compras não geram resultado imediato (apenas alteram o PM)
+            // Compras comuns não geram resultado imediato no SwingTrade
             0.0
         }
     }

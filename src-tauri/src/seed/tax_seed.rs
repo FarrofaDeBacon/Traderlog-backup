@@ -84,6 +84,7 @@ pub async fn seed_tax_rules(db: &Surreal<Db>) -> Result<(), String> {
             trade_type: t_type.into(),
             withholding_basis: w_basis.into(),
             revenue_code: Some(rev_code.into()),
+            metadata: std::collections::HashMap::new(),
         };
 
         let mut data = serde_json::to_value(&rule).unwrap();
@@ -120,6 +121,7 @@ pub async fn seed_tax_rules(db: &Surreal<Db>) -> Result<(), String> {
             id: Some(id.into()),
             name: name.into(),
             description: Some(desc.into()),
+            metadata: std::collections::HashMap::new(),
         };
         let mut data = serde_json::to_value(&profile).unwrap();
         if let Some(obj) = data.as_object_mut() {
@@ -170,6 +172,7 @@ pub async fn seed_tax_rules(db: &Surreal<Db>) -> Result<(), String> {
             tax_profile_id: Some(p_id.into()),
             modality_id: Some(m_id.into()),
             tax_rule_id: Some(r_id.into()),
+            metadata: std::collections::HashMap::new(),
         };
         let mut data = serde_json::to_value(&entry).unwrap();
         if let Some(obj) = data.as_object_mut() {
@@ -304,6 +307,7 @@ pub async fn seed_initial_tax_records(db: &Surreal<Db>) -> Result<(), String> {
             },
             trade_ids: vec![],
             is_complementary: false,
+            metadata: std::collections::HashMap::new(),
         };
 
         let mut data = serde_json::to_value(&appraisal).unwrap();
@@ -350,6 +354,7 @@ pub async fn seed_initial_tax_records(db: &Surreal<Db>) -> Result<(), String> {
                 account_id: Some("account:demo_b3_futuros".into()),
                 transaction_id: None,
                 is_complementary: false,
+                metadata: std::collections::HashMap::new(),
             };
 
             let mut darf_data = serde_json::to_value(&darf).unwrap();
