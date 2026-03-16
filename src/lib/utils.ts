@@ -14,11 +14,14 @@ export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?:
 
 export const formatCurrency = (amount: number, currency: string = "BRL", locale: string = "pt-BR") => {
 	try {
-		const isoCurrency = currency.toUpperCase();
+		// Handle null/undefined values early
+		const safeAmount = amount ?? 0;
+		const safeCurrency = currency || "BRL";
+		const isoCurrency = safeCurrency.toUpperCase();
 
 		if (isoCurrency === "USDT") {
-			const isNegative = amount < 0;
-			const absAmount = Math.abs(amount);
+			const isNegative = safeAmount < 0;
+			const absAmount = Math.abs(safeAmount);
 
 			const formatted = new Intl.NumberFormat(locale, {
 				minimumFractionDigits: 2,
@@ -30,13 +33,13 @@ export const formatCurrency = (amount: number, currency: string = "BRL", locale:
 
 		return new Intl.NumberFormat(locale, {
 			style: "currency",
-			currency: currency,
-		}).format(amount);
+			currency: safeCurrency,
+		}).format(safeAmount);
 	} catch (e) {
 		// Fallback for any other invalid currency codes that might slip through
-		// console.warn(`[formatCurrency] Invalid currency code: ${currency}. Falling back.`, e);
-		// If currency is a word like "Múltiplas", just append it.
-		return `${currency} ${new Intl.NumberFormat(locale, { minimumFractionDigits: 2 }).format(amount)}`;
+		const safeAmount = amount ?? 0;
+		const safeCurrency = currency || "---";
+		return `${safeCurrency} ${new Intl.NumberFormat(locale, { minimumFractionDigits: 2 }).format(safeAmount)}`;
 	}
 };
 

@@ -7,6 +7,7 @@
     import OnboardingWizard from "$lib/components/setup/OnboardingWizard.svelte";
     import LicenseBanner from "$lib/components/layout/LicenseBanner.svelte";
     import AutoTradeDetectionDialog from "$lib/components/trades/AutoTradeDetectionDialog.svelte";
+    import { ScrollArea } from "$lib/components/ui/scroll-area";
     import { invoke } from "@tauri-apps/api/core";
 
     let { children } = $props();

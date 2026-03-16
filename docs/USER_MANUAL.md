@@ -1,521 +1,336 @@
-# Manual do Usuário - TraderLogPro
+# Manual do Usuário - TraderLog Pro v1.1
 
-Este manual irá guiá-frame por página sobre a utilização do sistema, desde os primeiros passos até as ferramentas mais avançadas de controle e análises fiscais do **TraderLog Pro**.
+## 1. Visão Geral e Conceitos Fundamentais
 
----
+O **TraderLog Pro** não é apenas um diário de trades; é uma estação de inteligência financeira desenhada para profissionalizar o trader pessoa física. Nossa filosofia baseia-se na centralização de dados para transformar "sentimento" em estatística acionável.
 
-## 1. Setup Engine (Instalação Inicial)
+### 1.1. Os Três Pilares do Sucesso
+Para atingir a consistência, o software atua simultaneamente em três frentes:
+1.  **Pilar Operacional (The Engine)**: Automação completa do journaling via RTD. Você opera, nós registramos, calculamos e classificamos em tempo real.
+2.  **Pilar Psicológico (The Mind)**: Onde a matemática encontra a emoção. Rastreamos seu estado mental para identificar se suas perdas são técnicas ou comportamentais.
+3.  **Pilar Fiscal (The Compliance)**: Segurança jurídica e tributária. Geramos suas DARFs e controlamos isenções automaticamente, eliminando o medo da malha fina.
 
-Ao abrir o TraderLog Pro pela primeira vez, o aplicativo identifica que é uma instalação fresca e inicia automaticamente o **Setup Engine**, nosso assistente de configuração em 9 passos.
+### 1.2. Arquitetura Local-First (Privacidade por Design)
+Diferente de plataformas web, o TraderLog Pro opera sob o modelo **Local-First**:
+- **Privacidade Total**: Seus dados financeiros e estratégias nunca saem da sua máquina. Não existem servidores centrais que possam ser invadidos ou que vendam seus dados.
+- **Criptografia de Elite**: Tudo é armazenado no **SurrealDB** local, protegido por criptografia **AES-256**.
+- **Performance Offline**: O app funciona 100% sem internet para consulta e análise de dados históricos.
 
-### Passo 1: Boas-vindas e Preferências Visuais
+### 1.3. Integração Real-Time (RTD Bridge)
+A peça central da nossa automação é a **PowerShell Bridge**. Ela atua como um tradutor universal que escuta sua plataforma (ProfitChart, MetaTrader, etc) e alimenta o TraderLog Pro em milissegundos, eliminando o erro humano e a preguiça de preencher planilhas.
 
-A primeira tela garante que o ambiente esteja confortável para a sua leitura. 
-
-![Setup Engine - Bem-vindo](./assets/setup/setup_step_1.png)
-
-**O que fazer nesta etapa:**
-- **Selecione seu Idioma:** Você deve escolher o idioma da interface. As opções atuais incluem Português (BR), English, Español e Français. O clique altera instantaneamente todos os rótulos do aplicativo.
-- **Selecione o Tema Visual:** Escolha entre **Dark (Noite)**, que é o padrão recomendado para reduzir o cansaço visual de quem acompanha telas por muitas horas, ou **Light (Dia)**.
-- **Botão Próximo:** Após fazer as duas escolhas, basta clicar no botão inferior direito para avançar.
-
----
-
-## Passo 2: Criação de Perfil Local e Segurança
-
-Uma vez definido o seu idioma, a próxima tela solicitará a criação do seu perfil de usuário primário no TraderLog Pro.
-
-![Setup Engine - Perfil](./assets/setup/setup_step_2.png)
-
-Esta etapa é crucial pois ela define quem é o administrador deste ambiente de trabalho.
-
-**O que você precisa preencher:**
-- **Nome:** Como você gostaria de ser chamado no sistema.
-- **E-mail:** Seu e-mail de contato principal.
-- **Senha e Confirmação (Importante):** O TraderLog Pro opera localmente. Esta senha serve para criptografar seus dados e impedir acessos não autorizados de pessoas que usam o mesmo computador que você. 
-   - *Atenção:* Como não enviamos seus dados para a nuvem, se você esquecer essa senha, dependerá exclusivamente da sua Chave de Recuperação (gerada no passo seguinte) para não perder o acesso ao seu diário de trades.
-
-Preencha os dados e clique em avançar.
-
----
-
-## Passo 3: Chave de Recuperação (Master Key)
-
-Após definir sua senha, o sistema irá gerar automaticamente uma **Chave Mestra de Recuperação**. 
-
-Esta tela possui um grande alerta vermelho por um motivo muito importante: **você não deve ignorar esta etapa.**
-
-![Setup Engine - Chave Mestra](./assets/setup/setup_step_3.png)
-
-- **O que é a Chave de Recuperação?** É um código único associado ao seu perfil. Se você esquecer a senha criada no passo anterior, este código será a *ÚNICA FORMA* de restaurar o acesso aos seus dados no TraderLog Pro.
-- **Como guardar:** Clique sobre o bloco que exibe a chave para copiá-la automaticamente para a área de transferência. Salve este código em um local **seguro e externo** ao seu computador (ex: um gerenciador de senhas como 1Password ou anotado em um papel).
-- **Aviso de Segurança:** Nunca compartilhe esta chave com terceiros. O suporte técnico do TraderLog Pro nunca solicitará esta chave.
-
-Após garantir que a chave foi salva de forma segura, você pode prosseguir.
+### 1.3. Setup Engine (Guia de 9 Passos)
+Ao iniciar pela primeira vez, o assistente guiará você por:
+1. **Preferências Visuais**: Idioma e Tema.
+![Passo 1: Preferências Visuais](./assets/setup/setup_step_1.png)
+2. **Perfil e Segurança**: Criação de senha criptográfica.
+![Passo 2: Perfil](./assets/setup/setup_step_2.png)
+3. **Master Key**: Gere e guarde sua chave de 24 palavras.
+![Passo 3: Master Key](./assets/setup/setup_step_3.png)
+4. **Licença**: Ative seu acesso Premium.
+![Passo 4: Licença](./assets/setup/setup_step_4.png)
+5. **Moeda Base**: Defina a moeda da sua vida financeira.
+![Passo 5: Moeda Base](./assets/setup/setup_step_5.png)
+6. **Mercados**: Selecione onde você opera.
+![Passo 6: Mercados](./assets/setup/setup_step_6.png)
+7. **Tipos de Ativos**: Ações, Futuros, Opções.
+![Passo 7: Tipos de Ativos](./assets/setup/setup_step_7.png)
+8. **Conexão RTD**: Ative o monitoramento automático.
+![Passo 8: Conexão RTD](./assets/setup/setup_step_8.png)
+9. **Finalização**: Início da jornada.
+![Passo 9: Finalização](./assets/setup/setup_step_9.png)
 
 ---
 
-## Passo 4: Ativação de Licença
-
-Com o seu perfil criado e a chave mestra salva, o TraderLog Pro solicitará a ativação da sua licença.
-
-![Setup Engine - Licença](./assets/setup/setup_step_4.png)
-
-**Nesta tela você pode:**
-- **Importar Licença:** Se você já adquiriu o TraderLog Pro, clique no botão para selecionar o seu arquivo de licença (.lic) recebido por e-mail.
-- **Modo Trial (Pular):** Caso queira apenas testar o sistema, você pode pular esta etapa e validá-la posteriormente nas configurações.
-
----
-
-## Passo 5: Seleção de Moeda Base
-
-Aqui você define a moeda principal que o sistema usará para calcular seus totais consolidados no Dashboard.
-
-![Setup Engine - Moeda](./assets/setup/setup_step_5.png)
-
-**Opções disponíveis:**
-- **BRL (Real):** Recomendado para traders brasileiros que operam na B3.
-- **USD (Dólar):** Ideal para quem foca exclusivamente no mercado americano.
-- **USDT:** Para traders de criptomoedas.
-
-*Nota: Você pode adicionar outras moedas secundárias depois, mas esta será a sua referência principal.*
-
----
-
-## Passo 6: Mercados de Atuação
-
-O TraderLog Pro é um sistema multimerclado. Nesta etapa, você informa ao assistente quais mercados você costuma operar para que ele prepare os calendários e fusos horários corretos.
-
-![Setup Engine - Mercados](./assets/setup/setup_step_6.png)
-
-**Como configurar:**
-- Selecione um ou mais mercados (ex: B3 Brasil, NYSE, NASDAQ, Cripto).
-- O sistema ajustará automaticamente o fuso horário (Timezone) para as importações de notas de corretagem.
-
----
-
-## Passo 7: Tipos de Ativos
-
-Com base nos mercados selecionados no passo anterior, você filtrará aqui quais tipos de ativos (Assets) você deseja que o assistente monitore.
-
-![Setup Engine - Ativos](./assets/setup/setup_step_7.png)
-
-**Exemplos:**
-- **Ações:** Para operações clássicas de Buy & Hold ou Day/Swing Trade.
-- **Opções:** Se você opera derivativos.
-- **Futuros:** Para quem opera contratos de Índice (WIN) ou Dólar (WDO) na B3.
-
----
-
-## Passo 8: Conexão Real-Time (RTD)
-
-Este é um diferencial do TraderLog Pro. Você pode conectar sua plataforma de negociação (ex: Profit) para que o sistema receba cotações e execuções em tempo real.
-
-![Setup Engine - RTD](./assets/setup/setup_step_8.png)
-
-**Como funciona:**
-- O sistema utiliza uma integração via Excel/RTD para "ouvir" sua plataforma.
-- **Ativar agora:** Siga as instruções na tela para baixar o assistente de conexão.
-- **Pular:** Você pode configurar isso a qualquer momento no menu de Configurações do sistema.
-
----
-
-## Passo 9: Finalização (Missão Pronta!)
-
-Parabéns! Você concluiu a configuração de base do seu assistente de trading.
-
-![Setup Engine - Pronto](./assets/setup/setup_step_9.png)
-
-Ao clicar em **"INICIAR JORNADA"**, o TraderLog Pro salvará suas preferências locais e abrirá o Dashboard principal. Caso precise alterar qualquer informação que inseriu aqui, tudo estará disponível no menu lateral de configurações.
-
----
-
-# Parte 2: Navegação e Interface
-
-## Visão Geral do Dashboard (Painel)
-
-O Dashboard (identificado como **Painel** no menu lateral) é a central de comando do TraderLog Pro. Aqui você tem uma visão panorâmica e em tempo real da sua performance.
-
-![Visão Geral do Dashboard](./assets/dashboard_overview.png)
-
-### Elementos Principais:
-1.  **Sidebar (Menu Lateral):** Onde você acessa todos os módulos do sistema.
-2.  **Ticker de Cotações:** Fita superior com preços de ativos e moedas em tempo real.
-3.  **Kash Cards (Indicadores de Topo):**
-    - **Saldo Est.:** Patrimônio líquido estimado.
-    - **Resultado Líquido:** Lucro ou prejuízo do período selecionado.
-    - **Taxa de Acerto & Profit Factor:** Métricas cruciais de eficiência.
-    - **Disciplina:** Medidor de obediência às suas regras de trading.
-4.  **Gráficos de Evolução:** Visualização do crescimento do seu patrimônio.
-5.  **Calendário de Performance:** Visualização mensal colorida (verde/vermelho) dos seus resultados.
-
----
-
-## Menu de Navegação Lateral
-
-A sidebar é dividida em seções lógicas para facilitar o seu dia a dia:
-
-### Início
-- **Painel:** Retorna à visão geral (Dashboard).
-- **Negociações:** Onde você gerencia suas ordens, histórico e diário de trade.
-- **Estratégias:** Cadastro e análise de setups.
-- **Psicologia:** Ferramentas para controle emocional (Auto-Journaling).
-
-### Análise & Dados
-- **Hub Financeiro:** Gestão de contas bancárias, corretoras e transferências.
-- **Ativos:** Lista de ativos monitorados e cotações.
-
-### Fiscal
-- **Fiscal:** Todo o motor de cálculo de impostos, controle de prejuízos acumulados e geração de DARF.
-
-### Sistema (Base)
-- **Configurações:** (Ícone de engrenagem) Ajustes de perfil, licenciamento, temas e conexões RTD.
-- **Sair:** Encerra a sessão local com segurança.
-
----
-*(Fim da Seção: Dashboard e Navegação)*
-
----
-
-# Parte 3: Módulos Principais
-
-## Negociações (Trades)
-
-Este é o módulo central do TraderLog Pro. Aqui fica todo o seu histórico de operações, organizado de forma hierárquica.
-
-![Negociações](./assets/page_trades.png)
-
-
-### Estrutura da Página
-O histórico é organizado em:
-- **Mês → Semana → Dia → Operação**
-- Cada nível exibe o P&L consolidado do período.
-
-### KPIs (Painel de Métricas)
-Na parte superior da página, você tem acesso rápido a:
-
-| Métrica | Descrição |
-|---|---|
-| **Saldo Total** | Resultado financeiro total (P&L) de todas as operações filtradas. |
-| **Total de Trades** | Contagem total de operações no período. |
-| **Taxa de Acerto** | Percentual de operações lucrativas. |
-| **Profit Factor** | Razão entre o lucro bruto e o prejuízo bruto. |
-| **Tempo Médio** | Intervalo médio entre as operações. |
-
-### Ações Principais
-- **⊕ Novo Trade:** Abre o assistente para registro manual de uma nova operação.
-- **Importar Profit:** Importa o extrato de operações diretamente de um arquivo `.csv` exportado pela plataforma Profit.
-- **Filtrar:** Filtra as operações por status (aberto/fechado), conta, estratégia, tipo de ativo ou moeda.
-
----
-
-## Estratégias
-
-O módulo de Estratégias é onde você cadastra os seus setups operacionais (ex: "Rompimento de Abertura", "Lã com Lã"). Vincular um setup a cada trade é fundamental para avaliar qual estratégia dá mais retorno.
-
-![Estratégias](./assets/page_strategies.png)
-
-
-- **Nova Estratégia:** Cadastre o nome, descrição, e regras do setup.
-- **Desempenho:** Veja estatísticas de win rate e P&L por estratégia.
-
----
-
-## Psicologia (Auto-Journaling)
-
-A página de Psicologia é um diferencial do TraderLog Pro. Ela exibe os registros de estado emocional que você faz após cada operação.
-
-![Psicologia](./assets/page_psychology.png)
-
-**Como funciona:**
-- Após registrar ou importar um trade, o sistema pode exibir um pop-up pedindo que você avalie seu estado emocional (Calmo, Ansioso, Disciplinado, etc.).
-- Os dados coletados aqui alimentam gráficos de performance emocional, ajudando a identificar padrões comportamentais que impactam seus resultados.
-
----
-
-## Hub Financeiro
-
-O Hub Financeiro é a gestão financeira extratógica do TraderLog Pro. É onde você controla o dinheiro que flui pelas suas contas.
-
-![Hub Financeiro](./assets/page_finance.png)
-
-**Funcionalidades:**
-- **Fechamento Diário:** O sistema pode gerar um fechamento automático ao final do dia de pregão, consolidando o resultado das operações em uma entrada de extrato.
-- **Transferências:** Movimentação de valores entre contas.
-
----
-
-## Fiscal (DARF & IRPF)
-
-Este módulo é o coelho do chapeu do TraderLog Pro para traders brasileiros. Ele calcula automaticamente os impostos devidos conforme as regras da Receita Federal.
-
-
-![Módulo Fiscal](./assets/page_fiscal.png)
-
-#### Vista Mensal (Paínel Fiscal)
-- Resumo mensal do resultado líquido por mercado (B3, Exterior, etc.).
-- Identifica automaticamente quando há isenckão (ex: vendas abaixo de R$ 20.000 para ações em Swing Trade).
-- Exibe o valor do DARF a pagar por mês e por DARF.
-
-#### IRPF (Imposto de Renda)
-- Gera os dados consolidados para declaração anual (preço médio, ganhos/perdas por ativo).
-
-
-#### DARF (Por Código de Receita)
-- Lista os DARFs gerados com os respectivos códigos de receita (ex: 6015, 6006).
-- Informa o valor exato a pagar e o vencimento (último dia útil do mês seguinte).
-
----
-
-# Parte 4: Configurações do Sistema
-
-## Visão Geral das Configurações
+## 2. Configurações do Sistema (Fluxo Pós-Início)
 
 A área de Configurações está dividida em seções lógicas para facilitar o gerenciamento. Acesse pelo ícone de engrenagem no rodapé do menu lateral.
 
+### 2.1. GERAL
 
----
-
-### GERAL
-
-#### Perfil (`/settings/profile`)
-
-Gerencie suas informações pessoais e de contato. Estes dados são usados para identificar sua conta e podem ser necessários para suporte técnico ou recuperação de acesso.
-
-> [!IMPORTANT]
-> **SCREENSHOT MISSING**: Visão do Perfil do Usuário.
-
+#### 2.1.1. Perfil
+Gerencie informações pessoais (Nome, CPF) e preferências de idioma e fuso horário.
 ![Perfil do Usuário](./assets/settings/profile/view.png)
 
-- **Dados Pessoais:** Nome, CPF, Data de Nascimento.
-- **Contato:** E-mail e Telefone.
-- **Preferências:** Idioma da interface e Fuso Horário local.
-
-#### Licença (`/settings/license`)
-
-Acompanhe o status da sua assinatura do TraderLog Pro.
-
-> [!IMPORTANT]
-> **SCREENSHOT MISSING**: Tela de Licenciamento.
-
+#### 2.1.2. Licença
+Acompanhe o status e validade da sua assinatura.
 ![Licenciamento](./assets/settings/license/view.png)
 
-- **Status:** Indica se a licença está Ativa, Expirada ou em Período de Teste.
-- **Validade:** Data de expiração do plano atual.
-- **ID do Hardware:** Identificador único do seu computador para vinculação da licença.
-- **Importar Licença:** Botão para selecionar o arquivo `.lic` e ativar seu acesso premium.
+### 2.2. CADASTROS
 
----
+#### 2.2.1. Contas
+Cadastre suas corretoras ou mesas proprietárias. **Obrigatório para registrar trades.**
 
-### CADASTROS
-
-#### Contas (`/settings/accounts`)
-
-A página de Contas é onde você cadastra suas corretoras, mesas proprietárias ou simuladores. **O cadastro de pelo menos uma conta é pré-requisito** para registrar qualquer operação no sistema.
+**Como adicionar:**
+1. Clique no botão **"Novo"** no topo da lista.
+2. Preencha o nome da corretora, número da conta e selecione a moeda.
+3. Clique em **"Salvar"**.
 
 ![Lista de Contas](./assets/settings/accounts/list.png)
-
-A tela principal lista todas as suas contas, organizadas e agrupadas por tipo (Contas Reais, Mesas Proprietárias, Simuladores). Para cada conta, você visualiza rapidamente a corretora, a moeda e o saldo atualizado.
-
-**Criando ou Editando uma Conta**
-
 ![Formulário de Conta](./assets/settings/accounts/modal_add.png)
 
-**Campos do Formulário:**
-- **Ícone:** Permite fazer upload de uma imagem personalizada (ex: logo da corretora).
-- **Apelido:** Nome curto de identificação (ex: "XP Swing Trade").
-- **Tipo de Conta:** `Real`, `Demo` ou `Prop`.
-- **Corretora:** Nome da instituição financeira.
-- **Número da Conta:** Identificador opcional.
-- **Moeda:** A moeda base desta conta específica.
-- **Saldo Inicial:** Valor financeiro de partida.
+#### 2.2.2. Moedas
+Gerencie moedas e taxas de câmbio contra sua moeda base.
 
-#### Moedas (`/settings/currencies`)
-
-Gerencie as moedas suportadas e defina taxas de câmbio em relação à moeda base.
+**Como adicionar:**
+1. Clique em **"Novo"**.
+2. Defina o código (Ex: USD, EUR), nome e a taxa de conversão atual.
+3. Clique em **"Salvar"**.
 
 ![Lista de Moedas](./assets/settings/currencies/list.png)
-
-**Criando ou Editando uma Moeda**
-
 ![Formulário de Moeda](./assets/settings/currencies/modal_add.png)
 
-**Campos do Formulário:**
-- **Código:** Código internacional (ex: USD, EUR).
-- **Símbolo:** Símbolo gráfico (ex: $, €).
-- **Nome:** Nome descritivo completo.
-- **Câmbio (BRL):** Taxa de conversão contra a moeda principal.
+#### 2.2.3. Mercados
+Defina fuso horário e janelas de pregão (B3, NYSE, etc).
 
-#### Mercados (`/settings/markets`)
-
-Lista dos ambientes de negociação (ex: B3, NYSE). Define fuso horário e horários de pregão.
+**Como adicionar:**
+1. Clique em **"Novo"**.
+2. Informe o nome (Ex: B3), fuso horário e os horários de abertura e fechamento.
+3. Clique em **"Salvar"**.
 
 ![Lista de Mercados](./assets/settings/markets/list.png)
-
-**Criando ou Editando um Mercado**
-
 ![Formulário de Mercado](./assets/settings/markets/modal_add.png)
 
-**Campos do Formulário:**
-- **Código:** Identificação curta (ex: B3, NYSE).
-- **Nome:** Nome completo.
-- **Fuso Horário:** Fuso horário oficial da bolsa.
-- **Dias de Negociação:** Dias da semana ativos.
-- **Sessões de Negociação:** Janelas exatas de pregão.
+#### 2.2.4. Tipos de Ativos
+Categorize os papéis e defina se o PnL será em financeiro ou pontos.
 
-#### Tipos de Ativos (`/settings/asset-types`)
-
-Categorias principais que agrupam os papéis (ex: Ações, Opções, Futuros).
+**Como adicionar:**
+1. Clique em **"Novo Tipo"** no topo da lista.
+2. Defina o nome (Ex: Ações, Índice), o mercado e como o resultado deve ser exibido (Financeiro ou Pontos).
+3. Clique em **"Salvar"**.
 
 ![Lista de Tipos de Ativos](./assets/settings/asset-types/list.png)
-
-**Adicionando um Tipo de Ativo**
-
 ![Formulário de Tipo de Ativo](./assets/settings/asset-types/modal_add.png)
 
-- **Código:** Identificador curto (ex: FUT, ACAO).
-- **Nome:** Nome descritivo.
-- **Mercado:** Mercado base correspondente.
-- **Unidade:** Rótulo de quantidade (ex: Contratos, Cotas).
-- **Tipo de Resultado:** Se o PnL é calculado em **Financeiro** ou **Pontos**.
+#### 2.2.5. Ativos
+Cadastre tickers individuais (PETR4, WDO) e defina o peso do ponto.
 
-#### Ativos (`/settings/assets`)
-
-A tela de **Ativos** é onde você cadastra os tickers ou papéis individuais (ex: PETR4, WDOJ24).
+**Como adicionar:**
+1. Clique em **"Novo Ativo"** no topo da lista.
+2. Informe o Símbolo (Ticker), Nome amigável e selecione o Tipo de Ativo.
+3. Configure o Valor do Ponto (necessário para cálculo de PnL em contratos).
+4. Clique em **"Salvar"**.
 
 ![Lista de Ativos](./assets/settings/assets/list.png)
-
 ![Formulário de Ativo](./assets/settings/assets/modal_add.png)
 
-Vincule o papel ao seu **Tipo de Ativo** e defina o **Peso do Ponto** (ex: 0.20 para mini-índice).
+#### 2.2.6. Taxas & Emolumentos
+Configure custos de corretagem e emolumentos da bolsa.
 
-#### Taxas & Emolumentos (`/settings/fees`)
-
-Cadastre perfis de custos operacionais (corretagem, ISS, taxas da bolsa).
+**Como adicionar:**
+1. Clique em **"Nova Taxa"**.
+2. Defina um nome para o perfil de taxas.
+3. Informe os valores de corretagem (por ordem ou contrato) e as alíquotas de emolumentos e ISS.
+4. Clique em **"Salvar"**.
 
 ![Lista de Taxas](./assets/settings/fees/list.png)
+![Formulário de Taxas](./assets/settings/fees/modal_add.png)
 
-- **Nome:** Nome do perfil.
-- **Tipo de Cálculo:** Valor fixo ou percentual.
-- **Valores:** Corretagem, Emolumentos, Registro e ISS.
+### 2.3. FISCAL
 
----
+#### 2.3.1. Regras Fiscais
+Defina alíquotas (Day Trade 20%, Swing 15%) e limites de isenção.
 
-### FISCAL
+**Como adicionar:**
+1. Clique em **"Nova Regra"**.
+2. Escolha o Mercado e o Tipo de Ativo.
+3. Defina as alíquotas de Day Trade e Swing Trade.
+4. Informe o código de receita (DARF) e limites de isenção se houver.
+5. Clique em **"Salvar"**.
 
-#### Regras Fiscais (`/settings/fiscal/rules`)
+![Lista de Regras Fiscais](./assets/settings/fiscal/rules/list.png)
+![Formulário de Regra Fiscal](./assets/settings/fiscal/rules/modal_add.png)
 
-As **Regras Fiscais** definem as alíquotas e códigos de receita (DARF) para cada tipo de operação e ativo. 
+#### 2.3.2. Perfis Fiscais
+Agrupe regras em perfis (Ex: "Padrão Brasil").
 
-> [!IMPORTANT]
-> **SCREENSHOT MISSING**: Regras Fiscais.
+**Como adicionar:**
+1. Clique em **"Novo Perfil"**.
+2. Defina um nome (Ex: Swing Trade Ações).
+3. Selecione as regras fiscais que compõem este perfil.
+4. Clique em **"Salvar"**.
 
-![Lista de Regras Fiscais](./assets/settings/fiscal/rules_list.png)
+![Perfis Fiscais](./assets/settings/fiscal/profiles/list.png)
+![Formulário de Perfil Fiscal](./assets/settings/fiscal/profiles/modal.png)
 
-Cada regra especifica:
-- **Alíquota:** Porcentagem de imposto (ex: 15% para Swing Trade, 20% para Day Trade).
-- **Código DARF:** Código usado para pagamento (ex: 6015).
-- **Isenção:** Valor limite de vendas para isenção (ex: R$ 20.000 para ações B3).
+#### 2.3.3. Atribuições
+Vincule perfis fiscais a contas ou tipos de ativos específicos.
 
-#### Perfis Fiscais (`/settings/fiscal/profiles`)
+![Atribuições Fiscais](./assets/settings/fiscal/assignments/list.png)
 
-Um **Perfil Fiscal** é um conjunto de Regras Fiscais. Você pode ter um perfil "Padrão Brasil" que contém todas as regras para o mercado nacional.
+### 2.4. OPERACIONAL
 
-> [!IMPORTANT]
-> **SCREENSHOT MISSING**: Perfis Fiscais.
+#### 2.4.1. Perfil de Risco
+Defina Stop Loss Diário, Metas e o **Growth Plan** (Plano de Crescimento) para proteger seu capital.
 
-![Perfis Fiscais](./assets/settings/fiscal/profiles_list.png)
+**Como adicionar:**
+1. Clique em **"Novo Perfil"** na tela de Perfis de Risco.
+2. No formulário, preencha as configurações divididas em três abas: Geral, Motor de Risco e Crescimento.
+3. Clique em **"Salvar"** para aplicar as regras.
 
-#### Atribuições (`/settings/fiscal/assignments`)
+![Lista de Perfis de Risco](./assets/settings/risk/view.png)
 
-Nesta tela, você vincula um **Perfil Fiscal** a uma **Conta** ou a um **Tipo de Ativo**. Isso garante que, ao fazer um trade naquela conta, o sistema saiba exatamente qual regra de imposto aplicar.
+**Aba: Geral**  
+Configurações básicas de limites e objetivos.
 
-> [!IMPORTANT]
-> **SCREENSHOT MISSING**: Atribuições Fiscais.
+*   **Limite de Perda Diária:** Valor máximo que você aceita perder no dia. Ao atingir, a plataforma pode travar novas operações.
+*   **Meta Diária:** Objetivo de ganho para o dia.
+*   **Risco Máximo por Operação (%):** Limite de perda aceitável em uma única entrada.
+*   **Quantidade Máxima de Trades:** Limite de operações por dia para evitar overtrading.
+*   **Travar ao Atingir Perda:** Se ativado, impede a abertura de novas ordens após o stop diário.
 
-![Atribuições Fiscais](./assets/settings/fiscal/assignments_list.png)
+![Formulário de Risco - Geral](./assets/settings/risk/modal_add_general.png)
 
----
+***
 
----
+**Aba: Motor de Risco**  
+Recursos avançados de inteligência e disciplina.
 
-### OPERACIONAL
+*   **Acoplamento Psicológico:** Reduz o tamanho da mão automaticamente se detectar uma sequência de perdas ou comportamento errático.
+*   **Regressão de Outliers:** Identifica ganhos fora do comum que podem gerar excesso de confiança e ajusta o risco.
+*   **Modo Sniper:** Aumenta a seletividade exigida para novas entradas com base no seu histórico.
 
-#### Perfil de Risco (`/settings/risk`)
+![Formulário de Risco - Motor](./assets/settings/risk/modal_add_engine.png)
 
-O seu **Perfil de Risco** é o que define as métricas de disciplina no seu Dashboard. 
+***
 
-> [!IMPORTANT]
-> **SCREENSHOT MISSING**: Perfil de Risco.
+**Aba: Plano de Crescimento**  
+Escale seus lotes de forma matemática e segura.
 
-![Perfil de Risco](./assets/settings/risk/view.png)
+*   **Habilitar Plano:** Ativa a progressão automática de lotes.
+*   **Fases:** Defina quantos contratos/lotes operar em cada nível e quais as regras para subir ou descer de fase (Ex: 5 dias positivos para subir).
 
-- **Stop Loss Diário:** Valor financeiro máximo que você aceita perder em um dia.
-- **Risco por Operação:** Limite de perda por trade.
-- **Quantidade Máxima de Contratos/Lotes:** Trava operacional sugerida.
+![Formulário de Risco - Crescimento](./assets/settings/risk/modal_add_growth.png)
 
-#### Estratégias (`/settings/strategies`)
+#### 2.4.2. Modalidades
+Categorize o tempo das operações (Scalping, Swing, DT). **Vital para o cálculo fiscal.**
 
-Cadastre seus setups operacionais para analisar quais trazem os melhores resultados.
+**Como adicionar:**
+1. Clique em **"Nova Modalidade"**.
+2. Informe o nome (Ex: Scalping, Day Trade).
+3. Selecione o tipo de cálculo fiscal correspondente.
+4. Clique em **"Salvar"**.
 
-> [!IMPORTANT]
-> **SCREENSHOT MISSING**: Lista de Estratégias.
+![Lista de Modalidades](./assets/settings/modalities/list.png)
+![Formulário de Modalidade](./assets/settings/modalities/modal_add.png)
 
-![Lista de Estratégias](./assets/settings/strategies/list.png)
+### 2.5. ANÁLISE
 
-#### Modalidades (`/settings/modalities`)
+#### 2.5.1. Estados Emocionais
+Mapeie seu humor (Foco, Ansiedade, Vingança) e o peso no seu resultado.
 
-Defina como você opera temporalmente (ex: Day Trade, Swing Trade, Buy & Hold). Isso afeta agrupamentos em relatórios e regras fiscais.
-
----
-
-### ANÁLISE
-
-#### Estados Emocionais (`/settings/emotional-states`)
-
-Personalize as emoções que você registra no diário. 
-
-> [!IMPORTANT]
-> **SCREENSHOT MISSING**: Estados Emocionais.
+**Como adicionar:**
+1. Clique em **"Novo Estado"**.
+2. Dê um nome ao estado emocional.
+3. Defina um ícone e o impacto (Positivo, Neutro ou Negativo).
+4. Clique em **"Salvar"**.
 
 ![Estados Emocionais](./assets/settings/emotional-states/list.png)
+![Formulário de Estado Emocional](./assets/settings/emotional-states/modal_add.png)
 
-#### Tags (`/settings/tags`)
+#### 2.5.2. Tags
+Etiquetas livres para contexto (Notícia, Erro Operacional).
 
-Etiquetas livres para categorizar comportamentos ou setups específicos (ex: "Vingança", "Error 404", "Setup Perfeito").
+**Como adicionar:**
+1. Clique em **"Nova Tag"**.
+2. Informe o nome da tag.
+3. Escolha uma cor para identificação visual.
+4. Clique em **"Salvar"**.
 
-#### Indicadores (`/settings/indicators`)
+![Tags](./assets/settings/tags/list.png)
+![Formulário de Tag](./assets/settings/tags/modal_add.png)
 
-Cadastre os indicadores que você usa em seus gráficos (ex: VWAP, Médias Móveis, IFR).
+#### 2.5.3. Indicadores
+Documente as ferramentas técnicas (VWAP, Médias) usadas nos setups.
 
-#### Timeframes (`/settings/timeframes`)
+**Como adicionar:**
+1. Clique em **"Novo Indicador"**.
+2. Nomeie o indicador técnico.
+3. (Opcional) Adicione uma breve descrição técnica.
+4. Clique em **"Salvar"**.
 
-Tempos gráficos utilizados (ex: 5 min, 15 min, Diário).
+![Indicadores](./assets/settings/indicators/list.png)
+![Formulário de Indicador](./assets/settings/indicators/modal_add.png)
 
-#### Tipos de Gráfico (`/settings/chart-types`)
+#### 2.5.4. Timeframes
+Defina os tempos gráficos (1min, 5min, 60min).
 
-Formatos de visualização (ex: Candles, Renko, Heikin-Ashi).
+**Como adicionar:**
+1. Clique em **"Novo Timeframe"**.
+2. Defina o valor numérico e a unidade (Minutos, Horas, Dias).
+3. Clique em **"Salvar"**.
+
+![Timeframes](./assets/settings/timeframes/list.png)
+![Formulário de Timeframe](./assets/settings/timeframes/modal_add.png)
+
+#### 2.5.5. Tipos de Gráfico
+Escolha a forma de leitura de preço (Candle, Renko, Fluxo).
+
+**Como adicionar:**
+1. Clique em **"Novo Tipo"**.
+2. Nomeie o estilo de gráfico (Ex: Renko 10R).
+3. Clique em **"Salvar"**.
+
+![Tipos de Gráfico](./assets/settings/chart-types/list.png)
+![Formulário de Tipo de Gráfico](./assets/settings/chart-types/modal_add.png)
+
+#### 2.5.6. Estratégias
+Documente seus setups com gatilhos, checklists e exemplos visuais para manter a consistência operacional.
+
+**Como adicionar:**
+1. Clique em **"Nova Estratégia"**.
+2. Defina o nome do operacional (Ex: Rompimento de Pivot, Reversão de Médias).
+3. Preencha o checklist de entrada e as regras de saída (Gain/Loss).
+4. (Opcional) Anexe uma imagem de exemplo do setup ideal.
+5. Clique em **"Salvar"**.
+
+![Lista de Estratégias](./assets/settings/strategies/list.png)
+![Formulário de Estratégia](./assets/settings/strategies/modal_add.png)
+
+### 2.6. SISTEMA
+
+#### 2.6.1. Integrações
+Configure chaves de API para dados externos.
+![Integrações de API - Lista](./assets/settings/api-integrations/list.png)
+
+#### 2.6.2. Banco de Dados
+Gestão e backup dos dados locais criptografados.
+![Gestão de Banco de Dados - Lista](./assets/settings/database/list.png)
 
 ---
 
-### SISTEMA
+## 3. Navegação e Interface (O Cockpit)
 
-#### Integrações (`/settings/api-integrations`)
+### 3.1. Dashboard (Painel Principal)
+Visão 360º da sua saúde financeira. Inclui Equity Curve, Calendário Semafórico e os 4 Kash Cards (Saldo, Net PnL, Win Rate e Disciplina).
+![Visão Geral do Dashboard](./assets/page_dashboard.png)
 
-Configure chaves de API para serviços externos, como dados de mercado em tempo real ou integração com ferramentas de psicologia.
-
-![Integrações de API](./assets/settings/api-integrations/view.png)
-
-#### Banco de Dados (`/settings/database`)
-
-Controle total sobre seus dados locais.
-
-> **SCREENSHOT MISSING**: Gestão de Banco de Dados.
-
-![Gestão de Banco de Dados](./assets/settings/database/view.png)
-
-- **Backup:** Gere um arquivo `.zip` ou `.db` com todos os seus dados.
-- **Restaurar:** Recupere seus dados a partir de um backup anterior.
+### 3.2. Sidebar (Menu Lateral)
+Navegação dividida entre Núcleo Operacional (Trades/Mente), Tesouraria (Bancos/Ativos), Malha Fina (Fiscal) e Casa de Máquinas (Configurações).
 
 ---
-*(Fim do Manual - v1.0)*
+
+## 4. Ecossistema Operacional (Uso Diário)
+
+### 4.1. Negociações (Trades)
+A árvore cronológica onde o Auto-Journaling centraliza suas operações importadas via RTD.
+![Página de Negociações](./assets/page_trades.png)
+
+### 4.2. Estratégias Hub
+Onde você analisa estatisticamente qual setup paga suas contas através de checklists de disciplina.
+![Página de Estratégias](./assets/page_strategies.png)
+
+### 4.3. Hub Financeiro (Tesouraria)
+Gestão de entradas, saídas e controle de margem entre bancos e corretoras.
+![Hub Financeiro](./assets/page_finance.png)
+
+### 4.4. Psicologia (Mente)
+O cruzamento matemático entre seus estados emocionais e seu PnL real.
+![Psicologia](./assets/page_psicologia.png)
+
+### 4.5. Fiscal (O Motor Fiscal B3)
+Geração automática de DARFs, controle de isenção de 20k e relatórios mensais/anuais.
+![Módulo Fiscal](./assets/page_fiscal.png)
+
+---
+*(Fim do Manual - v1.1 - Padronizado)*

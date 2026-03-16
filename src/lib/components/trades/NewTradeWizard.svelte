@@ -1,9 +1,8 @@
-```typescript
 <script lang="ts">
     import { t, locale, _ } from "svelte-i18n";
     import { invoke } from "@tauri-apps/api/core";
     import { emit } from "@tauri-apps/api/event";
-    import { toast } from 'svelte-sonner';
+    import { toast } from "svelte-sonner";
     import { onMount, untrack } from "svelte";
     import { settingsStore } from "$lib/stores/settings.svelte";
     import { tradesStore } from "$lib/stores/trades.svelte";
@@ -277,19 +276,31 @@
             originalResult = parseFloat(currentTrade.result as any) || 0;
             originalData = JSON.parse(JSON.stringify(currentTrade)); // Capture full original data
 
-            // AUTO-PARTIAL DETECTION (NEW): If we are editing an open trade and 
+            // AUTO-PARTIAL DETECTION (NEW): If we are editing an open trade and
             // the detection triggered this, auto-add a partial entry.
             if (currentTrade._isAutoPartial) {
-                console.log("[NewTradeWizard] Automatic partial detected. Appending to exits...");
-                const autoPrice = parseFloat(currentTrade._autoPrice as any) || currentTrade.entry_price;
-                const autoType = currentTrade._autoType === 'partial_entry' ? 'entry' : 'exit';
-                
+                console.log(
+                    "[NewTradeWizard] Automatic partial detected. Appending to exits...",
+                );
+                const autoPrice =
+                    parseFloat(currentTrade._autoPrice as any) ||
+                    currentTrade.entry_price;
+                const autoType =
+                    currentTrade._autoType === "partial_entry"
+                        ? "entry"
+                        : "exit";
+
                 formData.partial_exits.push({
-                    date: currentTrade.date ? currentTrade.date.replace(" ", "T").slice(0, 16) : getNowWithOffset(),
+                    date: currentTrade.date
+                        ? currentTrade.date.replace(" ", "T").slice(0, 16)
+                        : getNowWithOffset(),
                     price: autoPrice,
-                    quantity: 1, 
+                    quantity: 1,
                     type: autoType,
-                    notes: autoType === 'entry' ? "Aumento de Posição via RTD" : "Parcial via RTD"
+                    notes:
+                        autoType === "entry"
+                            ? "Aumento de Posição via RTD"
+                            : "Parcial via RTD",
                 });
                 currentStep = 2; // Move to the partials manager step immediately
             }
@@ -613,7 +624,10 @@
                 if (upperSym.startsWith("WDO")) {
                     guessedTypeId = futType || indType || "rtd";
                     pointValue = 10.0;
-                } else if (upperSym.startsWith("WIN") || upperSym.startsWith("IND")) {
+                } else if (
+                    upperSym.startsWith("WIN") ||
+                    upperSym.startsWith("IND")
+                ) {
                     guessedTypeId = futType || indType || "rtd";
                     pointValue = 0.2;
                 } else if (upperSym.startsWith("DOL")) {
@@ -652,9 +666,10 @@
     let calculationResult = $derived.by(() => {
         const asset = selectedAsset;
         const assetTypes = assetTypesList;
-        const assetType = assetTypes.find(
-            (at) => at.id === asset?.asset_type_id,
-        ) || assetTypes.find(at => at.id === "rtd") || assetTypes[0];
+        const assetType =
+            assetTypes.find((at) => at.id === asset?.asset_type_id) ||
+            assetTypes.find((at) => at.id === "rtd") ||
+            assetTypes[0];
         const account = selectedAccount;
         const currencySymbol = account
             ? settingsStore.getCurrencySymbol(account.currency)
@@ -663,13 +678,15 @@
         const pointValue = (() => {
             if (asset?.point_value) return asset.point_value;
             const upperSym = (formData.asset || "").toUpperCase();
-            if (upperSym.startsWith("WIN") || upperSym.startsWith("IND")) return 0.2;
+            if (upperSym.startsWith("WIN") || upperSym.startsWith("IND"))
+                return 0.2;
             if (upperSym.startsWith("WDO")) return 10.0;
             if (upperSym.startsWith("DOL")) return 50.0;
             return 1.0;
         })();
 
-        const multiplier = (formData.direction || "").toLowerCase() === "buy" ? 1 : -1;
+        const multiplier =
+            (formData.direction || "").toLowerCase() === "buy" ? 1 : -1;
         const isPoints = assetType?.result_type === "points";
 
         // MOVING AVERAGE logic:
@@ -684,7 +701,10 @@
 
         // Sort parciais by date to ensure chronological processing
         const sortedPartials = [...formData.partial_exits].sort((a, b) => {
-            return new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime();
+            return (
+                new Date(a.date || 0).getTime() -
+                new Date(b.date || 0).getTime()
+            );
         });
 
         let calculatedFees = 0;
@@ -698,7 +718,8 @@
             if (isEntry) {
                 const newQty = currentQty + qty;
                 if (newQty > 0) {
-                    currentAvgPrice = ((currentAvgPrice * currentQty) + (price * qty)) / newQty;
+                    currentAvgPrice =
+                        (currentAvgPrice * currentQty + price * qty) / newQty;
                 }
                 currentQty = newQty;
                 totalEntryQty += qty;
@@ -707,7 +728,7 @@
                     resultCurrency: 0,
                     resultPoints: 0,
                     type: "addition",
-                    unit: "currency"
+                    unit: "currency",
                 });
             } else {
                 // Realize profit based on CURRENT average price
@@ -722,7 +743,7 @@
                     resultCurrency: resultCurrency,
                     resultPoints: resultCurrency / pointValue,
                     type: "exit",
-                    unit: isPoints ? "points" : "currency"
+                    unit: isPoints ? "points" : "currency",
                 });
             }
         });
@@ -734,14 +755,15 @@
 
         if (finalExitPrice !== null && remainingQty > 0) {
             const diff = finalExitPrice - currentAvgPrice;
-            const resultCurrency = diff * remainingQty * pointValue * multiplier;
+            const resultCurrency =
+                diff * remainingQty * pointValue * multiplier;
             grossCurrencyTotal += resultCurrency;
             memoryItems.push({
                 label: `${$t("trades.wizard.summary.final_exit")} (-${remainingQty} ${assetType?.unit_label || "ctr"}) @ ${finalExitPrice}`,
                 resultCurrency: resultCurrency,
                 resultPoints: resultCurrency / pointValue,
                 type: "exit",
-                unit: isPoints ? "points" : "currency"
+                unit: isPoints ? "points" : "currency",
             });
         }
 
@@ -755,7 +777,8 @@
             // Re-calculate total entry value for fee purposes
             let totalEntryValForFees = formData.entry_price * formData.quantity;
             sortedPartials.forEach((p: any) => {
-                if (p.type === "entry") totalEntryValForFees += (p.price || 0) * (p.quantity || 0);
+                if (p.type === "entry")
+                    totalEntryValForFees += (p.price || 0) * (p.quantity || 0);
             });
             const entryValue = totalEntryValForFees * pointValue;
 
@@ -766,7 +789,7 @@
                     label: $t("trades.wizard.summary.fixed_fee"),
                     resultCurrency: -fixed,
                     resultPoints: -fixed / pointValue,
-                    unit: "currency"
+                    unit: "currency",
                 });
             }
 
@@ -777,7 +800,7 @@
                     label: `${$t("trades.wizard.summary.variable_fee")} (${feeProfile.percentage_fee}%)`,
                     resultCurrency: -perc,
                     resultPoints: -perc / pointValue,
-                    unit: "currency"
+                    unit: "currency",
                 });
             }
 
@@ -788,18 +811,19 @@
                     label: `Taxas de Bolsa (${feeProfile.exchange_fee}%)`,
                     resultCurrency: -exch,
                     resultPoints: -exch / pointValue,
-                    unit: "currency"
+                    unit: "currency",
                 });
             }
 
             if (feeProfile.withholding_tax > 0 && grossCurrencyTotal > 0) {
-                const irrf = grossCurrencyTotal * (feeProfile.withholding_tax / 100);
+                const irrf =
+                    grossCurrencyTotal * (feeProfile.withholding_tax / 100);
                 calculatedFees += irrf;
                 memoryItems.push({
                     label: `IRRF Estimado (${feeProfile.withholding_tax}%)`,
                     resultCurrency: -irrf,
                     resultPoints: -irrf / pointValue,
-                    unit: "currency"
+                    unit: "currency",
                 });
             }
         }
@@ -813,7 +837,7 @@
                 resultCurrency: grossCurrencyTotal,
                 resultPoints: grossCurrencyTotal / pointValue,
                 unit: isPoints ? "points" : "currency",
-                isHeader: true
+                isHeader: true,
             });
         }
 
@@ -828,7 +852,7 @@
             assetType,
             currencySymbol,
             totalEntryQty,
-            globalAvgPrice: currentAvgPrice
+            globalAvgPrice: currentAvgPrice,
         };
     });
 
@@ -1016,12 +1040,18 @@
                 }
 
                 // DARF Warning Logic (as per instruction)
-                if (editTradeId && calculationResult.netCurrency > originalResult + 100) {
-                    toast.error($_('trades.wizard.messages.complementary_darf_warning'), {
-                        duration: 6000,
-                        position: 'top-center',
-                        style: 'background: #1a1a1a; color: #ff4b4b; border: 1px solid #ff4b4b22; font-weight: 600;'
-                    });
+                if (
+                    editTradeId &&
+                    calculationResult.netCurrency > originalResult + 100
+                ) {
+                    toast.error(
+                        $_("trades.wizard.messages.complementary_darf_warning"),
+                        {
+                            duration: 6000,
+                            position: "top-center",
+                            style: "background: #1a1a1a; color: #ff4b4b; border: 1px solid #ff4b4b22; font-weight: 600;",
+                        },
+                    );
                 }
 
                 console.log(
@@ -1388,12 +1418,29 @@
                             <!-- Left Column: Assets -->
                             <div class="space-y-4">
                                 {#if showDarfWarning}
-                                    <div class="p-3 rounded-lg bg-orange-500/10 border border-orange-500/30 flex gap-3 animate-pulse">
-                                        <AlertCircle class="w-5 h-5 text-orange-500 shrink-0" />
+                                    <div
+                                        class="p-3 rounded-lg bg-orange-500/10 border border-orange-500/30 flex gap-3 animate-pulse"
+                                    >
+                                        <AlertCircle
+                                            class="w-5 h-5 text-orange-500 shrink-0"
+                                        />
                                         <div class="space-y-1">
-                                            <p class="text-xs font-bold text-orange-500 uppercase tracking-tight">{$t("trades.wizard.messages.complementary_darf_warning")}</p>
-                                            <p class="text-[10px] text-muted-foreground leading-snug">
-                                                O resultado aumentou {(calculationResult.netCurrency - originalResult).toFixed(2)}. Verifique se há necessidade de emitir um DARF complementar para evitar multas.
+                                            <p
+                                                class="text-xs font-bold text-orange-500 uppercase tracking-tight"
+                                            >
+                                                {$t(
+                                                    "trades.wizard.messages.complementary_darf_warning",
+                                                )}
+                                            </p>
+                                            <p
+                                                class="text-[10px] text-muted-foreground leading-snug"
+                                            >
+                                                O resultado aumentou {(
+                                                    calculationResult.netCurrency -
+                                                    originalResult
+                                                ).toFixed(2)}. Verifique se há
+                                                necessidade de emitir um DARF
+                                                complementar para evitar multas.
                                             </p>
                                         </div>
                                     </div>
@@ -1856,9 +1903,16 @@
                                 (a) => a.symbol === formData.asset,
                             )}
                             {@const resolvedPointValue = (() => {
-                                if (selectedAsset?.point_value) return selectedAsset.point_value;
-                                const upperSym = (formData.asset || "").toUpperCase();
-                                if (upperSym.startsWith("WIN") || upperSym.startsWith("IND")) return 0.2;
+                                if (selectedAsset?.point_value)
+                                    return selectedAsset.point_value;
+                                const upperSym = (
+                                    formData.asset || ""
+                                ).toUpperCase();
+                                if (
+                                    upperSym.startsWith("WIN") ||
+                                    upperSym.startsWith("IND")
+                                )
+                                    return 0.2;
                                 if (upperSym.startsWith("WDO")) return 10.0;
                                 if (upperSym.startsWith("DOL")) return 50.0;
                                 return 1.0;
@@ -1870,9 +1924,17 @@
                                 direction={formData.direction}
                                 pointValue={resolvedPointValue}
                                 currencySymbol={calculationResult.currencySymbol}
-                                unitLabel={calculationResult.assetType?.unit_label || $t("trades.wizard.unit_labels.contracts")}
-                                resultSuffix={calculationResult.assetType?.result_type === "points" ? "pts" : ""}
-                                resultPrefix={calculationResult.assetType?.result_type === "currency" ? calculationResult.currencySymbol + " " : ""}
+                                unitLabel={calculationResult.assetType
+                                    ?.unit_label ||
+                                    $t("trades.wizard.unit_labels.contracts")}
+                                resultSuffix={calculationResult.assetType
+                                    ?.result_type === "points"
+                                    ? "pts"
+                                    : ""}
+                                resultPrefix={calculationResult.assetType
+                                    ?.result_type === "currency"
+                                    ? calculationResult.currencySymbol + " "
+                                    : ""}
                             />
                         {/if}
                     </section>
@@ -1890,7 +1952,8 @@
                                     class="text-[10px] font-bold uppercase tracking-tighter {formData.status ===
                                     'open'
                                         ? 'text-primary'
-                                        : 'text-muted-foreground'}">{$t("trades.status.open")}</span
+                                        : 'text-muted-foreground'}"
+                                    >{$t("trades.status.open")}</span
                                 >
                                 <button
                                     class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 transition-colors bg-muted/40 border border-border/40"
@@ -2111,7 +2174,18 @@
                                         >
                                         {#if calculationResult.totalEntryQty > formData.quantity}
                                             <span class="ml-2 text-primary/60">
-                                                 / MÉDIO: <span class="text-foreground font-mono font-bold">{(formData.entry_price || 0).toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })}</span>
+                                                / MÉDIO: <span
+                                                    class="text-foreground font-mono font-bold"
+                                                    >{(
+                                                        formData.entry_price ||
+                                                        0
+                                                    ).toLocaleString(
+                                                        $locale || "pt-BR",
+                                                        {
+                                                            minimumFractionDigits: 2,
+                                                        },
+                                                    )}</span
+                                                >
                                             </span>
                                         {/if}
                                     </p>
@@ -2124,17 +2198,35 @@
                                     {$t("trades.details.net_result")}
                                 </p>
                                 <h3
-                                    class="text-2xl font-black {calculationResult.netCurrency >= 0
+                                    class="text-2xl font-black {calculationResult.netCurrency >=
+                                    0
                                         ? 'text-emerald-400'
                                         : 'text-red-400'}"
                                 >
                                     {#if calculationResult.assetType?.result_type === "points"}
-                                        {calculationResult.netPoints.toLocaleString($locale || "pt-BR", { maximumFractionDigits: 2 })} <span class="text-xs uppercase font-bold text-muted-foreground mr-1">pts</span>
-                                        <span class="text-xs text-muted-foreground font-medium block md:inline md:ml-2">
-                                            {calculationResult.currencySymbol} {calculationResult.netCurrency.toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })}
+                                        {calculationResult.netPoints.toLocaleString(
+                                            $locale || "pt-BR",
+                                            { maximumFractionDigits: 2 },
+                                        )}
+                                        <span
+                                            class="text-xs uppercase font-bold text-muted-foreground mr-1"
+                                            >pts</span
+                                        >
+                                        <span
+                                            class="text-xs text-muted-foreground font-medium block md:inline md:ml-2"
+                                        >
+                                            {calculationResult.currencySymbol}
+                                            {calculationResult.netCurrency.toLocaleString(
+                                                $locale || "pt-BR",
+                                                { minimumFractionDigits: 2 },
+                                            )}
                                         </span>
                                     {:else}
-                                        {calculationResult.currencySymbol} {calculationResult.netCurrency.toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })}
+                                        {calculationResult.currencySymbol}
+                                        {calculationResult.netCurrency.toLocaleString(
+                                            $locale || "pt-BR",
+                                            { minimumFractionDigits: 2 },
+                                        )}
                                     {/if}
                                 </h3>
                             </div>
@@ -2332,7 +2424,9 @@
                                         <p
                                             class="text-[9px] text-muted-foreground uppercase font-bold tracking-widest"
                                         >
-                                            {$t("trades.wizard.fields.asset_direction")}
+                                            {$t(
+                                                "trades.wizard.fields.asset_direction",
+                                            )}
                                         </p>
                                         <div class="flex items-center gap-2">
                                             <span
@@ -2340,8 +2434,18 @@
                                                 >{formData.asset}</span
                                             >
                                             {#if calculationResult.totalEntryQty > formData.quantity}
-                                                <span class="text-[10px] text-muted-foreground">
-                                                    (Médio: {(formData.entry_price || 0).toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })})
+                                                <span
+                                                    class="text-[10px] text-muted-foreground"
+                                                >
+                                                    (Médio: {(
+                                                        formData.entry_price ||
+                                                        0
+                                                    ).toLocaleString(
+                                                        $locale || "pt-BR",
+                                                        {
+                                                            minimumFractionDigits: 2,
+                                                        },
+                                                    )})
                                                 </span>
                                             {/if}
                                             <span
@@ -2367,17 +2471,37 @@
                                             {$t("trades.table.pl")}
                                         </p>
                                         <p
-                                            class="text-xl font-black {calculationResult.netCurrency >= 0
+                                            class="text-xl font-black {calculationResult.netCurrency >=
+                                            0
                                                 ? 'text-emerald-400'
                                                 : 'text-red-400'}"
                                         >
                                             {#if calculationResult.assetType?.result_type === "points"}
-                                                {calculationResult.netPoints.toLocaleString($locale || "pt-BR", { maximumFractionDigits: 2 })} pts
-                                                <span class="text-[10px] text-muted-foreground block font-bold">
-                                                    {calculationResult.currencySymbol} {calculationResult.netCurrency.toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })}
+                                                {calculationResult.netPoints.toLocaleString(
+                                                    $locale || "pt-BR",
+                                                    {
+                                                        maximumFractionDigits: 2,
+                                                    },
+                                                )} pts
+                                                <span
+                                                    class="text-[10px] text-muted-foreground block font-bold"
+                                                >
+                                                    {calculationResult.currencySymbol}
+                                                    {calculationResult.netCurrency.toLocaleString(
+                                                        $locale || "pt-BR",
+                                                        {
+                                                            minimumFractionDigits: 2,
+                                                        },
+                                                    )}
                                                 </span>
                                             {:else}
-                                                {calculationResult.currencySymbol} {calculationResult.netCurrency.toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })}
+                                                {calculationResult.currencySymbol}
+                                                {calculationResult.netCurrency.toLocaleString(
+                                                    $locale || "pt-BR",
+                                                    {
+                                                        minimumFractionDigits: 2,
+                                                    },
+                                                )}
                                             {/if}
                                         </p>
                                     </div>
@@ -2480,14 +2604,35 @@
                                                         >
                                                     </div>
                                                     <span
-                                                        class="text-[10px] font-mono font-bold {item.resultCurrency >= 0
+                                                        class="text-[10px] font-mono font-bold {item.resultCurrency >=
+                                                        0
                                                             ? 'text-emerald-400'
                                                             : 'text-red-400'}"
                                                     >
                                                         {#if item.resultCurrency !== 0}
-                                                            {item.resultPoints >= 0 ? "+" : ""}{item.resultPoints.toLocaleString($locale || "pt-BR", { maximumFractionDigits: 2 })} pts
-                                                            <span class="text-[9px] opacity-60 ml-1">
-                                                                ({calculationResult.currencySymbol} {Math.abs(item.resultCurrency).toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })})
+                                                            {item.resultPoints >=
+                                                            0
+                                                                ? "+"
+                                                                : ""}{item.resultPoints.toLocaleString(
+                                                                $locale ||
+                                                                    "pt-BR",
+                                                                {
+                                                                    maximumFractionDigits: 2,
+                                                                },
+                                                            )} pts
+                                                            <span
+                                                                class="text-[9px] opacity-60 ml-1"
+                                                            >
+                                                                ({calculationResult.currencySymbol}
+                                                                {Math.abs(
+                                                                    item.resultCurrency,
+                                                                ).toLocaleString(
+                                                                    $locale ||
+                                                                        "pt-BR",
+                                                                    {
+                                                                        minimumFractionDigits: 2,
+                                                                    },
+                                                                )})
                                                             </span>
                                                         {:else}
                                                             -
@@ -2509,12 +2654,31 @@
                                                 class="text-xs font-mono font-black text-foreground"
                                             >
                                                 {#if calculationResult.assetType?.result_type === "points"}
-                                                    {calculationResult.grossPoints.toLocaleString($locale || "pt-BR", { maximumFractionDigits: 2 })} pts
-                                                    <span class="text-[9px] text-muted-foreground ml-1">
-                                                        ({calculationResult.currencySymbol} {calculationResult.grossCurrency.toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })})
+                                                    {calculationResult.grossPoints.toLocaleString(
+                                                        $locale || "pt-BR",
+                                                        {
+                                                            maximumFractionDigits: 2,
+                                                        },
+                                                    )} pts
+                                                    <span
+                                                        class="text-[9px] text-muted-foreground ml-1"
+                                                    >
+                                                        ({calculationResult.currencySymbol}
+                                                        {calculationResult.grossCurrency.toLocaleString(
+                                                            $locale || "pt-BR",
+                                                            {
+                                                                minimumFractionDigits: 2,
+                                                            },
+                                                        )})
                                                     </span>
                                                 {:else}
-                                                    {calculationResult.currencySymbol} {calculationResult.grossCurrency.toLocaleString($locale || "pt-BR", { minimumFractionDigits: 2 })}
+                                                    {calculationResult.currencySymbol}
+                                                    {calculationResult.grossCurrency.toLocaleString(
+                                                        $locale || "pt-BR",
+                                                        {
+                                                            minimumFractionDigits: 2,
+                                                        },
+                                                    )}
                                                 {/if}
                                             </span>
                                         </div>

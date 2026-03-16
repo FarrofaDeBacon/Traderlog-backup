@@ -609,6 +609,14 @@
         "yes": "Yes",
         "progress": "Progress"
     },
+    "help": {
+        "title": "Help Center",
+        "subtitle": "Find answers and learn how to use all the features of TraderLog Pro.",
+        "searchHint": "Search the manual (e.g. DARF, RTD, Strategies)...",
+        "topics": "Topics",
+        "emptyState": "No results found",
+        "emptyStateDescription": "Try searching for different terms or browse the topics on the side."
+    },
     "header": {
         "searchPlaceholder": "Search...",
         "toggleUserMenu": "Toggle User Menu",
@@ -1913,17 +1921,14 @@
         "categories": {
             "analysis": "Analysis",
             "fiscal": "Fiscal",
+            "support": "Support",
             "workspace": "Home"
         },
-        "darfs": "DARFs",
         "dashboard": "Dashboard",
         "finance": "Finance Hub",
-        "fiscalDashboard": "Overview",
-        "fiscalRules": "Tax Rules",
+        "help": "Help Center",
         "irpf": "Fiscal",
-        "journal": "Journal",
         "psychology": "Psychology",
-        "quant": "Quant Screen",
         "settings": "Settings",
         "strategies": "Strategies",
         "trades": "Trades"

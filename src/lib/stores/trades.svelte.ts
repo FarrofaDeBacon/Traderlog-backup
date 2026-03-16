@@ -13,12 +13,8 @@ class TradesStore {
         if (this.isLoading) return;
         this.isLoading = true;
         try {
-            console.log("[TradesStore] Calling get_trades...");
             const trades = await invoke("get_trades") as Trade[];
-            console.log("[TradesStore] Received trades from backend:", trades ? trades.length : 0);
-
-            // Critical: always update trades even if empty, to clear the list correctly
-            this.trades = trades || [];
+            this.trades = trades;
         } catch (e) {
             console.error("[TradesStore] Error loading trades:", e);
         } finally {

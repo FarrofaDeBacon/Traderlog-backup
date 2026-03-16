@@ -18,6 +18,7 @@
         PanelLeftOpen,
         FileText,
         DollarSign,
+        LifeBuoy,
     } from "lucide-svelte";
     import * as Tooltip from "$lib/components/ui/tooltip";
     import * as AlertDialog from "$lib/components/ui/alert-dialog";
@@ -53,6 +54,11 @@
 
     // System Items
     let systemItems = $derived([
+        {
+            label: $t("sidebar.help"),
+            href: "/help",
+            icon: LifeBuoy,
+        },
         {
             label: $t("sidebar.settings"),
             href: "/settings",
@@ -167,10 +173,8 @@
 </Sheet.Root>
 
 <!-- Desktop Sidebar -->
-<!-- Desktop Sidebar -->
-<!-- Desktop Sidebar -->
 <aside
-    class="hidden border-r bg-sidebar/40 backdrop-blur-xl md:flex md:flex-col min-h-screen transition-all duration-300 relative group"
+    class="hidden border-r bg-sidebar/40 backdrop-blur-xl md:flex md:flex-col h-screen sticky top-0 transition-all duration-300 relative group overflow-hidden"
 >
     <!-- Floating Toggle Button -->
     <Button
@@ -208,8 +212,9 @@
             <ModeToggle />
         </div>
     </div>
-    <div class="flex-1 overflow-x-hidden">
-        <nav class="grid gap-1 px-2 pt-4">
+    <div class="flex-1 overflow-hidden flex flex-col min-h-0">
+        <ScrollArea class="h-full flex-1">
+            <nav class="grid gap-1 px-2 pt-4">
             {#if !sidebarState.isCollapsed}
                 <div
                     class="px-3 py-2 text-[10px] font-bold uppercase text-muted-foreground tracking-widest"
@@ -356,7 +361,8 @@
                 {/if}
             {/each}
         </nav>
-    </div>
+    </ScrollArea>
+</div>
 
     <!-- Footer: Settings & Logout -->
     <div class="mt-auto p-4 border-t flex flex-col gap-2">

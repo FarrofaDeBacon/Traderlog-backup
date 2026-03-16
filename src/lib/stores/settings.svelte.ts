@@ -239,7 +239,12 @@ class SettingsStore {
             // Assign results
             if (hwid) this.hardwareId = hwid;
             if (apiConfigsRes) this.apiConfigs = apiConfigsRes;
-            if (accountsRes) this.accounts = accountsRes;
+            if (accountsRes) {
+                this.accounts = accountsRes.map(a => ({
+                    ...a,
+                    root_id: a.root_id ?? undefined
+                }));
+            }
             if (currenciesRes) this.currencies = currenciesRes;
             if (marketsRes) this.markets = marketsRes;
             if (assetTypesRes) this.assetTypes = assetTypesRes;
@@ -250,8 +255,12 @@ class SettingsStore {
                     root_id: a.root_id ?? undefined
                 }));
             }
-            if (emotionalStatesRes) this.emotionalStates = emotionalStatesRes;
-            if (strategiesRes) this.strategies = strategiesRes;
+            if (emotionalStatesRes) {
+                this.emotionalStates = emotionalStatesRes;
+            }
+            if (strategiesRes) {
+                this.strategies = strategiesRes;
+            }
             if (transactionsRes) this.cashTransactions = transactionsRes;
             if (feesRes) this.fees = feesRes;
             if (riskProfilesRes) {
@@ -277,8 +286,7 @@ class SettingsStore {
 
             if (profile) {
                 this.userProfile = { ...this.userProfile, ...profile };
-
-                console.log("[SettingsStore] User Profile loaded and processed. Onboarding:", this.userProfile.onboarding_completed);
+                console.log("[SettingsStore] User Profile loaded and processed.");
             } else {
                 console.warn("[SettingsStore] No profile found, using defaults.");
             }

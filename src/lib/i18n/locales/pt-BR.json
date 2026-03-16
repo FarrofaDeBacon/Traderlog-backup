@@ -609,14 +609,22 @@
     "yes": "Sim",
     "progress": "Progresso"
   },
+  "help": {
+    "title": "Central de Ajuda",
+    "subtitle": "Encontre respostas e aprenda a usar todas as funcionalidades do TraderLog Pro.",
+    "searchHint": "Pesquisar no manual (ex: DARF, RTD, Estratégias)...",
+    "topics": "Tópicos",
+    "emptyState": "Nenhum resultado encontrado",
+    "emptyStateDescription": "Tente buscar por termos diferentes ou navegue pelos tópicos ao lado."
+  },
   "header": {
-    "searchPlaceholder": "Search Placeholder",
-    "toggleUserMenu": "Toggle User Menu",
+    "searchPlaceholder": "Pesquisar...",
+    "toggleUserMenu": "Alternar Menu do Usuário",
     "userMenu": {
-      "logout": "Logout",
-      "myAccount": "My Account",
-      "settings": "Settings",
-      "support": "Support"
+      "logout": "Sair",
+      "myAccount": "Minha Conta",
+      "settings": "Configurações",
+      "support": "Suporte"
     }
   },
   "home": {
@@ -768,49 +776,49 @@
         "rule": "Regra Aplicável"
       },
       "profiles": {
-        "create": "Create",
-        "description": "Description",
-        "empty": "Empty",
+        "create": "Criar Perfil",
+        "description": "Perfis fiscais consolidam várias regras.",
+        "empty": "Nenhum perfil fiscal encontrado.",
         "error": {
-          "duplicateModality": "Duplicate Modality",
-          "errorAddEntry": "Error Add Entry",
-          "nameRequired": "Name Required",
-          "saveError": "Save Error",
-          "selectRequired": "Select Required"
+          "duplicateModality": "Esta modalidade já está configurada.",
+          "errorAddEntry": "Erro ao adicionar entrada",
+          "nameRequired": "Nome é obrigatório",
+          "saveError": "Erro ao salvar perfil",
+          "selectRequired": "Seleção obrigatória"
         },
         "form": {
           "addModalityHint": "Clique em + para adicionar uma regra a uma modalidade.",
-          "description": "Description",
+          "description": "Descrição do perfil",
           "descriptionLabel": "Descrição",
           "descriptionPlaceholder": "Descrição do perfil...",
           "emptyRules": "Nenhuma regra adicionada.",
           "modality": "Modalidade",
-          "name": "Name",
+          "name": "Nome",
           "namePlaceholder": "Ex: Perfil de Ações",
           "rule": "Regra Fiscal",
           "rulesByModality": "Regras por Modalidade",
-          "save": "Save",
-          "saving": "Saving",
+          "save": "Salvar",
+          "saving": "Salvando...",
           "select": "Selecionar...",
           "titleEdit": "Editar Perfil",
           "titleNew": "Novo Perfil",
-          "update": "Update"
+          "update": "Atualizar"
         },
-        "linkedRules": "Linked Rules",
-        "new": "New",
-        "noLinkedRules": "No Linked Rules",
+        "linkedRules": "Regras Vinculadas",
+        "new": "Novo Perfil",
+        "noLinkedRules": "Nenhuma regra vinculada.",
         "success": {
-          "create": "Create",
-          "ruleAdded": "Rule Added",
-          "ruleAddedDraft": "Rule Added Draft",
-          "ruleRemoved": "Rule Removed",
-          "ruleRemovedDraft": "Rule Removed Draft",
-          "update": "Update"
+          "create": "Perfil criado com sucesso.",
+          "ruleAdded": "Regra adicionada com sucesso.",
+          "ruleAddedDraft": "Regra adicionada como rascunho.",
+          "ruleRemoved": "Regra removida com sucesso.",
+          "ruleRemovedDraft": "Regra removida do rascunho.",
+          "update": "Perfil atualizado com sucesso."
         },
-        "title": "Title"
+        "title": "Perfis Fiscais"
       },
       "rules": {
-        "description": "Description",
+        "description": "Regras fiscais individuais.",
         "empty": "Nenhuma regra fiscal configurada.",
         "form": {
           "basis": "Base de Cálculo",
@@ -1003,12 +1011,12 @@
       }
     },
     "appearance": {
-      "compactDescription": "Compact Description",
-      "compactLabel": "Compact Label",
-      "description": "Description",
-      "themeDescription": "Theme Description",
-      "themeLabel": "Theme Label",
-      "title": "Title"
+      "compactDescription": "Modo compacto para maior densidade de dados.",
+      "compactLabel": "Interface Compacta",
+      "description": "Ajuste a aparência visual da plataforma.",
+      "themeDescription": "Escolha entre os temas claro e escuro.",
+      "themeLabel": "Tema Visual",
+      "title": "Aparência"
     },
     "assetTypes": {
       "description": "Categorias de ativos (Ações, Futuros, Opções, Forex...).",
@@ -1071,7 +1079,7 @@
         "fileSelected": "Arquivo selecionado: {path}",
         "importSelected": "Importar Selecionados ({count})",
         "noAssets": "Nenhum ativo novo detectado no RTD.",
-      "selectExcel": "Selecionar Arquivo Excel",
+        "selectExcel": "Selecionar Arquivo Excel",
         "suggestedName": "Nome Sugerido",
         "symbol": "Símbolo",
         "title": "Importar Ativos do Profit RTD",
@@ -1090,15 +1098,15 @@
       "title": "Ativos"
     },
     "backup": {
-      "clearButton": "Clear Button",
-      "confirmReset": "Confirm Reset",
-      "dangerDescription": "Danger Description",
-      "dangerZone": "Danger Zone",
-      "description": "Description",
-      "exportButton": "Export Button",
-      "exportDescription": "Export Description",
-      "exportTitle": "Export Title",
-      "title": "Title"
+      "clearButton": "Limpar Todos os Dados",
+      "confirmReset": "Tem certeza que deseja resetar o banco de dados? Isso não pode ser desfeito.",
+      "dangerDescription": "Apague permanentemente todos os dados e resete para as configurações de fábrica.",
+      "dangerZone": "Zona de Perigo",
+      "description": "Gerencie seus backups e o estado do sistema.",
+      "exportButton": "Exportar Backup",
+      "exportDescription": "Salve seus dados em um arquivo JSON.",
+      "exportTitle": "Exportar Dados",
+      "title": "Backup e Sistema"
     },
     "chartTypes": {
       "description": "Defina os tipos de gráfico que utiliza (Candle, Renko, etc.).",
@@ -1394,7 +1402,7 @@
         "titleNew": "Novo Mercado",
         "tradingDays": "Dias de Operação",
         "tradingSessions": "Sessões de Negociação",
-        "until": "Until"
+        "until": "Até"
       },
       "new": "Novo Mercado",
       "searchPlaceholder": "Buscar mercado...",
@@ -1913,17 +1921,14 @@
     "categories": {
       "analysis": "Análise",
       "fiscal": "Fiscal",
+      "support": "Suporte",
       "workspace": "Início"
     },
-    "darfs": "DARFs",
     "dashboard": "Painel",
     "finance": "Hub Financeiro",
-    "fiscalDashboard": "Visão Geral",
-    "fiscalRules": "Regras Fiscais",
+    "help": "Central de Ajuda",
     "irpf": "Fiscal",
-    "journal": "Diário",
     "psychology": "Psicologia",
-    "quant": "Tela Quant",
     "settings": "Configurações",
     "strategies": "Estratégias",
     "trades": "Negociações"

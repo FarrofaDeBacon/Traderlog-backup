@@ -663,7 +663,7 @@
                                     "active"
                                         ? $t("settings.profile.license.active")
                                         : settingsStore.licenseStatus ===
-                                            "trial"
+                                             "trial"
                                           ? $t("settings.profile.license.trial")
                                           : $t(
                                                 "settings.profile.license.expired",

@@ -6,6 +6,17 @@
     import * as Avatar from "$lib/components/ui/avatar";
     import ModeToggle from "$lib/components/mode-toggle/ModeToggle.svelte";
     import { t } from "svelte-i18n";
+    import { goto } from "$app/navigation";
+    import { page } from "$app/stores";
+
+    let searchQuery = $state("");
+
+    function handleSearch(e: SubmitEvent) {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            goto(`/help?q=${encodeURIComponent(searchQuery)}`);
+        }
+    }
 
     // Props for mobile trigger injection if needed, but Sidebar handles its own trigger currently.
     // We might want to move the trigger here if we want a unified header.
@@ -18,7 +29,7 @@
 >
     <!-- Mobile Menu Trigger Area (Occupied by Sidebar Trigger in Layout) -->
     <div class="w-full flex-1">
-        <form>
+        <form onsubmit={handleSearch}>
             <div class="relative">
                 <Search
                     class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"
@@ -26,6 +37,7 @@
                 <Input
                     type="search"
                     placeholder={$t("header.searchPlaceholder")}
+                    bind:value={searchQuery}
                     class="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
                 />
             </div>
