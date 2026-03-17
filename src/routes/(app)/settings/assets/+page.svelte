@@ -440,10 +440,7 @@
             </div>
 
             <div class="grid grid-cols-4 items-center gap-4">
-                <Label class="text-right leading-[1.1] flex flex-col gap-0.5 items-end justify-center">
-                    <span class="whitespace-nowrap">Tam. Contrato</span>
-                    <span class="text-[0.65rem] text-muted-foreground opacity-80 whitespace-nowrap">(Multiplicador)</span>
-                </Label>
+                <Label class="text-right whitespace-nowrap">Tamanho de Contrato</Label>
                 <Input
                     type="number"
                     step="0.01"
@@ -539,8 +536,8 @@
                 </div>
             </div>
             <div class="grid grid-cols-4 items-center gap-4">
-                <Label class="text-right leading-tight flex flex-col items-end justify-center text-balance w-full">
-                    <span>{$t("settings.assets.form.brokerageProfile") || "Perfil de Corretagem"}</span>
+                <Label class="text-right whitespace-nowrap">
+                    {$t("settings.assets.form.brokerageProfile") || "Perfil de Corretagem"}
                 </Label>
                 <div class="col-span-3">
                     <Select.Root
@@ -570,8 +567,8 @@
             </div>
 
             <div class="grid grid-cols-4 items-center gap-4">
-                <Label class="text-right leading-tight flex flex-col items-end justify-center text-balance w-full">
-                    <span>{$t("settings.assets.form.fiscalProfile") || "Perfil Fiscal"}</span>
+                <Label class="text-right whitespace-nowrap">
+                    {$t("settings.assets.form.fiscalProfile") || "Perfil Fiscal"}
                 </Label>
                 <div class="col-span-3">
                     <Select.Root
