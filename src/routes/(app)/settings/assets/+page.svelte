@@ -440,7 +440,7 @@
             </div>
 
             <div class="grid grid-cols-4 items-center gap-4">
-                <Label class="text-right">Tam. Contrato (Multiplicador)</Label>
+                <Label class="text-right leading-tight">Tam. Contrato<br/><span class="text-[0.65rem] text-muted-foreground opacity-80">(Multiplicador)</span></Label>
                 <Input
                     type="number"
                     step="0.01"
@@ -519,8 +519,8 @@
                         type="single"
                         bind:value={formData.asset_type_id}
                     >
-                        <Select.Trigger class="w-full"
-                            >{settingsStore.getAssetTypeCode(
+                        <Select.Trigger class="w-full">
+                            {settingsStore.getAssetTypeCode(
                                 formData.asset_type_id,
                             ) ||
                                 $t(
@@ -536,7 +536,7 @@
                 </div>
             </div>
             <div class="grid grid-cols-4 items-center gap-4">
-                <Label class="text-right"
+                <Label class="text-right leading-tight"
                     >{$t("settings.assets.form.brokerageProfile")}</Label
                 >
                 <div class="col-span-3">
