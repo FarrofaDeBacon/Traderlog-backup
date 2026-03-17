@@ -561,6 +561,37 @@ impl ToDto for Asset {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AssetRiskProfile {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    pub name: String,
+    pub asset_id: Thing,
+    #[serde(default)]
+    pub default_stop_points: f64,
+    #[serde(default)]
+    pub min_contracts: i32,
+    #[serde(default)]
+    pub max_contracts: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub notes: Option<String>,
+}
+
+impl ToDto for AssetRiskProfile {
+    type Dto = dto::AssetRiskProfileDto;
+    fn to_dto(&self) -> Self::Dto {
+        dto::AssetRiskProfileDto {
+            id: self.id.clone(),
+            name: self.name.clone(),
+            asset_id: Some(self.asset_id.to_string()),
+            default_stop_points: self.default_stop_points,
+            min_contracts: self.min_contracts,
+            max_contracts: self.max_contracts,
+            notes: self.notes.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct EmotionalState {
     #[serde(
         default,

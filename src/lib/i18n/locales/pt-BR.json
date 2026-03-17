@@ -1693,7 +1693,21 @@
         "dailyTarget": "Meta Diária"
       },
       "title": "Gerenciamento de Risco",
-      "upside": "Objetivos (Upside)"
+      "upside": "Objetivos (Upside)",
+      "assetProfiles": {
+        "title": "Perfis de Risco do Ativo",
+        "new": "Novo Perfil do Ativo",
+        "edit": "Editar Perfil",
+        "delete": "Excluir Perfil",
+        "name": "Nome",
+        "asset": "Ativo Vinculado",
+        "defaultStop": "Stop Padrão (Pontos/Ticks)",
+        "minContracts": "Mínimo de Contratos",
+        "maxContracts": "Máximo de Contratos",
+        "notes": "Notas (Opcional)",
+        "empty": "Nenhum Perfil de Risco de Ativo encontrado",
+        "search": "Buscar perfil..."
+      }
     },
     "strategies": {
       "description": "Documente seus setups, regras de entrada, saída e gestão.",

@@ -362,6 +362,16 @@ export type RiskProfile = {
     max_contracts?: number;
 };
 
+export type AssetRiskProfile = {
+    id?: string;
+    name: string;
+    asset_id: string; // The Thing ID from SurrealDB
+    default_stop_points: number;
+    min_contracts: number;
+    max_contracts: number;
+    notes?: string;
+};
+
 
 
 export type TaxPayment = {

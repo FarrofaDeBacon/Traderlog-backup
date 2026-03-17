@@ -1693,7 +1693,21 @@
         "dailyTarget": "Daily Target"
       },
       "title": "Risk Management",
-      "upside": "Goals (Upside)"
+      "upside": "Goals (Upside)",
+      "assetProfiles": {
+        "title": "Asset Risk Profiles",
+        "new": "New Asset Profile",
+        "edit": "Edit Profile",
+        "delete": "Delete Profile",
+        "name": "Name",
+        "asset": "Linked Asset",
+        "defaultStop": "Default Stop (Points/Ticks)",
+        "minContracts": "Min. Allowed Contracts",
+        "maxContracts": "Max. Allowed Contracts",
+        "notes": "Notes (Optional)",
+        "empty": "No Asset Risk Profile found",
+        "search": "Search profile..."
+      }
     },
     "strategies": {
       "description": "Register your trading strategies and their characteristics.",

@@ -2,8 +2,9 @@ use crate::db::DbState;
 use crate::models::{
     Account, ApiConfig, Asset, AssetType, CashTransaction, ChartType, Currency, EmotionalState,
     FeeProfile, Indicator, JournalEntry, Market, Modality, RiskProfile, Strategy, Tag, Timeframe,
-    Trade, UserProfile,
+    Trade, UserProfile, AssetRiskProfile,
 };
+use crate::models::dto::AssetRiskProfileDto;
 use bcrypt::{hash, verify, DEFAULT_COST};
 use surrealdb::engine::local::Db;
 use surrealdb::Surreal;
@@ -491,6 +492,67 @@ pub async fn delete_asset(db: State<'_, DbState>, id: String) -> Result<(), Stri
         .replace("⟨", "")
         .replace("⟩", "");
     delete_record(&db.0, "asset", &clean_id).await
+}
+
+// --- Asset Risk Profiles ---
+
+#[tauri::command]
+pub async fn get_asset_risk_profiles(db: State<'_, DbState>) -> Result<Vec<AssetRiskProfileDto>, String> {
+    let mut result =
+        db.0.query("SELECT *, type::string(id) as id, type::string(asset_id) as asset_id FROM asset_risk_profile")
+            .await
+            .map_err(|e| e.to_string())?;
+    let profiles: Vec<AssetRiskProfileDto> = result.take(0).map_err(|e| {
+        println!("[ERROR] get_asset_risk_profiles deserialization failure: {}", e);
+        e.to_string()
+    })?;
+    Ok(profiles)
+}
+
+#[tauri::command]
+pub async fn save_asset_risk_profile(db: State<'_, DbState>, profile: AssetRiskProfileDto) -> Result<(), String> {
+    let id = profile.id.clone();
+    let mut json = serde_json::to_value(&profile).map_err(|e| e.to_string())?;
+    
+    if let Some(obj) = json.as_object_mut() {
+        obj.remove("id");
+    }
+    
+    let id_str = id.unwrap_or_default();
+    let clean_id = id_str
+        .split(':')
+        .last()
+        .unwrap_or(&id_str)
+        .replace("⟨", "")
+        .replace("⟩", "")
+        .replace("`", "")
+        .trim()
+        .to_string();
+
+    upsert_record(&db.0, "asset_risk_profile", &clean_id, json).await?;
+
+    // Relational field conversion ensures asset_id is a Thing, not a String
+    let full_id = format!("asset_risk_profile:⟨{}⟩", clean_id);
+    let sql = format!("
+        UPDATE {} SET 
+            asset_id = type::thing(asset_id)
+        WHERE id = {};
+    ", full_id, full_id);
+
+    db.0.query(&sql).await.map_err(|e| e.to_string())?;
+    
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_asset_risk_profile(db: State<'_, DbState>, id: String) -> Result<(), String> {
+    let clean_id = id
+        .split(':')
+        .last()
+        .unwrap_or(id.as_str())
+        .replace("⟨", "")
+        .replace("⟩", "");
+    delete_record(&db.0, "asset_risk_profile", &clean_id).await
 }
 
 // --- Emotional States ---

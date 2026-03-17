@@ -107,6 +107,11 @@
             icon: ShieldAlert,
         },
         {
+            href: "/settings/risk/asset-profiles",
+            title: $t("settings.risk.assetProfiles.title") || "Perfis de Ativo",
+            icon: Layers,
+        },
+        {
             href: "/settings/strategies",
             title: $t("settings.nav.strategies"),
             icon: Target,

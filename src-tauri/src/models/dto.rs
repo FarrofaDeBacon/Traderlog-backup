@@ -98,6 +98,17 @@ pub struct AssetDto {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AssetRiskProfileDto {
+    pub id: Option<String>,
+    pub name: String,
+    pub asset_id: Option<String>,
+    pub default_stop_points: f64,
+    pub min_contracts: i32,
+    pub max_contracts: i32,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AssetTypeDto {
     pub id: Option<String>,
     pub name: String,

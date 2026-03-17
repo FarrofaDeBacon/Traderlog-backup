@@ -10,14 +10,14 @@ import type {
     TradingSession, Market, AssetType, Asset, Currency, Account,
     JournalEntry, Trade, EmotionalState, Strategy, UserProfile,
     FeeProfile, RiskProfile, Modality, Tag, Indicator, Timeframe,
-    ChartType, ApiConfig, CashTransaction, TaxRule, TaxMapping, TaxProfile, TaxProfileEntry
+    ChartType, ApiConfig, CashTransaction, TaxRule, TaxMapping, TaxProfile, TaxProfileEntry, AssetRiskProfile
 } from "$lib/types";
 
 export type {
     TradingSession, Market, AssetType, Asset, Currency, Account,
     JournalEntry, Trade, EmotionalState, Strategy, UserProfile,
     FeeProfile, RiskProfile, Modality, Tag, Indicator, Timeframe,
-    ChartType, ApiConfig, CashTransaction, TaxRule, TaxMapping, TaxProfile, TaxProfileEntry
+    ChartType, ApiConfig, CashTransaction, TaxRule, TaxMapping, TaxProfile, TaxProfileEntry, AssetRiskProfile
 } from "$lib/types";
 
 class SettingsStore {
@@ -25,6 +25,7 @@ class SettingsStore {
     assetTypes = $state<AssetType[]>([]);
     assets = $state<Asset[]>([]);
     riskProfiles = $state<RiskProfile[]>([]);
+    assetRiskProfiles = $state<AssetRiskProfile[]>([]);
     modalities = $state<Modality[]>([]);
     userProfile = $state<UserProfile>({
         id: "main",
@@ -209,7 +210,8 @@ class SettingsStore {
                 taxRulesRes,
                 taxMappingsRes,
                 taxProfilesRes,
-                taxProfileEntriesRes
+                taxProfileEntriesRes,
+                assetRiskProfilesRes
             ] = await Promise.all([
                 safeInvoke<UserProfile>("get_user_profile", "User Profile"),
                 safeInvoke<string>("get_machine_id_cmd", "Hardware ID"),
@@ -233,17 +235,15 @@ class SettingsStore {
                 safeInvoke<TaxRule[]>("get_tax_rules", "Tax Rules"),
                 safeInvoke<TaxMapping[]>("get_tax_mappings", "Tax Mappings"),
                 safeInvoke<TaxProfile[]>("get_tax_profiles", "Tax Profiles"),
-                safeInvoke<TaxProfileEntry[]>("get_tax_profile_entries", "Tax Profile Entries")
+                safeInvoke<TaxProfileEntry[]>("get_tax_profile_entries", "Tax Profile Entries"),
+                safeInvoke<AssetRiskProfile[]>("get_asset_risk_profiles", "Asset Risk Profiles")
             ]);
 
             // Assign results
             if (hwid) this.hardwareId = hwid;
             if (apiConfigsRes) this.apiConfigs = apiConfigsRes;
             if (accountsRes) {
-                this.accounts = accountsRes.map(a => ({
-                    ...a,
-                    root_id: a.root_id ?? undefined
-                }));
+                this.accounts = accountsRes;
             }
             if (currenciesRes) this.currencies = currenciesRes;
             if (marketsRes) this.markets = marketsRes;
@@ -278,6 +278,7 @@ class SettingsStore {
             if (taxMappingsRes) this.taxMappings = taxMappingsRes;
             if (taxProfilesRes) this.taxProfiles = taxProfilesRes;
             if (taxProfileEntriesRes) this.taxProfileEntries = taxProfileEntriesRes;
+            if (assetRiskProfilesRes) this.assetRiskProfiles = assetRiskProfilesRes;
 
             if (journalEntriesRes) {
                 this.journalEntries = journalEntriesRes;
@@ -513,6 +514,16 @@ class SettingsStore {
                 await invoke("save_risk_profile", { profile: $state.snapshot(profile) });
             } catch (e) {
                 console.error("[SettingsStore] Error saving risk profile:", e);
+            }
+        }
+    }
+
+    private async saveAssetRiskProfiles() {
+        for (const profile of this.assetRiskProfiles) {
+            try {
+                await invoke("save_asset_risk_profile", { profile: $state.snapshot(profile) });
+            } catch (e) {
+                console.error("[SettingsStore] Error saving asset risk profile:", e);
             }
         }
     }
@@ -850,6 +861,21 @@ class SettingsStore {
     updateRiskProfilePhase(id: string, newPhaseIndex: number) {
         this.riskProfiles = this.riskProfiles.map(r => r.id === id ? { ...r, current_phase_index: newPhaseIndex } : r);
         this.saveRiskProfiles();
+    }
+
+    // Asset Risk Profiles
+    addAssetRiskProfile(item: Omit<AssetRiskProfile, "id">) {
+        this.assetRiskProfiles.push({ ...item, id: crypto.randomUUID() });
+        this.saveAssetRiskProfiles();
+    }
+    updateAssetRiskProfile(id: string, item: Partial<AssetRiskProfile>) {
+        this.assetRiskProfiles = this.assetRiskProfiles.map(r => r.id === id ? { ...r, ...item } : r);
+        this.saveAssetRiskProfiles();
+    }
+    async deleteAssetRiskProfile(id: string): Promise<{ success: boolean; error?: string }> {
+        await invoke("delete_asset_risk_profile", { id });
+        this.assetRiskProfiles = this.assetRiskProfiles.filter(r => r.id !== id);
+        return { success: true };
     }
 
     setActiveRiskProfile(id: string) {
