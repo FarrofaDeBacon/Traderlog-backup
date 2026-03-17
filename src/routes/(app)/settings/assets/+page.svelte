@@ -1,3 +1,4 @@
+<!-- SIZING ENABLED ASSET FORM -->
 <script lang="ts">
     import {
         Plus,
