@@ -306,20 +306,19 @@ export type TaxLoss = {
     balance: number;
 };
 
+export type RiskCondition = {
+    metric: string;
+    operator: string;
+    value: number;
+};
+
 export type GrowthPhase = {
-    id: string;
+    id?: string;
+    level: number;
     name: string;
-    description: string;
-    max_lots: number;
-    max_daily_loss: number;
-    progression_rules: {
-        condition: "profit_target" | "days_positive" | "consistency_days";
-        value: number;
-    }[];
-    regression_rules: {
-        condition: "drawdown_limit" | "max_daily_loss_streak";
-        value: number;
-    }[];
+    lot_size: number;
+    conditions_to_advance: RiskCondition[];
+    conditions_to_demote: RiskCondition[];
 };
 
 export type RiskProfile = {
@@ -333,6 +332,10 @@ export type RiskProfile = {
     lock_on_loss: boolean;
     account_type_applicability: 'All' | 'Prop' | 'Real' | 'Demo' | 'Specific';
     account_ids: string[];
+    target_type: "Financial" | "Points";
+    capital_source: "Fixed" | "LinkedAccount";
+    fixed_capital: number;
+    linked_account_id: string | null;
     growth_plan_enabled: boolean;
     current_phase_index: number;
     growth_phases: GrowthPhase[];

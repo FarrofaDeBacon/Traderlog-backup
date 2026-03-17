@@ -67,29 +67,27 @@
         name: data?.name ?? "",
         max_daily_loss: data?.max_daily_loss ?? 0,
         daily_target: data?.daily_target ?? 0,
-        max_risk_per_trade_percent:
-            data?.max_risk_per_trade_percent ?? 1.0,
+        max_risk_per_trade_percent: data?.max_risk_per_trade_percent ?? 1.0,
         max_trades_per_day: data?.max_trades_per_day ?? 5,
         min_risk_reward: data?.min_risk_reward ?? 1.5,
         lock_on_loss: data?.lock_on_loss ?? false,
-        account_type_applicability:
-            data?.account_type_applicability ?? "All",
+        account_type_applicability: data?.account_type_applicability ?? "All",
+        target_type: data?.target_type ?? "Financial",
+        capital_source: data?.capital_source ?? "Fixed",
+        fixed_capital: data?.fixed_capital ?? 0,
+        linked_account_id: data?.linked_account_id ?? null,
         growth_plan_enabled: data?.growth_plan_enabled ?? false,
         current_phase_index: data?.current_phase_index ?? 0,
         growth_phases: data?.growth_phases ?? [],
-        psychological_coupling_enabled:
-            data?.psychological_coupling_enabled ?? false,
-        outlier_regression_enabled:
-            data?.outlier_regression_enabled ?? false,
+        psychological_coupling_enabled: data?.psychological_coupling_enabled ?? false,
+        outlier_regression_enabled: data?.outlier_regression_enabled ?? false,
         sniper_mode_enabled: data?.sniper_mode_enabled ?? false,
         sniper_mode_selectivity: data?.sniper_mode_selectivity ?? 3,
-        psychological_lookback_count:
-            data?.psychological_lookback_count ?? 10,
+        psychological_lookback_count: data?.psychological_lookback_count ?? 10,
         outlier_lookback_count: data?.outlier_lookback_count ?? 20,
         psychological_threshold: data?.psychological_threshold ?? -2,
         lot_reduction_multiplier: data?.lot_reduction_multiplier ?? 0.5,
-        psychological_search_strategy:
-            data?.psychological_search_strategy ?? "Strict",
+        psychological_search_strategy: data?.psychological_search_strategy ?? "Strict",
         account_ids: data?.account_ids ?? [],
         active: data?.active ?? false,
     });
@@ -128,6 +126,10 @@
                 min_risk_reward: fd.min_risk_reward,
                 lock_on_loss: fd.lock_on_loss,
                 account_type_applicability: fd.account_type_applicability,
+                target_type: fd.target_type ?? "Financial",
+                capital_source: fd.capital_source ?? "Fixed",
+                fixed_capital: fd.fixed_capital ?? 0,
+                linked_account_id: fd.linked_account_id ?? null,
                 growth_plan_enabled: fd.growth_plan_enabled ?? false,
                 current_phase_index: fd.current_phase_index ?? 0,
                 growth_phases: fd.growth_phases ? [...fd.growth_phases] : [],
@@ -184,19 +186,14 @@
             name: $t("settings.risk.form.presets.conservative"),
             description: $t("settings.risk.growthPlan.enableDesc"),
             phases: Array.from({ length: 5 }, (_, i) => ({
-                id: crypto.randomUUID(),
+                level: i + 1,
                 name: `${$t("general.items")} ${i + 1}`,
-                description: `Fase ${i + 1}`,
-                max_lots: i + 1,
-                max_daily_loss: (i + 1) * 200, // Grows 200 per level
-                progression_rules: [
-                    { condition: "days_positive" as const, value: 5 },
+                lot_size: i + 1,
+                conditions_to_advance: [
+                    { metric: "days_positive", operator: ">=", value: 5 },
                 ],
-                regression_rules: [
-                    {
-                        condition: "drawdown_limit" as const,
-                        value: (i + 1) * 100,
-                    },
+                conditions_to_demote: [
+                    { metric: "drawdown_limit", operator: ">=", value: (i + 1) * 100 },
                 ],
             })),
         },
@@ -204,16 +201,14 @@
             name: $t("settings.risk.form.presets.moderate"),
             description: $t("settings.risk.growthPlan.enableDesc"),
             phases: Array.from({ length: 8 }, (_, i) => ({
-                id: crypto.randomUUID(),
+                level: i + 1,
                 name: `${$t("general.items")} ${i + 1}`,
-                description: `Fase ${i + 1}`,
-                max_lots: (i + 1) * 2, // Grows by 2 lots
-                max_daily_loss: (i + 1) * 500,
-                progression_rules: [
-                    { condition: "days_positive" as const, value: 3 },
+                lot_size: (i + 1) * 2,
+                conditions_to_advance: [
+                    { metric: "days_positive", operator: ">=", value: 3 },
                 ],
-                regression_rules: [
-                    { condition: "max_daily_loss_streak" as const, value: 1 },
+                conditions_to_demote: [
+                    { metric: "max_daily_loss_streak", operator: ">=", value: 1 },
                 ],
             })),
         },
@@ -221,19 +216,14 @@
             name: $t("settings.risk.form.presets.aggressive"),
             description: $t("settings.risk.growthPlan.enableDesc"),
             phases: Array.from({ length: 10 }, (_, i) => ({
-                id: crypto.randomUUID(),
+                level: i + 1,
                 name: `${$t("general.items")} ${i + 1}`,
-                description: `Fase ${i + 1}`,
-                max_lots: (i + 1) * 5, // Grows fast
-                max_daily_loss: (i + 1) * 1000,
-                progression_rules: [
-                    { condition: "days_positive" as const, value: 2 },
+                lot_size: (i + 1) * 5,
+                conditions_to_advance: [
+                    { metric: "days_positive", operator: ">=", value: 2 },
                 ],
-                regression_rules: [
-                    {
-                        condition: "drawdown_limit" as const,
-                        value: (i + 1) * 800,
-                    },
+                conditions_to_demote: [
+                    { metric: "drawdown_limit", operator: ">=", value: (i + 1) * 800 },
                 ],
             })),
         },
@@ -259,12 +249,11 @@
             ...formData.growth_phases,
             {
                 id: crypto.randomUUID(),
+                level: formData.growth_phases.length + 1,
                 name: `${$t("settings.risk.growthPlan.phases")} ${formData.growth_phases.length}`,
-                description: "",
-                max_lots: 1,
-                max_daily_loss: formData.max_daily_loss,
-                progression_rules: [],
-                regression_rules: [],
+                lot_size: 1,
+                conditions_to_advance: [],
+                conditions_to_demote: [],
             },
         ];
         selectedGrowthPreset = "custom";
@@ -334,25 +323,96 @@
             >
         </Tabs.List>
 
-        <Tabs.Content value="general" class="space-y-4 pt-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Tabs.Content value="general" class="space-y-6 pt-4">
+            
+            <!-- Target Type & Capital Source -->
+            <div class="space-y-5 p-5 rounded-xl border border-border/10 bg-black/5 shadow-sm">
+                <h3 class="flex items-center gap-2 font-bold text-primary">
+                    <Target class="w-4 h-4" />
+                    Configuração de Capital e Alvo
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="space-y-2.5">
+                        <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tipo de Alvo</Label>
+                        <Select.Root
+                            type="single"
+                            bind:value={formData.target_type}
+                        >
+                            <Select.Trigger class="w-full">
+                                {formData.target_type === "Financial" ? "Financeiro ($)" : "Pontos (pts)"}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value="Financial">Financeiro ($)</Select.Item>
+                                <Select.Item value="Points">Pontos (pts)</Select.Item>
+                            </Select.Content>
+                        </Select.Root>
+                    </div>
+
+                    <div class="space-y-2.5">
+                        <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Origem do Capital</Label>
+                        <Select.Root
+                            type="single"
+                            bind:value={formData.capital_source}
+                        >
+                            <Select.Trigger class="w-full">
+                                {formData.capital_source === "Fixed" ? "Valor Fixo" : "Vincular a Conta"}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value="Fixed">Valor Fixo</Select.Item>
+                                <Select.Item value="LinkedAccount">Vincular a Conta</Select.Item>
+                            </Select.Content>
+                        </Select.Root>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                    {#if formData.capital_source === "Fixed"}
+                        <div class="space-y-2.5 animate-in fade-in slide-in-from-top-1">
+                            <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Capital Base (Valor Fixo)</Label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                bind:value={formData.fixed_capital}
+                                placeholder="ex: 1000.00"
+                            />
+                        </div>
+                    {:else}
+                         <div class="space-y-2.5 animate-in fade-in slide-in-from-top-1">
+                            <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Selecionar Conta Vinculada</Label>
+                            <Select.Root
+                                type="single"
+                                bind:value={formData.linked_account_id}
+                            >
+                                <Select.Trigger class="w-full">
+                                    {settingsStore.accounts.find(a => a.id === formData.linked_account_id)?.nickname ?? "Selecione uma Conta"}
+                                </Select.Trigger>
+                                <Select.Content>
+                                    {#each settingsStore.accounts as account}
+                                        <Select.Item value={account.id}>{account.nickname}</Select.Item>
+                                    {/each}
+                                </Select.Content>
+                            </Select.Root>
+                        </div>
+                    {/if}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <!-- Downside Protection -->
-                <div
-                    class="space-y-4 p-4 rounded-lg border border-rose-500/20 bg-rose-500/5"
-                >
+                <div class="space-y-5 p-5 rounded-xl border border-border/10 bg-black/5 shadow-sm">
                     <h3 class="flex items-center gap-2 font-bold text-rose-500">
                         <Shield class="w-4 h-4" />
                         {$t("settings.risk.downside")}
                     </h3>
-                    <div class="space-y-2">
-                        <Label>{$t("settings.risk.dailyLossLimit")}</Label>
+                    <div class="space-y-2.5">
+                        <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{$t("settings.risk.dailyLossLimit")}</Label>
                         <Input
                             type="number"
                             bind:value={formData.max_daily_loss}
                         />
                     </div>
-                    <div class="space-y-2">
-                        <Label>{$t("settings.risk.maxRiskPerTrade")}</Label>
+                    <div class="space-y-2.5">
+                        <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{$t("settings.risk.maxRiskPerTrade")}</Label>
                         <Input
                             type="number"
                             step="0.1"
@@ -362,24 +422,20 @@
                 </div>
 
                 <!-- Upside Targets -->
-                <div
-                    class="space-y-4 p-4 rounded-lg border border-green-500/20 bg-green-500/5"
-                >
-                    <h3
-                        class="flex items-center gap-2 font-bold text-green-500"
-                    >
+                <div class="space-y-5 p-5 rounded-xl border border-border/10 bg-black/5 shadow-sm">
+                    <h3 class="flex items-center gap-2 font-bold text-emerald-500">
                         <Target class="w-4 h-4" />
                         {$t("settings.risk.upside")}
                     </h3>
-                    <div class="space-y-2">
-                        <Label>{$t("settings.risk.dailyGoal")}</Label>
+                    <div class="space-y-2.5">
+                        <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{$t("settings.risk.dailyGoal")}</Label>
                         <Input
                             type="number"
                             bind:value={formData.daily_target}
                         />
                     </div>
-                    <div class="space-y-2">
-                        <Label>{$t("settings.risk.minRiskReward")}</Label>
+                    <div class="space-y-2.5">
+                        <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{$t("settings.risk.minRiskReward")}</Label>
                         <Input
                             type="number"
                             step="0.1"
@@ -390,25 +446,21 @@
             </div>
 
             <!-- Discipline -->
-            <div
-                class="space-y-4 p-4 rounded-lg border border-muted bg-muted/20"
-            >
-                <h3
-                    class="flex items-center gap-2 font-bold text-muted-foreground"
-                >
+            <div class="space-y-5 p-5 rounded-xl border border-border/10 bg-black/5 shadow-sm">
+                <h3 class="flex items-center gap-2 font-bold text-muted-foreground">
                     <Lock class="w-4 h-4" />
                     {$t("settings.risk.discipline")}
                 </h3>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-2">
-                        <Label>{$t("settings.risk.maxTradesDay")}</Label>
+                <div class="grid grid-cols-2 gap-5">
+                    <div class="space-y-2.5">
+                        <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{$t("settings.risk.maxTradesDay")}</Label>
                         <Input
                             type="number"
                             bind:value={formData.max_trades_per_day}
                         />
                     </div>
-                    <div class="space-y-2">
-                        <Label>{$t("settings.risk.applicability")}</Label>
+                    <div class="space-y-2.5">
+                        <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{$t("settings.risk.applicability")}</Label>
                         <Select.Root
                             type="single"
                             bind:value={formData.account_type_applicability}
@@ -503,21 +555,17 @@
             </div>
         </Tabs.Content>
 
-        <Tabs.Content value="risk-engine" class="space-y-4 pt-4">
+        <Tabs.Content value="risk-engine" class="space-y-6 pt-4">
             <!-- Psychological Coupling -->
-            <div
-                class="space-y-4 p-4 rounded-lg border border-indigo-500/20 bg-indigo-500/5"
-            >
+            <div class="space-y-5 p-5 rounded-xl border border-indigo-500/20 bg-indigo-500/5 shadow-sm">
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <Brain class="w-5 h-5 text-indigo-400" />
-                        <div class="space-y-0.5">
-                            <h4 class="font-bold text-indigo-400">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-lg bg-indigo-500/10"><Brain class="w-5 h-5 text-indigo-400" /></div>
+                        <div class="space-y-1">
+                            <h4 class="font-bold text-indigo-400 text-sm">
                                 {$t("settings.risk.engine.psychological.title")}
                             </h4>
-                            <p
-                                class="text-[10px] text-muted-foreground uppercase tracking-tight"
-                            >
+                            <p class="text-[10px] text-muted-foreground/80 uppercase tracking-widest font-semibold">
                                 {$t(
                                     "settings.risk.engine.psychological.description",
                                     {
@@ -534,13 +582,11 @@
                     />
                 </div>
                 {#if formData.psychological_coupling_enabled}
-                    <div class="grid grid-cols-2 gap-4 pt-2">
-                        <div class="space-y-2">
-                            <Label class="text-xs"
-                                >{$t(
-                                    "settings.risk.engine.psychological.strategy",
-                                )}</Label
-                            >
+                    <div class="grid grid-cols-2 gap-5 pt-3 border-t border-indigo-500/10">
+                        <div class="space-y-2.5">
+                            <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                {$t("settings.risk.engine.psychological.strategy")}
+                            </Label>
                             <Select.Root
                                 type="single"
                                 bind:value={
@@ -573,12 +619,10 @@
                                 </Select.Content>
                             </Select.Root>
                         </div>
-                        <div class="space-y-2">
-                            <Label class="text-xs"
-                                >{$t(
-                                    "settings.risk.engine.psychological.lookback",
-                                )}</Label
-                            >
+                        <div class="space-y-2.5">
+                            <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                {$t("settings.risk.engine.psychological.lookback")}
+                            </Label>
                             <Input
                                 type="number"
                                 bind:value={
@@ -587,24 +631,20 @@
                                 class="h-8 text-xs"
                             />
                         </div>
-                        <div class="space-y-2">
-                            <Label class="text-xs"
-                                >{$t(
-                                    "settings.risk.engine.psychological.threshold",
-                                )}</Label
-                            >
+                        <div class="space-y-2.5">
+                            <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                {$t("settings.risk.engine.psychological.threshold")}
+                            </Label>
                             <Input
                                 type="number"
                                 bind:value={formData.psychological_threshold}
                                 class="h-8 text-xs"
                             />
                         </div>
-                        <div class="space-y-2">
-                            <Label class="text-xs"
-                                >{$t(
-                                    "settings.risk.engine.psychological.multiplier",
-                                )}</Label
-                            >
+                        <div class="space-y-2.5">
+                            <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                {$t("settings.risk.engine.psychological.multiplier")}
+                            </Label>
                             <Input
                                 type="number"
                                 step="0.1"
@@ -617,19 +657,15 @@
             </div>
 
             <!-- Outlier Regression -->
-            <div
-                class="space-y-4 p-4 rounded-lg border border-amber-500/20 bg-amber-500/5"
-            >
+            <div class="space-y-5 p-5 rounded-xl border border-amber-500/20 bg-amber-500/5 shadow-sm">
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <AlertTriangle class="w-5 h-5 text-amber-500" />
-                        <div class="space-y-0.5">
-                            <h4 class="font-bold text-amber-500">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-lg bg-amber-500/10"><AlertTriangle class="w-5 h-5 text-amber-500" /></div>
+                        <div class="space-y-1">
+                            <h4 class="font-bold text-amber-500 text-sm">
                                 {$t("settings.risk.engine.outlier.title")}
                             </h4>
-                            <p
-                                class="text-[10px] text-muted-foreground uppercase tracking-tight"
-                            >
+                            <p class="text-[10px] text-muted-foreground/80 uppercase tracking-widest font-semibold">
                                 {$t("settings.risk.engine.outlier.description")}
                             </p>
                         </div>
@@ -639,12 +675,10 @@
                     />
                 </div>
                 {#if formData.outlier_regression_enabled}
-                    <div class="pt-2">
-                        <Label class="text-xs"
-                            >{$t(
-                                "settings.risk.engine.outlier.lookback",
-                            )}</Label
-                        >
+                    <div class="pt-3 border-t border-amber-500/10 space-y-2.5">
+                        <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            {$t("settings.risk.engine.outlier.lookback")}
+                        </Label>
                         <Input
                             type="number"
                             bind:value={formData.outlier_lookback_count}
@@ -655,19 +689,15 @@
             </div>
 
             <!-- Sniper Mode -->
-            <div
-                class="space-y-4 p-4 rounded-lg border border-blue-500/20 bg-blue-500/5"
-            >
+            <div class="space-y-5 p-5 rounded-xl border border-blue-500/20 bg-blue-500/5 shadow-sm">
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <Zap class="w-5 h-5 text-blue-400" />
-                        <div class="space-y-0.5">
-                            <h4 class="font-bold text-blue-400">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-lg bg-blue-500/10"><Zap class="w-5 h-5 text-blue-400" /></div>
+                        <div class="space-y-1">
+                            <h4 class="font-bold text-blue-400 text-sm">
                                 {$t("settings.risk.engine.sniper.title")}
                             </h4>
-                            <p
-                                class="text-[10px] text-muted-foreground uppercase tracking-tight"
-                            >
+                            <p class="text-[10px] text-muted-foreground/80 uppercase tracking-widest font-semibold">
                                 {$t("settings.risk.engine.sniper.description")}
                             </p>
                         </div>
@@ -675,12 +705,10 @@
                     <Switch bind:checked={formData.sniper_mode_enabled} />
                 </div>
                 {#if formData.sniper_mode_enabled}
-                    <div class="space-y-2 pt-2 animate-in fade-in duration-300">
-                        <Label class="text-xs"
-                            >{$t(
-                                "settings.risk.engine.sniper.selectivity",
-                            )}</Label
-                        >
+                    <div class="space-y-2.5 pt-3 border-t border-blue-500/10 animate-in fade-in duration-300">
+                        <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            {$t("settings.risk.engine.sniper.selectivity")}
+                        </Label>
                         <div class="flex items-center gap-4">
                             <Input
                                 type="number"
@@ -698,17 +726,15 @@
             </div>
         </Tabs.Content>
 
-        <Tabs.Content value="growth" class="space-y-4 pt-4">
-            <div
-                class="flex items-center justify-between p-4 rounded-lg border bg-card"
-            >
-                <div class="flex items-center gap-2">
-                    <TrendingUp class="w-5 h-5 text-primary" />
-                    <div class="space-y-0.5">
-                        <h4 class="font-medium text-sm">
+        <Tabs.Content value="growth" class="space-y-6 pt-4">
+            <div class="flex items-center justify-between p-5 rounded-xl border border-border/10 bg-black/5 shadow-sm cursor-pointer" onclick={() => formData.growth_plan_enabled = !formData.growth_plan_enabled}>
+                <div class="flex items-center gap-3">
+                    <div class="p-2 rounded-lg bg-primary/10"><TrendingUp class="w-5 h-5 text-primary" /></div>
+                    <div class="space-y-1">
+                        <h4 class="font-bold text-sm text-foreground">
                             {$t("settings.risk.growthPlan.enable")}
                         </h4>
-                        <p class="text-xs text-muted-foreground">
+                        <p class="text-[10px] text-muted-foreground/80 uppercase tracking-widest font-semibold">
                             {$t("settings.risk.growthPlan.enableDesc")}
                         </p>
                     </div>
@@ -717,11 +743,9 @@
             </div>
 
             {#if formData.growth_plan_enabled}
-                <div class="space-y-4">
+                <div class="space-y-6">
                     <!-- Growth Presets Selection -->
-                    <div
-                        class="space-y-2 p-3 bg-muted/20 rounded-lg border border-dashed"
-                    >
+                    <div class="space-y-3 p-4 bg-black/5 rounded-xl border border-dashed border-border/20">
                         <Label
                             class="text-xs text-muted-foreground uppercase font-bold"
                             >{$t("settings.risk.form.presets.title")}</Label
@@ -772,51 +796,51 @@
 
                     <div class="grid gap-3 max-h-[400px] overflow-y-auto pr-2">
                         {#each formData.growth_phases as phase, i}
-                            <Card.Root class="relative">
+                            <Card.Root class="relative border-border/10 bg-black/5 shadow-sm rounded-xl overflow-hidden mb-4">
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    class="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-destructive"
+                                    class="absolute top-3 right-3 h-8 w-8 text-muted-foreground/50 hover:text-destructive transition-colors"
                                     onclick={() => removePhase(i)}
                                 >
-                                    <Trash2 class="w-3 h-3" />
+                                    <Trash2 class="w-4 h-4" />
                                 </Button>
-                                <Card.Header class="p-3 pb-0">
-                                    <div class="flex items-center gap-2">
+                                <Card.Header class="p-5 pb-2">
+                                    <div class="flex items-center gap-3">
                                         <div
-                                            class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary"
+                                            class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shadow-inner"
                                         >
                                             {i}
                                         </div>
                                         <Input
-                                            class="h-7 text-sm font-medium border-0 px-0 focus-visible:ring-0"
+                                            class="h-9 text-base font-bold border-0 px-0 focus-visible:ring-0 bg-transparent"
                                             bind:value={phase.name}
                                         />
                                     </div>
                                 </Card.Header>
-                                <Card.Content class="p-3 pt-2 space-y-3">
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <div class="space-y-1">
-                                            <Label class="text-[10px]"
+                                <Card.Content class="p-5 pt-3 space-y-5">
+                                    <div class="grid grid-cols-2 gap-5">
+                                        <div class="space-y-2.5">
+                                            <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
                                                 >{$t(
                                                     "settings.risk.growthPlan.maxLots",
                                                 )}</Label
                                             >
                                             <Input
                                                 type="number"
-                                                class="h-7 text-xs"
+                                                class="h-9 text-sm"
                                                 bind:value={phase.max_lots}
                                             />
                                         </div>
-                                        <div class="space-y-1">
-                                            <Label class="text-[10px]"
+                                        <div class="space-y-2.5">
+                                            <Label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
                                                 >{$t(
                                                     "settings.risk.growthPlan.dailyLoss",
                                                 )}</Label
                                             >
                                             <Input
                                                 type="number"
-                                                class="h-7 text-xs"
+                                                class="h-9 text-sm"
                                                 bind:value={
                                                     phase.max_daily_loss
                                                 }
@@ -824,177 +848,89 @@
                                         </div>
                                     </div>
 
-                                    <!-- Rules Summary (Simplified for now) -->
-                                    <div
-                                        class="grid grid-cols-2 gap-3 pt-2 border-t text-xs text-muted-foreground"
-                                    >
-                                        <div>
-                                            <span
-                                                class="font-semibold block text-green-500"
-                                                >{$t(
-                                                    "settings.risk.growthPlan.progression",
-                                                )}</span
-                                            >
-                                            <div
-                                                class="flex items-center gap-1 mt-1"
-                                            >
-                                                <span
-                                                    >{$t(
-                                                        "settings.risk.growthPlan.profitTarget",
-                                                    )}</span
-                                                >
-                                                <Input
-                                                    type="number"
-                                                    class="h-6 w-16 px-1 text-xs"
-                                                    value={phase.progression_rules.find(
-                                                        (r) =>
-                                                            r.condition ===
-                                                            "profit_target",
-                                                    )?.value ?? 0}
-                                                    oninput={(e) => {
-                                                        const val = Number(
-                                                            e.currentTarget
-                                                                .value,
-                                                        );
-                                                        const idx =
-                                                            phase.progression_rules.findIndex(
-                                                                (r) =>
-                                                                    r.condition ===
-                                                                    "profit_target",
-                                                            );
-                                                        if (val > 0) {
-                                                            if (idx >= 0)
-                                                                phase.progression_rules[
-                                                                    idx
-                                                                ].value = val;
-                                                            else
-                                                                phase.progression_rules.push(
-                                                                    {
-                                                                        condition:
-                                                                            "profit_target",
-                                                                        value: val,
-                                                                    },
-                                                                );
-                                                        } else if (idx >= 0) {
-                                                            phase.progression_rules.splice(
-                                                                idx,
-                                                                1,
-                                                            );
-                                                        }
-                                                    }}
-                                                />
+                                    <!-- Dynamic Rule Builder -->
+                                    <div class="pt-4 border-t border-border/10 space-y-6">
+                                        <!-- Advance Rules -->
+                                        <div class="space-y-3">
+                                            <div class="flex items-center justify-between">
+                                                <Label class="text-[11px] font-bold text-emerald-500 uppercase flex items-center gap-1.5 tracking-wider">
+                                                    <TrendingUp class="w-3.5 h-3.5" />
+                                                    {$t("settings.risk.growthPlan.progression") || "Avançar de Fase se:"}
+                                                </Label>
+                                                <Button variant="ghost" size="sm" class="h-6 px-2 text-[10px] font-bold text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10" onclick={() => phase.conditions_to_advance.push({metric: 'profit_target', operator: '>=', value: 0})}>
+                                                    <Plus class="w-3 h-3 mr-1" /> {$t("general.add")}
+                                                </Button>
                                             </div>
-                                            <div
-                                                class="flex items-center gap-1 mt-1"
-                                            >
-                                                <span
-                                                    >{$t(
-                                                        "settings.risk.growthPlan.consistency",
-                                                    )}</span
-                                                >
-                                                <Input
-                                                    type="number"
-                                                    class="h-6 w-12 px-1 text-xs"
-                                                    value={phase.progression_rules.find(
-                                                        (r) =>
-                                                            r.condition ===
-                                                            "consistency_days",
-                                                    )?.value ?? 0}
-                                                    oninput={(e) => {
-                                                        const val = Number(
-                                                            e.currentTarget
-                                                                .value,
-                                                        );
-                                                        const idx =
-                                                            phase.progression_rules.findIndex(
-                                                                (r) =>
-                                                                    r.condition ===
-                                                                    "consistency_days",
-                                                            );
-                                                        if (val > 0) {
-                                                            if (idx >= 0)
-                                                                phase.progression_rules[
-                                                                    idx
-                                                                ].value = val;
-                                                            else
-                                                                phase.progression_rules.push(
-                                                                    {
-                                                                        condition:
-                                                                            "consistency_days",
-                                                                        value: val,
-                                                                    },
-                                                                );
-                                                        } else if (idx >= 0) {
-                                                            phase.progression_rules.splice(
-                                                                idx,
-                                                                1,
-                                                            );
-                                                        }
-                                                    }}
-                                                />
-                                                <span class="text-[10px]"
-                                                    >{$t(
-                                                        "settings.risk.growthPlan.tradingSessions",
-                                                    )}</span
-                                                >
-                                            </div>
+                                            {#each phase.conditions_to_advance as rule, ri}
+                                                <div class="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 bg-black/5 p-1 rounded-md border border-border/5">
+                                                    <Select.Root type="single" bind:value={rule.metric}>
+                                                        <Select.Trigger class="h-8 text-xs flex-1 border-0 bg-transparent shadow-none"><span class="truncate font-medium">{rule.metric === 'profit_target' ? 'Lucro' : rule.metric === 'days_positive' ? 'Dias O.K' : rule.metric === 'win_rate' ? 'Win Rate %' : rule.metric === 'consistency_days' ? 'Consistência' : rule.metric}</span></Select.Trigger>
+                                                        <Select.Content>
+                                                            <Select.Item value="profit_target" class="text-xs">Lucro ($/pts)</Select.Item>
+                                                            <Select.Item value="days_positive" class="text-xs">Dias O.K</Select.Item>
+                                                            <Select.Item value="win_rate" class="text-xs">Win Rate %</Select.Item>
+                                                            <Select.Item value="consistency_days" class="text-xs">Consistência</Select.Item>
+                                                        </Select.Content>
+                                                    </Select.Root>
+                                                    <Select.Root type="single" bind:value={rule.operator}>
+                                                        <Select.Trigger class="h-8 text-xs w-[60px] px-2 font-mono font-bold border-0 bg-transparent shadow-none">{rule.operator}</Select.Trigger>
+                                                        <Select.Content>
+                                                            <Select.Item value=">=" class="text-xs font-mono">&gt;=</Select.Item>
+                                                            <Select.Item value=">" class="text-xs font-mono">&gt;</Select.Item>
+                                                            <Select.Item value="<=" class="text-xs font-mono">&lt;=</Select.Item>
+                                                            <Select.Item value="<" class="text-xs font-mono">&lt;</Select.Item>
+                                                        </Select.Content>
+                                                    </Select.Root>
+                                                    <Input type="number" step="0.1" class="h-8 text-xs w-[75px] font-mono font-bold" bind:value={rule.value} />
+                                                    <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground/50 hover:text-destructive shrink-0" onclick={() => phase.conditions_to_advance.splice(ri, 1)}>
+                                                        <Trash2 class="w-3.5 h-3.5" />
+                                                    </Button>
+                                                </div>
+                                            {/each}
+                                            {#if phase.conditions_to_advance.length === 0}
+                                                <div class="text-[11px] font-semibold text-muted-foreground/60 p-3 border border-dashed border-border/10 rounded-lg bg-black/5 text-center">Nenhuma regra para avançar. O avanço será manual.</div>
+                                            {/if}
                                         </div>
-                                        <div>
-                                            <span
-                                                class="font-semibold block text-red-500"
-                                                >{$t(
-                                                    "settings.risk.growthPlan.regression",
-                                                )}</span
-                                            >
-                                            <div
-                                                class="flex items-center gap-1 mt-1"
-                                            >
-                                                <span
-                                                    >{$t(
-                                                        "settings.risk.growthPlan.drawdown",
-                                                    )}</span
-                                                >
-                                                <Input
-                                                    type="number"
-                                                    class="h-6 w-16 px-1 text-xs"
-                                                    value={phase.regression_rules.find(
-                                                        (r) =>
-                                                            r.condition ===
-                                                            "drawdown_limit",
-                                                    )?.value ?? 0}
-                                                    oninput={(e) => {
-                                                        const val = Number(
-                                                            e.currentTarget
-                                                                .value,
-                                                        );
-                                                        const idx =
-                                                            phase.regression_rules.findIndex(
-                                                                (r) =>
-                                                                    r.condition ===
-                                                                    "drawdown_limit",
-                                                            );
-                                                        if (val > 0) {
-                                                            if (idx >= 0)
-                                                                phase.regression_rules[
-                                                                    idx
-                                                                ].value = val;
-                                                            else
-                                                                phase.regression_rules.push(
-                                                                    {
-                                                                        condition:
-                                                                            "drawdown_limit",
-                                                                        value: val,
-                                                                    },
-                                                                );
-                                                        } else if (idx >= 0) {
-                                                            phase.regression_rules.splice(
-                                                                idx,
-                                                                1,
-                                                            );
-                                                        }
-                                                    }}
-                                                />
+
+                                        <!-- Demote Rules -->
+                                        <div class="space-y-3">
+                                            <div class="flex items-center justify-between">
+                                                <Label class="text-[11px] font-bold text-rose-500 uppercase flex items-center gap-1.5 tracking-wider">
+                                                    <TrendingUp class="w-3.5 h-3.5 rotate-180" />
+                                                    {$t("settings.risk.growthPlan.regression") || "Rebaixar de Fase se:"}
+                                                </Label>
+                                                <Button variant="ghost" size="sm" class="h-6 px-2 text-[10px] font-bold text-rose-500 hover:text-rose-400 hover:bg-rose-500/10" onclick={() => phase.conditions_to_demote.push({metric: 'drawdown_limit', operator: '<=', value: 0})}>
+                                                    <Plus class="w-3 h-3 mr-1" /> {$t("general.add")}
+                                                </Button>
                                             </div>
+                                            {#each phase.conditions_to_demote as rule, ri}
+                                                <div class="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 bg-black/5 p-1 rounded-md border border-border/5">
+                                                    <Select.Root type="single" bind:value={rule.metric}>
+                                                        <Select.Trigger class="h-8 text-xs flex-1 border-0 bg-transparent shadow-none"><span class="truncate font-medium">{rule.metric === 'drawdown_limit' ? 'Drawdown' : rule.metric === 'daily_loss_limit' ? 'Perda Diária' : rule.metric === 'max_daily_loss_streak' ? 'Dias de Loss' : rule.metric}</span></Select.Trigger>
+                                                        <Select.Content>
+                                                            <Select.Item value="drawdown_limit" class="text-xs">Drawdown ($/pts)</Select.Item>
+                                                            <Select.Item value="daily_loss_limit" class="text-xs">Perda Diária ($/pts)</Select.Item>
+                                                            <Select.Item value="max_daily_loss_streak" class="text-xs">Dias de Loss Seguidos</Select.Item>
+                                                        </Select.Content>
+                                                    </Select.Root>
+                                                    <Select.Root type="single" bind:value={rule.operator}>
+                                                        <Select.Trigger class="h-8 text-xs w-[60px] px-2 font-mono font-bold border-0 bg-transparent shadow-none">{rule.operator}</Select.Trigger>
+                                                        <Select.Content>
+                                                            <Select.Item value=">=" class="text-xs font-mono">&gt;=</Select.Item>
+                                                            <Select.Item value=">" class="text-xs font-mono">&gt;</Select.Item>
+                                                            <Select.Item value="<=" class="text-xs font-mono">&lt;=</Select.Item>
+                                                            <Select.Item value="<" class="text-xs font-mono">&lt;</Select.Item>
+                                                        </Select.Content>
+                                                    </Select.Root>
+                                                    <Input type="number" step="0.1" class="h-8 text-xs w-[75px] font-mono font-bold" bind:value={rule.value} />
+                                                    <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground/50 hover:text-destructive shrink-0" onclick={() => phase.conditions_to_demote.splice(ri, 1)}>
+                                                        <Trash2 class="w-3.5 h-3.5" />
+                                                    </Button>
+                                                </div>
+                                            {/each}
+                                            {#if phase.conditions_to_demote.length === 0}
+                                                <div class="text-[11px] font-semibold text-muted-foreground/60 p-3 border border-dashed border-border/10 rounded-lg bg-black/5 text-center">Nenhuma regra armada para rebaixamento de fase.</div>
+                                            {/if}
                                         </div>
                                     </div>
                                 </Card.Content>

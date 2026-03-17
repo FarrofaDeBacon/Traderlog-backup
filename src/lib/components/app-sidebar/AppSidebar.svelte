@@ -32,21 +32,22 @@
 
     // Workspace Items (Principal)
     let workspaceItems = $derived([
-        { label: $t("sidebar.trades"), href: "/trades", icon: TrendingUp },
-        { label: $t("sidebar.strategies"), href: "/strategies", icon: Target },
-        { label: $t("sidebar.finance"), href: "/finance", icon: Wallet },
+        { label: $t("nav.trades", { default: "Trades" }), href: "/trades", icon: TrendingUp },
+        { label: $t("nav.strategies", { default: "Estratégias" }), href: "/strategies", icon: Target },
+        { label: $t("nav.finance", { default: "Financeiro" }), href: "/finance", icon: Wallet },
     ]);
 
     // Análise Items
     let analysisItems = $derived([
-        { label: $t("sidebar.dashboard"), href: "/", icon: LayoutDashboard },
-        { label: $t("sidebar.psychology"), href: "/psychology", icon: Brain },
+        { label: $t("nav.dashboard", { default: "Dashboard" }), href: "/", icon: LayoutDashboard },
+        { label: $t("nav.psychology", { default: "Psicologia" }), href: "/psychology", icon: Brain },
+        { label: $t("nav.risk", { default: "Controle de Risco" }), href: "/risk-control", icon: Activity },
     ]);
 
     // Fiscal Items
     let fiscalItems = $derived([
         {
-            label: $t("sidebar.irpf"),
+            label: $t("nav.fiscal.irpf", { default: "Imposto de Renda" }),
             href: "/fiscal/irpf",
             icon: FileText,
         },
@@ -55,12 +56,12 @@
     // System Items
     let systemItems = $derived([
         {
-            label: $t("sidebar.help"),
+            label: $t("nav.help", { default: "Ajuda" }),
             href: "/help",
             icon: LifeBuoy,
         },
         {
-            label: $t("sidebar.settings"),
+            label: $t("nav.settings", { default: "Configurações" }),
             href: "/settings",
             icon: Settings,
         },

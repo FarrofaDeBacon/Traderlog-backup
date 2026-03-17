@@ -607,7 +607,8 @@
     "weeks_upper": "SEMAINES",
     "weight": "poids",
     "yes": "Yes",
-    "progress": "Progrès"
+    "progress": "Progrès",
+    "add": "Ajouter"
   },
   "help": {
     "title": "Centre d'Aide",
@@ -2460,6 +2461,17 @@
         "low": "Faible",
         "normal": "Normale"
       }
+    }
+  },
+  "nav": {
+    "dashboard": "Tableau de Bord",
+    "trades": "Transactions",
+    "finance": "Finances",
+    "psychology": "Psychologie",
+    "help": "Aide",
+    "settings": "Paramètres",
+    "fiscal": {
+      "irpf": "Income Tax"
     }
   }
 }

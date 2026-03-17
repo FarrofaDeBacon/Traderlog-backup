@@ -1,6 +1,6 @@
 // src-tauri/src/seed/risk_seed.rs
 use crate::models::{
-    GrowthPhase, GrowthPhaseProgressionRule, RiskProfile,
+    GrowthPhase, RiskCondition, RiskProfile,
 };
 use surrealdb::engine::local::Db;
 use surrealdb::Surreal;
@@ -63,34 +63,35 @@ pub async fn seed_risk_profiles(
         let growth_phases = if growth_enabled {
             vec![
                 GrowthPhase {
-                    id: format!("{}_p1", id),
+                    id: Some(format!("{}_p1", id)),
+                    level: 1,
                     name: "Starter".to_string(),
-                    description: "Fase inicial de validação".to_string(),
-                    max_lots: 1.0,
-                    max_daily_loss: max_loss,
-                    progression_rules: vec![
-                        GrowthPhaseProgressionRule {
-                            condition: "profit_target".to_string(),
+                    lot_size: 1,
+                    conditions_to_advance: vec![
+                        RiskCondition {
+                            metric: "profit_target".to_string(),
+                            operator: ">=".to_string(),
                             value: target * 5.0,
                         },
-                        GrowthPhaseProgressionRule {
-                            condition: "consistency_days".to_string(),
+                        RiskCondition {
+                            metric: "consistency_days".to_string(),
+                            operator: ">=".to_string(),
                             value: 20.0,
                         },
                     ],
-                    regression_rules: vec![],
+                    conditions_to_demote: vec![],
                 },
                 GrowthPhase {
-                    id: format!("{}_p2", id),
+                    id: Some(format!("{}_p2", id)),
+                    level: 2,
                     name: "Scale Up".to_string(),
-                    description: "Aumentando exposição".to_string(),
-                    max_lots: 2.0,
-                    max_daily_loss: max_loss * 1.5,
-                    progression_rules: vec![GrowthPhaseProgressionRule {
-                        condition: "profit_target".to_string(),
+                    lot_size: 2,
+                    conditions_to_advance: vec![RiskCondition {
+                        metric: "profit_target".to_string(),
+                        operator: ">=".to_string(),
                         value: target * 15.0,
                     }],
-                    regression_rules: vec![],
+                    conditions_to_demote: vec![],
                 },
             ]
         } else {
@@ -108,6 +109,10 @@ pub async fn seed_risk_profiles(
             lock_on_loss: lock,
             account_type_applicability: account_type.into(),
             account_ids: vec![],
+            target_type: "Financial".to_string(),
+            capital_source: "Fixed".to_string(),
+            fixed_capital: 0.0,
+            linked_account_id: None,
             growth_plan_enabled: growth_enabled,
             current_phase_index: 0,
             growth_phases,

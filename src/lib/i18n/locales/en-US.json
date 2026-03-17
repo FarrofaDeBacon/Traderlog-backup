@@ -607,7 +607,8 @@
     "weeks_upper": "WEEKS",
     "weight": "weight",
     "yes": "Yes",
-    "progress": "Progress"
+    "progress": "Progress",
+    "add": "Add New"
   },
   "help": {
     "title": "Help Center",
@@ -2460,6 +2461,17 @@
         "low": "Low",
         "normal": "Normal"
       }
+    }
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "trades": "Trades",
+    "finance": "Finance",
+    "psychology": "Psychology",
+    "help": "Help",
+    "settings": "Settings",
+    "fiscal": {
+      "irpf": "Income Tax"
     }
   }
 }

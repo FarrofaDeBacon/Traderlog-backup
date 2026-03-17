@@ -808,27 +808,25 @@ pub struct FeeProfile {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GrowthPhaseProgressionRule {
-    pub condition: String, // "profit_target" | "days_positive" | "consistency_days"
-    pub value: f64,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GrowthPhaseRegressionRule {
-    pub condition: String, // "drawdown_limit" | "max_daily_loss_streak"
+pub struct RiskCondition {
+    pub metric: String,
+    pub operator: String,
     pub value: f64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GrowthPhase {
-    #[serde(deserialize_with = "deserialize_id")]
-    pub id: String,
+    #[serde(default, deserialize_with = "crate::models::deserialize_id_opt")]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub level: i32,
     pub name: String,
-    pub description: String,
-    pub max_lots: f64,
-    pub max_daily_loss: f64,
-    pub progression_rules: Vec<GrowthPhaseProgressionRule>,
-    pub regression_rules: Vec<GrowthPhaseRegressionRule>,
+    #[serde(default)]
+    pub lot_size: i32,
+    #[serde(default)]
+    pub conditions_to_advance: Vec<RiskCondition>,
+    #[serde(default)]
+    pub conditions_to_demote: Vec<RiskCondition>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -845,6 +843,16 @@ pub struct RiskProfile {
     pub account_type_applicability: String, // "All" | "Prop" | "Real" | "Demo" | "Specific"
     #[serde(default)]
     pub account_ids: Vec<String>,
+    
+    #[serde(default = "default_target_type")]
+    pub target_type: String, // "Financial" | "Points"
+    #[serde(default = "default_capital_source")]
+    pub capital_source: String, // "Fixed" | "LinkedAccount"
+    #[serde(default)]
+    pub fixed_capital: f64,
+    #[serde(default, deserialize_with = "crate::models::deserialize_id_opt")]
+    pub linked_account_id: Option<String>,
+
     pub growth_plan_enabled: bool,
     pub current_phase_index: i32,
     pub growth_phases: Vec<GrowthPhase>,
@@ -868,6 +876,13 @@ pub struct RiskProfile {
     pub psychological_search_strategy: String, // "Strict" | "Sequence"
     #[serde(default)]
     pub active: bool,
+}
+
+fn default_target_type() -> String {
+    "Financial".to_string()
+}
+fn default_capital_source() -> String {
+    "Fixed".to_string()
 }
 
 fn default_psyc_lookback() -> i32 {
