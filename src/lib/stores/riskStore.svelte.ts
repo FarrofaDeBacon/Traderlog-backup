@@ -1,6 +1,13 @@
 import { settingsStore } from './settings.svelte';
 import { tradesStore } from './trades.svelte';
-import { buildRiskCockpitState, type RiskCockpitState } from '$lib/domain/risk';
+import { 
+    buildRiskCockpitState, 
+    type RiskCockpitState,
+    adaptPositionSizingInput,
+    calculatePositionSizing,
+    type PositionSizingInput,
+    type PositionSizingResult
+} from '$lib/domain/risk';
 import { 
     adaptSettingsProfileToDomain, 
     adaptTradeToDomain, 
@@ -13,6 +20,12 @@ import {
  * e expõe o resultado do domínio em tempo real via getter derivado.
  */
 class RiskStore {
+    /**
+     * Ativo atualmente selecionado pelo usuário na UI (ex: na boleta)
+     * Necessário para alimentar o contexto do Position Sizing Engine.
+     */
+    activeAssetId = $state<string | null>(null);
+
     /**
      * Estado agregado final do Cockpit de Risco calculado pelo Domínio Puro.
      * Nenhuma regra de negócio é tomada AQUI, apenas injeção limpa de dependências.
@@ -53,6 +66,47 @@ class RiskStore {
             domainGrowthPhase,
             startingCapital
         );
+    }
+
+    /**
+     * Motor de Position Sizing (Entrada Pura formatada pelo Adapter)
+     */
+    get positionSizingInput(): PositionSizingInput | null {
+        const activeProfile = settingsStore.activeProfile;
+        if (!activeProfile || !activeProfile.active || !this.activeAssetId) return null;
+
+        const asset = settingsStore.assets.find(a => a.id === this.activeAssetId);
+        if (!asset) return null;
+
+        let currentPhase = undefined;
+        let dynamicBalance = undefined;
+
+        if (activeProfile.growth_plan_enabled && activeProfile.growth_phases && activeProfile.growth_phases.length > activeProfile.current_phase_index) {
+            currentPhase = activeProfile.growth_phases[activeProfile.current_phase_index];
+        }
+
+        if (activeProfile.capital_source === 'LinkedAccount' && activeProfile.linked_account_id) {
+            const linkedAccount = settingsStore.accounts.find(a => a.id === activeProfile.linked_account_id);
+            if (linkedAccount) {
+                dynamicBalance = linkedAccount.balance;
+            }
+        }
+
+        return adaptPositionSizingInput(
+            activeProfile,
+            asset,
+            currentPhase,
+            dynamicBalance
+        );
+    }
+
+    /**
+     * Motor de Position Sizing (Resultado de Cálculo Puro do Motor Matemático)
+     */
+    get positionSizingResult(): PositionSizingResult | null {
+        const input = this.positionSizingInput;
+        if (!input) return null;
+        return calculatePositionSizing(input);
     }
 }
 
