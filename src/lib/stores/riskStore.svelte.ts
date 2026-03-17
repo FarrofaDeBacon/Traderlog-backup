@@ -1,3 +1,6 @@
+// --- RISK STORE (Position Sizing Enabled) ---
+// This file serves as the reactive bindings for the pure risk domains.
+
 import { settingsStore } from './settings.svelte';
 import { tradesStore } from './trades.svelte';
 import { 
