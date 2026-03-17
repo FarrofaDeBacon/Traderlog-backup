@@ -43,6 +43,10 @@
         name: "",
         asset_type_id: "",
         point_value: 1,
+        contract_size: 1,
+        min_contracts: 1,
+        max_contracts: 100,
+        default_stop_points: 0,
         default_fee_id: "",
         tax_profile_id: "",
         is_root: false,
@@ -144,6 +148,10 @@
             name: "",
             asset_type_id: "",
             point_value: 1,
+            contract_size: 1,
+            min_contracts: 1,
+            max_contracts: 100,
+            default_stop_points: 0,
             default_fee_id: "",
             tax_profile_id: "",
             is_root: false,
@@ -159,6 +167,10 @@
             name: item.name,
             asset_type_id: item.asset_type_id,
             point_value: item.point_value,
+            contract_size: item.contract_size ?? 1,
+            min_contracts: item.min_contracts ?? 1,
+            max_contracts: item.max_contracts ?? 100,
+            default_stop_points: item.default_stop_points ?? 0,
             default_fee_id: item.default_fee_id,
             tax_profile_id: item.tax_profile_id || "",
             is_root: item.is_root || false,
@@ -168,9 +180,27 @@
     }
 
     async function save() {
+        // Validações do Position Sizing
+        if (formData.point_value <= 0) {
+            toast.error("O valor do ponto deve ser maior que zero.");
+            return;
+        }
+        if (formData.default_stop_points !== undefined && formData.default_stop_points < 0) {
+            toast.error("Os pontos de stop default não podem ser negativos.");
+            return;
+        }
+        if (formData.min_contracts !== undefined && formData.max_contracts !== undefined && formData.min_contracts > formData.max_contracts) {
+            toast.error("O mínimo de contratos não pode ser maior que o máximo.");
+            return;
+        }
+
         const dataToSave = {
             ...formData,
             root_id: formData.root_id === "none" ? undefined : formData.root_id,
+            contract_size: formData.contract_size,
+            min_contracts: formData.min_contracts,
+            max_contracts: formData.max_contracts,
+            default_stop_points: formData.default_stop_points,
         };
 
         if (editingId) {
@@ -427,6 +457,46 @@
                     class="col-span-3"
                 />
             </div>
+
+            <div class="grid grid-cols-4 items-center gap-4">
+                <Label class="text-right">Tam. Contrato (Multiplicador)</Label>
+                <Input
+                    type="number"
+                    step="0.01"
+                    bind:value={formData.contract_size}
+                    class="col-span-3"
+                    placeholder="Ex: 1 (B3) ou 100000 (Forex)"
+                />
+            </div>
+
+            <div class="grid grid-cols-4 items-center gap-4">
+                <Label class="text-right">Stop Padrão (Pontos)</Label>
+                <Input
+                    type="number"
+                    step="0.5"
+                    bind:value={formData.default_stop_points}
+                    class="col-span-3"
+                    placeholder="Ex: 150 para WIN, 5 para WDO"
+                />
+            </div>
+
+            <div class="grid grid-cols-4 items-center gap-4">
+                <Label class="text-right">Contratos Mínimos</Label>
+                <Input
+                    type="number"
+                    step="1"
+                    bind:value={formData.min_contracts}
+                    class="col-span-1"
+                />
+                <Label class="text-right">Máximos</Label>
+                <Input
+                    type="number"
+                    step="1"
+                    bind:value={formData.max_contracts}
+                    class="col-span-1"
+                />
+            </div>
+
 
             <div class="grid grid-cols-4 items-center gap-4">
                 <div class="col-start-2 col-span-3 flex items-center gap-2">
