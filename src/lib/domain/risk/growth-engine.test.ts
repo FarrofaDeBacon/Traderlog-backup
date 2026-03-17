@@ -3,69 +3,89 @@ import {
     calculateWinRate, 
     calculateProfitFactor, 
     calculateExpectancyR,
+    calculateDrawdownPercent,
     evaluateGrowthPhase
 } from './growth-engine';
 import type { GrowthPhase, TradeRiskSnapshot } from './types';
 
-describe('growth-engine metrics', () => {
+describe('Domain: Growth Engine - Metricas Isoladas', () => {
     const today = new Date().toISOString();
 
-    const makeTrade = (isWin: boolean, pnl: number, resultR: number): TradeRiskSnapshot => ({
-        tradeId: Math.random().toString(),
-        date: today,
-        pnl,
-        pnlPoints: pnl * 2,
-        resultR,
-        isWin,
-        isLoss: !isWin,
-        contracts: 1
-    });
+    const createTestTrade = (isWin: boolean, pnl: number, resultR: number): TradeRiskSnapshot => {
+        return {
+            tradeId: Math.random().toString(),
+            date: today,
+            pnl,
+            pnlPoints: pnl * 2,
+            resultR,
+            isWin,
+            isLoss: !isWin,
+            contracts: 1
+        };
+    };
 
-    it('deve calcular win rate corretamente', () => {
+    it('deve calcular win rate em percentual corretamente', () => {
         const trades = [
-            makeTrade(true, 100, 1),
-            makeTrade(false, -50, -1),
-            makeTrade(true, 100, 1),
-            makeTrade(false, -50, -1),
+            createTestTrade(true, 100, 1),
+            createTestTrade(false, -50, -1),
+            createTestTrade(true, 100, 1),
+            createTestTrade(false, -50, -1),
         ]; // 50%
+        
         expect(calculateWinRate(trades)).toBe(50);
         expect(calculateWinRate([])).toBe(0);
     });
 
     it('deve calcular profit factor corretamente', () => {
         const trades = [
-            makeTrade(true, 150, 1),
-            makeTrade(false, -50, -1),
-        ]; // Gross profit = 150, Gross Loss = 50 => PF = 3
+            createTestTrade(true, 150, 1),
+            createTestTrade(false, -50, -1),
+        ]; // 150 / 50 = 3
+        
         expect(calculateProfitFactor(trades)).toBe(3);
 
-        const onlyWins = [makeTrade(true, 100, 1)];
-        expect(calculateProfitFactor(onlyWins)).toBe(999); // Tratamento de divisão por zero
+        const onlyWins = [createTestTrade(true, 100, 1)];
+        expect(calculateProfitFactor(onlyWins)).toBe(Infinity);
     });
 
-    it('deve calcular expectancyR corretamente', () => {
+    it('deve calcular expectancyR precisamente', () => {
         const trades = [
-            makeTrade(true, 100, 2),
-            makeTrade(false, -50, -1),
-        ]; // sum R = 1, length = 2 => 0.5
+            createTestTrade(true, 100, 2),
+            createTestTrade(false, -50, -1),
+        ]; //  2 - 1 = 1 / 2 = 0.5
+        
         expect(calculateExpectancyR(trades)).toBe(0.5);
+    });
+
+    it('deve calcular drawdown percent corretamente com sequência de pico e queda', () => {
+        const capital = 1000;
+        const trades = [
+            createTestTrade(true, 200, 1),   // peak = 1200
+            createTestTrade(false, -600, -1), // drop to 600. Drawdown = 600 (50% of 1200)
+            createTestTrade(true, 100, 1)    // recup to 700. Drawdown is still 600 from 1200 (50%)
+        ]; 
+        
+        expect(calculateDrawdownPercent(trades, capital)).toBe(50);
     });
 });
 
-describe('growth-engine evaluateGrowthPhase', () => {
+describe('Domain: Growth Engine - evaluateGrowthPhase', () => {
     const today = new Date().toISOString();
-    const makeTrade = (isWin: boolean, pnl: number, resultR: number): TradeRiskSnapshot => ({
-        tradeId: Math.random().toString(),
-        date: today,
-        pnl,
-        pnlPoints: pnl * 2,
-        resultR,
-        isWin,
-        isLoss: !isWin,
-        contracts: 1
-    });
+    
+    const createTestTrade = (isWin: boolean, pnl: number, resultR: number): TradeRiskSnapshot => {
+        return {
+            tradeId: Math.random().toString(),
+            date: today,
+            pnl,
+            pnlPoints: pnl * 2,
+            resultR,
+            isWin,
+            isLoss: !isWin,
+            contracts: 1
+        };
+    };
 
-    const phase: GrowthPhase = {
+    const targetPhase: GrowthPhase = {
         id: '1',
         name: 'Fase 1',
         maxContracts: 2,
@@ -79,38 +99,70 @@ describe('growth-engine evaluateGrowthPhase', () => {
         allowRegression: true
     };
 
-    it('deve detectar canPromote quando todos os critérios são atendidos', () => {
-        // Criar amostra ideal
+    it('deve autorizar canPromote = true quando todos os critérios superam a baseline', () => {
         const trades = [
-            makeTrade(true, 200, 1),
-            makeTrade(true, 200, 1),
-            makeTrade(true, 200, 1),
-            makeTrade(false, -50, -0.5),
-            makeTrade(false, -50, -0.5),
+            createTestTrade(true, 200, 1),
+            createTestTrade(true, 200, 1),
+            createTestTrade(true, 200, 1),
+            createTestTrade(false, -50, 0),
+            createTestTrade(false, -50, 0),
         ]; 
-        // trades = 5
-        // WR = 60%, PF = 600/100 = 6, R = (3 - 1)/5 = 0.4... wait, R needs to be >= 0.5
-        // Let's adjust R: 200 is +1, 200 is +1, 200 is +1. sum = 3. 50 is -0.5, 50 is -0.5. sum = 2. 2 / 5 = 0.4.
-        // Let's make R stronger:
-        trades[3].resultR = 0; // break even ish
-        trades[4].resultR = 0; 
-        // sum R = 3 / 5 = 0.6
-        // netPnL = 500
         
-        const result = evaluateGrowthPhase(phase, trades, 10000);
+        const startingCapital = 10000;
+        const result = evaluateGrowthPhase(targetPhase, trades, startingCapital);
+        
         expect(result.canPromote).toBe(true);
         expect(result.shouldRegress).toBe(false);
+        expect(result.metrics.netPnL).toBe(500);
+        expect(result.metrics.expectancyR).toBe(0.6);
+        expect(result.metrics.tradeCount).toBe(5);
     });
 
-    it('deve detectar shouldRegress quando drawdown excede o limite', () => {
-        // Limit é 10%. Vamos perder 1500 num capital de 10000 (15%)
+    it('deve detectar shouldRegress = true e quebrar promotion quando drawdown estoura', () => {
         const trades = [
-            makeTrade(false, -1500, -2)
+            createTestTrade(false, -1500, -2) // 15% drawdown num balance de 10k
         ];
         
-        const result = evaluateGrowthPhase(phase, trades, 10000);
+        const startingCapital = 10000;
+        const result = evaluateGrowthPhase(targetPhase, trades, startingCapital);
+        
         expect(result.shouldRegress).toBe(true);
         expect(result.canPromote).toBe(false);
-        expect(result.reasons.some(r => r.includes('-Drawdown máximo')) || result.reasons.some(r => r.includes('Aviso Crítico: Drawdown'))).toBe(true);
+        
+        const hasCriticalReason = result.reasons.some(r => r.includes('Aviso Crítico: Drawdown máximo atingido'));
+        expect(hasCriticalReason).toBe(true);
+    });
+
+    it('deve detectar shouldRegress = true e quebrar promotion quando expectancyR fica negativa independentemente da quantidade de trades', () => {
+        const trades = [
+            createTestTrade(false, -50, -1) // 1 único trade perdedor deixando Expectancy = -1
+        ];
+        
+        const startingCapital = 10000;
+        const result = evaluateGrowthPhase(targetPhase, trades, startingCapital);
+        
+        expect(result.shouldRegress).toBe(true);
+        expect(result.canPromote).toBe(false);
+        
+        const hasExpectancyReason = result.reasons.some(r => r.includes('Aviso Crítico: Expectativa matemática negativa detectada'));
+        expect(hasExpectancyReason).toBe(true);
+    });
+
+    it('não deve promover quando faltar apenas 1 critério, mesmo com todos os outros perfeitos', () => {
+        const trades = [
+            createTestTrade(true, 200, 1),
+            createTestTrade(true, 200, 1),
+            createTestTrade(true, 200, 1),
+            createTestTrade(true, 200, 1), 
+            // Only 4 trades instead of the required 5. All other metrics (WR 100%, PF inf, net 800) are perfect.
+        ];
+        
+        const startingCapital = 10000;
+        const result = evaluateGrowthPhase(targetPhase, trades, startingCapital);
+        
+        expect(result.canPromote).toBe(false);
+        expect(result.shouldRegress).toBe(false);
+        const reason = result.reasons.find(r => r.includes('Mínimo de trades não alcançado'));
+        expect(reason).toBeDefined();
     });
 });
