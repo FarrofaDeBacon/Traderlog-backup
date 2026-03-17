@@ -478,7 +478,7 @@
                         onValueChange={(v) => (formData.root_id = v)}
                         disabled={formData.is_root}
                     >
-                        <Select.Trigger>
+                        <Select.Trigger class="w-full">
                             {settingsStore.assets.find(
                                 (a) => a.id === formData.root_id,
                             )?.symbol ||
@@ -519,7 +519,7 @@
                         type="single"
                         bind:value={formData.asset_type_id}
                     >
-                        <Select.Trigger
+                        <Select.Trigger class="w-full"
                             >{settingsStore.getAssetTypeCode(
                                 formData.asset_type_id,
                             ) ||
@@ -544,7 +544,7 @@
                         type="single"
                         bind:value={formData.default_fee_id}
                     >
-                        <Select.Trigger>
+                        <Select.Trigger class="w-full">
                             {settingsStore.fees.find(
                                 (f) => f.id === formData.default_fee_id,
                             )?.name ||
@@ -575,7 +575,7 @@
                         type="single"
                         bind:value={formData.tax_profile_id}
                     >
-                        <Select.Trigger>
+                        <Select.Trigger class="w-full">
                             {settingsStore.taxProfiles.find(
                                 (p) => p.id === formData.tax_profile_id,
                             )?.name ||
