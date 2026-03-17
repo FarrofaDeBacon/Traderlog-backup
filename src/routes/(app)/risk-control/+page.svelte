@@ -1,6 +1,12 @@
+```
 <script lang="ts">
     import { t } from "svelte-i18n";
-    import { Activity, Shield, Target, TrendingUp, TrendingDown, CheckCircle2, XCircle, ArrowRight, Gauge, Layers, AlertTriangle, ChevronRight, ChevronLeft } from "lucide-svelte";
+    import { 
+        Activity, Shield, Target, TrendingUp, TrendingDown, 
+        CheckCircle2, XCircle, ArrowRight, Gauge, Layers, 
+        AlertTriangle, ChevronRight, ChevronLeft, Calendar, 
+        History, Lock, HelpCircle, Box, Info 
+    } from 'lucide-svelte';
     import * as Card from "$lib/components/ui/card";
     import { Button } from "$lib/components/ui/button";
     import EChart from "$lib/components/ui/echart.svelte";
@@ -133,8 +139,22 @@
         {#if activeProfiles.length > 0}
             <div class="flex items-center gap-3">
                 <Shield class="w-5 h-5 text-muted-foreground hidden md:block" />
+                <!-- Sizing Asset Selector (Temporary) -->
+                <div class="hidden sm:flex items-center gap-2">
+                    <span class="text-xs text-muted-foreground uppercase font-bold tracking-wider">Ativo:</span>
+                    <select 
+                        class="bg-black/20 border border-border/20 text-foreground text-xs rounded px-2 py-1 outline-none min-w-[80px]"
+                        bind:value={riskStore.activeAssetId}
+                    >
+                        <option value={null}>Selecione...</option>
+                        {#each settingsStore.assets as asset}
+                            <option value={asset.id}>{asset.symbol}</option>
+                        {/each}
+                    </select>
+                </div>
+                
                 <!-- Profile Base Selector (Badges) -->
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2 border-l border-border/10 pl-3">
                     {#each activeProfiles as profile}
                         <button 
                             class="px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all border {selectedProfileId === profile.id ? 'bg-primary/20 border-primary text-primary shadow-[0_0_10px_rgba(255,255,255,0.1)]' : 'bg-black/20 border-border/20 text-muted-foreground hover:bg-black/40 hover:text-foreground'}"
@@ -250,19 +270,91 @@
                     </div>
                 </Card.Root>
 
-                <!-- Widget 2: Equity Curve (8 cols) -->
-                <Card.Root class="lg:col-span-8 border-border/10 shadow-lg card-glass p-5 flex flex-col min-h-[300px]">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center gap-2">
-                           <TrendingUp class="w-5 h-5 text-emerald-500" />
-                           <h3 class="text-sm font-bold uppercase tracking-widest text-muted-foreground/80">Curva de Capital Recente</h3>
-                        </div>
-                        <span class="px-2 py-0.5 rounded-full bg-muted/20 text-[10px] uppercase tracking-widest font-bold text-muted-foreground/60 border border-border/10">14 Dias</span>
-                    </div>
-                    <div class="flex-1 w-full relative">
-                        <!-- Chart component fills the space -->
+                <!-- Chart Column (8 cols) -->
+                <Card.Root class="lg:col-span-8 border-border/10 shadow-lg card-glass flex flex-col h-[400px]">
+                    <Card.Header class="pb-2 flex-none">
+                        <Card.Title class="text-lg flex items-center gap-2">
+                            <TrendingUp class="w-5 h-5 text-emerald-400" />
+                            Curva de Capital (Drawdown de Topo)
+                        </Card.Title>
+                        <Card.Description>
+                            Evolução financeira baseada apenas nas operações deste Perfil
+                        </Card.Description>
+                    </Card.Header>
+                    <Card.Content class="flex-1 w-full relative -ml-4">
                         <EChart options={chartOptions()} />
-                    </div>
+                    </Card.Content>
+                </Card.Root>
+
+                <!-- New Card: Position Sizing Engine Result -->
+                <Card.Root class="lg:col-span-4 border-border/10 shadow-lg card-glass">
+                    <Card.Header class="pb-2 border-b border-border/10">
+                        <Card.Title class="text-base flex items-center gap-2">
+                            <Box class="w-5 h-5 text-blue-400" />
+                            Position Sizing
+                        </Card.Title>
+                        <Card.Description>Contratos Permitidos Hoje</Card.Description>
+                    </Card.Header>
+                    <Card.Content class="pt-4 space-y-4">
+                        {#if !riskStore.activeAssetId}
+                            <div class="text-sm text-muted-foreground flex items-center gap-2 p-3 bg-black/20 rounded-md border border-border/10">
+                                <Info class="w-4 h-4 text-blue-400 shrink-0" />
+                                Selecione um Ativo no topo da tela para calcular o tamanho de posição.
+                            </div>
+                        {:else if riskStore.positionSizingResult}
+                            {@const b = riskStore.positionSizingResult}
+                            
+                            <div class="flex items-center justify-between pb-3 border-b border-border/10">
+                                <span class="text-sm text-muted-foreground">Lotes Permitidos</span>
+                                {#if b.isValid}
+                                    <span class="text-3xl font-bold text-emerald-400 tracking-tighter">{b.allowedContracts}</span>
+                                {:else}
+                                    <span class="text-3xl font-bold text-rose-500 tracking-tighter">0</span>
+                                {/if}
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-muted-foreground">Risco Máx (Hedge)</span>
+                                    <span class="font-medium">R$ {b.allowedRisk.toFixed(2)}</span>
+                                </div>
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-muted-foreground">Custo por Contrato</span>
+                                    <span class="font-medium">R$ {b.riskPerContract.toFixed(2)}</span>
+                                </div>
+                            </div>
+
+                            {#if !b.isValid && b.reasons.length > 0}
+                                <div class="mt-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-md space-y-1">
+                                    <div class="flex items-center gap-2 text-rose-400 font-bold text-xs uppercase tracking-wider mb-2">
+                                        <AlertTriangle class="w-3 h-3" />
+                                        Operação Bloqueada
+                                    </div>
+                                    <ul class="text-xs text-rose-300/80 list-disc pl-4 space-y-1">
+                                        {#each b.reasons as reason}
+                                            <li>{reason}</li>
+                                        {/each}
+                                    </ul>
+                                </div>
+                            {:else if b.reasons.length > 0}
+                                <div class="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-md space-y-1">
+                                    <div class="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider mb-2">
+                                        <AlertTriangle class="w-3 h-3" />
+                                        Limites de Fase Aplicados
+                                    </div>
+                                    <ul class="text-xs text-amber-300/80 list-disc pl-4 space-y-1">
+                                        {#each b.reasons as reason}
+                                            <li>{reason}</li>
+                                        {/each}
+                                    </ul>
+                                </div>
+                            {/if}
+                        {:else}
+                             <div class="text-sm text-muted-foreground">
+                                Dados insuficientes para calcular dimensionamento (sem parâmetros no ativo).
+                             </div>
+                        {/if}
+                    </Card.Content>
                 </Card.Root>
 
                 <!-- Widget 3: Discipline Checklist (Full Width List) -->
