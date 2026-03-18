@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { riskStore } from './riskStore.svelte';
 import { settingsStore } from './settings.svelte';
 
@@ -245,5 +245,50 @@ describe('RiskStore Position Sizing Integration', () => {
             expect(riskStore.resolvedGrowthContext?.growthSourceType).toBe('assetProfile');
             expect(riskStore.resolvedGrowthContext?.growthPhase.lot_size).toBe(99);
         });
+    });
+});
+
+describe('RiskStore Persistence (activeAssetId)', () => {
+    let mockStore: Record<string, string> = {};
+
+    beforeEach(() => {
+        mockStore = {};
+        vi.stubGlobal('localStorage', {
+            getItem: (key: string) => mockStore[key] || null,
+            setItem: (key: string, value: string) => { mockStore[key] = value.toString(); },
+            removeItem: (key: string) => { delete mockStore[key]; },
+            clear: () => { mockStore = {}; },
+        });
+        settingsStore.assets = [];
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('restores activeAssetId from localStorage if present upon initialization', async () => {
+        mockStore['risk_activeAssetId'] = 'WDO';
+        
+        const { RiskStore } = await import('./riskStore.svelte');
+        const testStore = new RiskStore();
+
+        expect(testStore.activeAssetId).toBe('WDO');
+    });
+
+    it('cleans activeAssetId if the linked asset no longer exists in settingsStore', async () => {
+        mockStore['risk_activeAssetId'] = 'DEAD_ASSET';
+        
+        settingsStore.assets = [
+            { id: 'WDO', symbol: 'WDO', point_value: 10 } as any
+        ];
+        
+        const { RiskStore } = await import('./riskStore.svelte');
+        const testStore = new RiskStore();
+        
+        // Wait a tick for $effect.root
+        await new Promise(r => setTimeout(r, 0));
+        
+        expect(testStore.activeAssetId).toBeNull();
+        expect(mockStore['risk_activeAssetId']).toBeUndefined(); // or not existing
     });
 });

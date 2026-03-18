@@ -25,7 +25,24 @@
 
     $effect(() => {
         if (!selectedProfileId && activeProfiles.length > 0) {
-            selectedProfileId = activeProfiles[0].id;
+            const saved = localStorage.getItem("risk_selectedProfileId");
+            if (saved && activeProfiles.some(p => p.id === saved)) {
+                selectedProfileId = saved;
+            } else {
+                selectedProfileId = activeProfiles[0].id;
+            }
+        }
+    });
+
+    $effect(() => {
+        if (selectedProfileId) {
+            const exists = activeProfiles.some(p => p.id === selectedProfileId);
+            if (exists) {
+                localStorage.setItem("risk_selectedProfileId", selectedProfileId);
+            } else if (activeProfiles.length > 0) {
+                localStorage.removeItem("risk_selectedProfileId");
+                selectedProfileId = activeProfiles[0].id;
+            }
         }
     });
 

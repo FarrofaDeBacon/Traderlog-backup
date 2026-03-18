@@ -23,12 +23,40 @@ import type { ResolvedGrowthContext } from '../types';
  * Consome os stores de `settings` e `trades`, converte usando `risk-adapters`
  * e expõe o resultado do domínio em tempo real via getter derivado.
  */
-class RiskStore {
+export class RiskStore {
     /**
      * Ativo atualmente selecionado pelo usuário na UI (ex: na boleta)
      * Necessário para alimentar o contexto do Position Sizing Engine.
      */
     activeAssetId = $state<string | null>(null);
+
+    constructor() {
+        if (typeof window !== 'undefined') {
+            const savedId = localStorage.getItem('risk_activeAssetId');
+            if (savedId) {
+                this.activeAssetId = savedId;
+            }
+
+            $effect.root(() => {
+                $effect(() => {
+                    // Safe cleanup: if we have an active asset but it was deleted from settings
+                    if (this.activeAssetId && settingsStore.assets.length > 0) {
+                        const exists = settingsStore.assets.some(a => a.id === this.activeAssetId);
+                        if (!exists) {
+                            this.activeAssetId = null;
+                        }
+                    }
+
+                    // Sync to localStorage
+                    if (this.activeAssetId) {
+                        localStorage.setItem('risk_activeAssetId', this.activeAssetId);
+                    } else {
+                        localStorage.removeItem('risk_activeAssetId');
+                    }
+                });
+            });
+        }
+    }
 
     /**
      * Estado agregado final do Cockpit de Risco calculado pelo Domínio Puro.
