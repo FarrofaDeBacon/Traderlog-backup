@@ -1,4 +1,4 @@
-import type { RiskProfile, Asset, GrowthPhase } from '$lib/types';
+import type { RiskProfile, Asset, AssetRiskProfile, GrowthPhase } from '$lib/types';
 import type { PositionSizingInput } from './position-sizing-engine';
 
 /**
@@ -6,6 +6,7 @@ import type { PositionSizingInput } from './position-sizing-engine';
  * 
  * @param profile O Perfil de Risco atual do usuário.
  * @param asset O ativo que ele selecionou para operar.
+ * @param assetRiskProfile O perfil de ativo vinculado selecionado para este sizing.
  * @param currentPhase Se o Growth Plan estiver ativo, é a fase na qual ele está atualmente.
  * @param dynamicBalanceFallback Se a fonte de capital for LinkedAccount, deve ser injetado o Account Balance via store aqui fora do engine.
  * @returns {PositionSizingInput|null} Retorna null se for impossível processar por falta violenta de dados de config.
@@ -13,6 +14,7 @@ import type { PositionSizingInput } from './position-sizing-engine';
 export function adaptPositionSizingInput(
     profile: RiskProfile,
     asset: Asset,
+    assetRiskProfile: AssetRiskProfile,
     currentPhase?: GrowthPhase,
     dynamicBalanceFallback?: number
 ): PositionSizingInput | null {
@@ -35,10 +37,11 @@ export function adaptPositionSizingInput(
     // 2. Extrair Regras do Ativo (Fonte de Verdade Estrutural)
     const pointValue = asset.point_value;
 
-    // 2.5 Regras Operacionais do Trader (Perfil de Risco)
-    const stopPoints = profile.default_stop_points ?? 0; // Default zero vai falhar no engine controladamente.
-    const minContracts = profile.min_contracts;
-    const maxContracts = profile.max_contracts;
+    // 2.5 Regras Operacionais do Trader (Asset Risk Profile)
+    // Extrai stop, min e max DO PERFIL ESPECÍFICO DE ATIVO, não mais do perfil geral de risco
+    const stopPoints = assetRiskProfile.default_stop_points ?? 0; // Default zero vai falhar no engine controladamente.
+    const minContracts = assetRiskProfile.min_contracts;
+    const maxContracts = assetRiskProfile.max_contracts;
 
     // 3. Extrair Regras da Fase Ativa de Crescimento
     const maxContractsPhase = (profile.growth_plan_enabled && currentPhase) 

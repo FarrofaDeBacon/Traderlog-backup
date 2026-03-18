@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { adaptPositionSizingInput } from './position-sizing-adapter';
-import type { RiskProfile, Asset, GrowthPhase } from '$lib/types';
+import type { RiskProfile, Asset, AssetRiskProfile, GrowthPhase } from '$lib/types';
 
 describe('Position Sizing Adapter', () => {
     
@@ -10,14 +10,20 @@ describe('Position Sizing Adapter', () => {
         capital_source: 'Fixed',
         fixed_capital: 10000,
         growth_plan_enabled: true,
-        current_phase_index: 0,
-        default_stop_points: 150,
-        min_contracts: 1,
-        max_contracts: 100
+        current_phase_index: 0
     };
 
     const baseAsset: Partial<Asset> = {
+        id: 'WIN',
         point_value: 0.20
+    };
+
+    const baseAssetRiskProfile: Partial<AssetRiskProfile> = {
+        id: 'win-profile-1',
+        asset_id: 'WIN',
+        default_stop_points: 150,
+        min_contracts: 1,
+        max_contracts: 100
     };
 
     const basePhase: Partial<GrowthPhase> = {
@@ -28,6 +34,7 @@ describe('Position Sizing Adapter', () => {
         const input = adaptPositionSizingInput(
             baseProfile as RiskProfile, 
             baseAsset as Asset,
+            baseAssetRiskProfile as AssetRiskProfile,
             basePhase as GrowthPhase,
             undefined // Account balance overrides
         );
@@ -37,11 +44,11 @@ describe('Position Sizing Adapter', () => {
 
         expect(input.capital).toBe(10000);
         expect(input.riskPerTradePercent).toBe(1.5);
-        expect(input.stopPoints).toBe(150);
-        expect(input.pointValue).toBe(0.20);
-        expect(input.minContracts).toBe(1);
-        expect(input.maxContracts).toBe(100);
-        expect(input.maxContractsPhase).toBe(5);
+        expect(input.stopPoints).toBe(150); // From AssetRiskProfile
+        expect(input.pointValue).toBe(0.20); // From Asset
+        expect(input.minContracts).toBe(1); // From AssetRiskProfile
+        expect(input.maxContracts).toBe(100); // From AssetRiskProfile
+        expect(input.maxContractsPhase).toBe(5); // From Phase
     });
 
     it('returns null if profile capital_source is missing override when needed', () => {
@@ -51,6 +58,7 @@ describe('Position Sizing Adapter', () => {
         const input = adaptPositionSizingInput(
             linkProfile as RiskProfile, 
             baseAsset as Asset,
+            baseAssetRiskProfile as AssetRiskProfile,
             undefined,
             undefined // Missing parameter from store layer
         );
@@ -64,6 +72,7 @@ describe('Position Sizing Adapter', () => {
         const input = adaptPositionSizingInput(
             linkProfile as RiskProfile, 
             baseAsset as Asset,
+            baseAssetRiskProfile as AssetRiskProfile,
             undefined,
             25000 // Valid external balance
         );
@@ -74,23 +83,24 @@ describe('Position Sizing Adapter', () => {
         expect(input.capital).toBe(25000);
     });
 
-    it('falls back to optional undefined constraints if Asset does not provide them', () => {
+    it('falls back to optional undefined constraints if AssetRiskProfile does not provide them', () => {
         const emptyAsset: Partial<Asset> = {
+            id: 'WIN',
             point_value: 1.0
-            // No min/max/stop limits
         };
 
-        // Ensure min_contracts and max_contracts are undefined on the profile for this test
-        const emptyProfile: Partial<RiskProfile> = { 
-            ...baseProfile, 
+        const emptyAssetProfile: Partial<AssetRiskProfile> = { 
+            id: 'win-profile-2',
+            asset_id: 'WIN',
             default_stop_points: undefined,
             min_contracts: undefined,
             max_contracts: undefined
         };
 
         const input = adaptPositionSizingInput(
-            emptyProfile as RiskProfile, 
+            baseProfile as RiskProfile, 
             emptyAsset as Asset,
+            emptyAssetProfile as AssetRiskProfile,
             undefined, 
             undefined 
         );
@@ -98,7 +108,7 @@ describe('Position Sizing Adapter', () => {
         expect(input).toBeDefined();
         if(!input) return;
 
-        expect(input.stopPoints).toBe(0); // If undefined, should pass 0 to let engine reject it! Engine handles validity, adapter is dumb mapper.
+        expect(input.stopPoints).toBe(0); // If undefined, should pass 0 to let engine reject it!
         expect(input.minContracts).toBeUndefined();
         expect(input.maxContracts).toBeUndefined();
         expect(input.maxContractsPhase).toBeUndefined();
