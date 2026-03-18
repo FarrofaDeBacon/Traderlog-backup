@@ -2508,5 +2508,20 @@
     "fiscal": {
       "irpf": "Imposto de Renda"
     }
+  },
+  "riskContext": {
+    "title": "Composição Ativa",
+    "asset": "Ativo Operacional",
+    "unlinked": "Sem Perfil Vinculado",
+    "riskProfile": "Perfil de Risco",
+    "growthSource": "Fonte do Growth",
+    "globalPlan": "Plano Global",
+    "overridePlan": "Específico (Override)",
+    "currentPhase": "Fase Atual",
+    "noPhase": "Nenhuma / Manual",
+    "sizing": "Sizing Permitido",
+    "contracts": "Contratos Mensurados",
+    "blocked": "Bloqueado / Inválido",
+    "reasons": "Motivo do Bloqueio:"
   }
 }

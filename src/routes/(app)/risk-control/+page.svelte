@@ -21,7 +21,13 @@
         settingsStore.riskProfiles.filter(p => p.active)
     );
 
-    let selectedProfileId = $state(activeProfiles[0]?.id || null);
+    let selectedProfileId = $state<string | null>(null);
+
+    $effect(() => {
+        if (!selectedProfileId && activeProfiles.length > 0) {
+            selectedProfileId = activeProfiles[0].id;
+        }
+    });
 
     // Derived the single selected profile
     let currentProfile = $derived(
@@ -192,6 +198,90 @@
     {:else}
 
         {#if currentProfile && stats && riskData && chartOptions()}
+            
+            <!-- ====== ETAPA 12: ACTIVE RISK CONTEXT SUMMARY ====== -->
+            <Card.Root class="mb-6 border-border/10 shadow-sm bg-muted/5 relative overflow-hidden">
+                <Card.Content class="p-4 sm:p-5 flex flex-col gap-4">
+                    <div class="flex items-center gap-2">
+                        <Layers class="w-4 h-4 text-primary" />
+                        <h3 class="text-sm font-bold uppercase tracking-widest text-muted-foreground">{$t("riskContext.title")}</h3>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 lg:grid-cols-6 gap-4 text-sm">
+                        <div class="space-y-1">
+                            <p class="text-[10px] uppercase font-bold text-muted-foreground/70">{$t("riskContext.asset")}</p>
+                            <p class="font-medium text-foreground">{settingsStore.assets.find(a => a.id === riskStore.activeAssetId)?.symbol || $t("riskContext.unlinked")}</p>
+                        </div>
+
+                        <div class="space-y-1">
+                            <p class="text-[10px] uppercase font-bold text-muted-foreground/70">{$t("riskContext.riskProfile")}</p>
+                            <p class="font-medium text-foreground">{currentProfile.name}</p>
+                        </div>
+
+                        <div class="space-y-1">
+                            <p class="text-[10px] uppercase font-bold text-muted-foreground/70">Asset Risk Profile</p>
+                            <p class="font-medium text-foreground {riskStore.resolvedAssetRiskProfile ? 'text-emerald-500' : 'text-amber-500'}">
+                                {riskStore.resolvedAssetRiskProfile?.name || $t("riskContext.unlinked")}
+                            </p>
+                        </div>
+
+                        <div class="space-y-1">
+                            <p class="text-[10px] uppercase font-bold text-muted-foreground/70">{$t("riskContext.growthSource")}</p>
+                            <p class="font-medium text-foreground">
+                                {#if riskStore.resolvedGrowthContext?.growthSourceType === 'assetProfile'}
+                                    <span class="text-primary">{$t("riskContext.overridePlan")}</span>
+                                {:else if riskStore.resolvedGrowthContext?.growthSourceType === 'global'}
+                                    <span>{$t("riskContext.globalPlan")}</span>
+                                {:else}
+                                    <span class="text-muted-foreground">{$t("riskContext.noPhase")}</span>
+                                {/if}
+                            </p>
+                        </div>
+
+                        <div class="space-y-1">
+                            <p class="text-[10px] uppercase font-bold text-muted-foreground/70">{$t("riskContext.currentPhase")}</p>
+                            <p class="font-medium text-foreground whitespace-nowrap overflow-hidden text-ellipsis" title={riskStore.resolvedGrowthContext?.growthPhase?.name || $t("riskContext.noPhase")}>
+                                {riskStore.resolvedGrowthContext?.growthPhase?.name || $t("riskContext.noPhase")}
+                            </p>
+                        </div>
+
+                        <div class="space-y-1">
+                            <p class="text-[10px] uppercase font-bold text-muted-foreground/70">{$t("riskContext.sizing")}</p>
+                            {#if !riskStore.positionSizingResult}
+                                <p class="font-medium text-rose-500">{$t("riskContext.blocked")}</p>
+                            {:else if riskStore.positionSizingResult.allowedContracts === 0}
+                                <p class="font-medium text-amber-500 truncate" title="{$t('riskContext.blocked')} (0)">{$t("riskContext.blocked")} (0)</p>
+                            {:else}
+                                <p class="font-black text-emerald-500">{riskStore.positionSizingResult.allowedContracts} CTRs</p>
+                            {/if}
+                        </div>
+                    </div>
+
+                    {#if riskStore.positionSizingResult && riskStore.positionSizingResult.reasons.length > 0}
+                        <div class="mt-1 pt-3 border-t border-border/10">
+                            <p class="text-[10px] uppercase font-bold text-amber-500 mb-1 flex items-center gap-1">
+                                <AlertTriangle class="w-3 h-3" />
+                                {$t("riskContext.reasons")}
+                            </p>
+                            <ul class="text-xs text-muted-foreground list-disc list-inside space-y-0.5 ml-1">
+                                {#each riskStore.positionSizingResult.reasons as reason}
+                                    <li>{reason}</li>
+                                {/each}
+                            </ul>
+                        </div>
+                    {:else if !riskStore.resolvedAssetRiskProfile}
+                        <div class="mt-1 pt-3 border-t border-border/10">
+                            <p class="text-[10px] uppercase font-bold text-rose-500 mb-1 flex items-center gap-1">
+                                <AlertTriangle class="w-3 h-3" />
+                                {$t("riskContext.blocked")}
+                            </p>
+                            <p class="text-xs text-muted-foreground ml-1">Para calcular lotes válidos e tamanho de posição, é necessário selecionar um Ativo que possua um `Asset Risk Profile` vinculado ao perfil atual.</p>
+                        </div>
+                    {/if}
+                </Card.Content>
+            </Card.Root>
+            <!-- ====== FIM DO SUMMARY ====== -->
+
             <!-- Cockpit Dashboard Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 

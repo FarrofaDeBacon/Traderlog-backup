@@ -2508,5 +2508,20 @@
     "fiscal": {
       "irpf": "Income Tax"
     }
+  },
+  "riskContext": {
+    "title": "Active Composition",
+    "asset": "Operational Asset",
+    "unlinked": "No Linked Profile",
+    "riskProfile": "Risk Profile",
+    "growthSource": "Growth Source",
+    "globalPlan": "Global Plan",
+    "overridePlan": "Specific (Override)",
+    "currentPhase": "Current Phase",
+    "noPhase": "None / Manual",
+    "sizing": "Allowed Sizing",
+    "contracts": "Measured Contracts",
+    "blocked": "Blocked / Invalid",
+    "reasons": "Block Reason:"
   }
 }
