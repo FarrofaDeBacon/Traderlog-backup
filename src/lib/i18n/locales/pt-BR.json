@@ -1714,7 +1714,9 @@
         "addAssetProfile": "Adicionar Vínculo",
         "removeAssetProfile": "Remover",
         "noLinkedAssetProfiles": "Nenhum perfil de ativo vinculado.",
-        "assetProfileSelector": "Selecione um Perfil de Ativo..."
+        "assetProfileSelector": "Selecione um Perfil de Ativo...",
+        "noLinkedAssetProfileForThisAsset": "Nenhum Perfil de Ativo vinculado para este ativo.",
+        "linkedProfile": "Perfil Vinculado"
       }
     },
     "strategies": {

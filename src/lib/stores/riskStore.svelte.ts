@@ -72,6 +72,22 @@ class RiskStore {
     }
 
     /**
+     * Retorna o Perfil de Risco de Ativo resolvido para o ativo selecionado na UI.
+     */
+    get resolvedAssetRiskProfile() {
+        const activeProfile = settingsStore.activeProfile;
+        if (!activeProfile || !activeProfile.active || !this.activeAssetId) return null;
+
+        const asset = settingsStore.assets.find(a => a.id === this.activeAssetId);
+        if (!asset) return null;
+
+        const linkedProfileIds = activeProfile.linked_asset_risk_profile_ids || [];
+        const validProfiles = settingsStore.assetRiskProfiles.filter(ap => linkedProfileIds.includes(ap.id as string));
+        
+        return validProfiles.find(ap => ap.asset_id === asset.id) || null;
+    }
+
+    /**
      * Motor de Position Sizing (Entrada Pura formatada pelo Adapter)
      */
     get positionSizingInput(): PositionSizingInput | null {
@@ -81,12 +97,8 @@ class RiskStore {
         const asset = settingsStore.assets.find(a => a.id === this.activeAssetId);
         if (!asset) return null;
 
-        // ETAPA 3: Garantir que o ativo selecionado possui um perfil vinculado ao perfil de risco
-        const linkedProfileIds = activeProfile.linked_asset_risk_profile_ids || [];
-        const validProfiles = settingsStore.assetRiskProfiles.filter(ap => linkedProfileIds.includes(ap.id as string));
-        
-        // Procuramos o perfil de ativo cujo 'asset_id' corresponde ao ativo atual
-        const assetRiskProfile = validProfiles.find(ap => ap.asset_id === asset.id);
+        // ETAPA 3 & 4: Reutiliza logica do getter para obter o perfil resolvido na UI tbm.
+        const assetRiskProfile = this.resolvedAssetRiskProfile;
         
         // Falha explícita se não existir perfil de ativo vinculado
         if (!assetRiskProfile) return null;

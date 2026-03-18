@@ -1713,8 +1713,10 @@
         "linkedAssetProfilesDesc": "Applies global risk rules to specific asset trading profiles.",
         "addAssetProfile": "Add Link",
         "removeAssetProfile": "Remove",
-        "noLinkedAssetProfiles": "No linked asset profile.",
-        "assetProfileSelector": "Select an Asset Profile..."
+        "noLinkedAssetProfiles": "No asset profile linked.",
+        "assetProfileSelector": "Select an Asset Profile...",
+        "noLinkedAssetProfileForThisAsset": "No Asset Profile linked for this asset.",
+        "linkedProfile": "Linked Profile"
       }
     },
     "strategies": {

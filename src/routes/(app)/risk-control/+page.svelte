@@ -1,11 +1,11 @@
 ```
 <script lang="ts">
-    import { t } from "svelte-i18n";
+    import { t, _ } from "svelte-i18n";
     import { 
         Activity, Shield, Target, TrendingUp, TrendingDown, 
         CheckCircle2, XCircle, ArrowRight, Gauge, Layers, 
         AlertTriangle, ChevronRight, ChevronLeft, Calendar, 
-        History, Lock, HelpCircle, Box, Info 
+        History, Lock, HelpCircle, Box, Info, PieChart 
     } from 'lucide-svelte';
     import * as Card from "$lib/components/ui/card";
     import { Button } from "$lib/components/ui/button";
@@ -301,6 +301,11 @@
                                 <Info class="w-4 h-4 text-blue-400 shrink-0" />
                                 Selecione um Ativo no topo da tela para calcular o tamanho de posição.
                             </div>
+                        {:else if !riskStore.resolvedAssetRiskProfile}
+                            <div class="text-[13px] flex items-center gap-2 p-3 bg-rose-500/10 text-rose-400 rounded-md border border-rose-500/20">
+                                <AlertTriangle class="w-4 h-4 shrink-0" />
+                                {$_('risk.management.noLinkedAssetProfileForThisAsset')}
+                            </div>
                         {:else if riskStore.positionSizingResult}
                             {@const b = riskStore.positionSizingResult}
                             
@@ -314,6 +319,10 @@
                             </div>
                             
                             <div class="space-y-2">
+                                <div class="flex justify-between text-[11px] bg-black/20 py-1.5 px-2 rounded border border-border/5 mb-2">
+                                    <span class="text-muted-foreground">{$_('risk.management.linkedProfile')}</span>
+                                    <span class="font-bold text-primary">{riskStore.resolvedAssetRiskProfile?.name || '---'}</span>
+                                </div>
                                 <div class="flex justify-between text-xs">
                                     <span class="text-muted-foreground">Risco Máx (Hedge)</span>
                                     <span class="font-medium">R$ {b.allowedRisk.toFixed(2)}</span>
