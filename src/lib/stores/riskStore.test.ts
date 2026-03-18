@@ -124,84 +124,126 @@ describe('RiskStore Position Sizing Integration', () => {
         expect(result?.reasons).toContain("Distância do Stop (stopPoints) deve ser maior que zero.");
     });
 
-    describe('resolvedGrowthContext', () => {
-        it('returns null if there is no active growth plan', () => {
+    describe('Risk Flow Integration Tests (ETAPA 10)', () => {
+        it('Scenario A: Asset selected, NO AssetRiskProfile linked', () => {
             settingsStore.riskProfiles = [{ 
-                id: '1', active: true, growth_plan_enabled: false,
-                linked_asset_risk_profile_ids: ['profile-wdo']
+                id: 'global-1', active: true, growth_plan_enabled: true, growth_phases: [{}], current_phase_index: 0,
+                // Missing link to 'profile-wdo'
+                linked_asset_risk_profile_ids: [] 
             } as any];
-            settingsStore.assets = [{ id: 'WDO' } as any];
+            settingsStore.assets = [{ id: 'WDO', symbol: 'WDO', point_value: 10 } as any];
             settingsStore.assetRiskProfiles = [{ id: 'profile-wdo', asset_id: 'WDO' } as any];
+            
             riskStore.activeAssetId = 'WDO';
             
+            expect(riskStore.resolvedAssetRiskProfile).toBeNull();
             expect(riskStore.resolvedGrowthContext).toBeNull();
+            expect(riskStore.positionSizingResult).toBeNull();
         });
 
-        it('returns null if there is no active asset profile linked to the asset', () => {
+        it('Scenario B: Asset selected, AssetRiskProfile linked, Global Growth', () => {
             settingsStore.riskProfiles = [{ 
-                id: '1', active: true, growth_plan_enabled: true, growth_phases: [{}], current_phase_index: 0,
-                linked_asset_risk_profile_ids: [] // Missing link
-            } as any];
-            settingsStore.assets = [{ id: 'WDO' } as any];
-            settingsStore.assetRiskProfiles = [{ id: 'profile-wdo', asset_id: 'WDO' } as any];
-            riskStore.activeAssetId = 'WDO';
-            
-            expect(riskStore.resolvedGrowthContext).toBeNull();
-        });
-
-        it('returns global source when asset profile has no override', () => {
-            const globalPhaseMock = { level: 1, lot_size: 5 };
-            const profileMock = { 
-                id: '1', active: true, growth_plan_enabled: true, 
-                growth_phases: [globalPhaseMock], current_phase_index: 0,
+                id: 'global-1', active: true, growth_plan_enabled: true, 
+                growth_phases: [{ level: 1, lot_size: 5 }], current_phase_index: 0,
                 linked_asset_risk_profile_ids: ['profile-wdo']
-            };
-            const assetMock = { id: 'WDO' };
-            const assetProfileMock = { 
+            } as any];
+            settingsStore.assets = [{ id: 'WDO', symbol: 'WDO', point_value: 10 } as any];
+            settingsStore.assetRiskProfiles = [{ 
                 id: 'profile-wdo', asset_id: 'WDO', 
                 growth_override_enabled: false 
-            };
-
-            settingsStore.riskProfiles = [profileMock as any];
-            settingsStore.assets = [assetMock as any];
-            settingsStore.assetRiskProfiles = [assetProfileMock as any];
+            } as any];
+            
             riskStore.activeAssetId = 'WDO';
             
-            const context = riskStore.resolvedGrowthContext;
-            
-            expect(context).not.toBeNull();
-            expect(context?.growthSourceType).toBe('global');
-            expect(context?.growthPhase.level).toBe(1);
+            expect(riskStore.resolvedGrowthContext?.growthSourceType).toBe('global');
+            expect(riskStore.resolvedGrowthContext?.growthPhase.level).toBe(1);
         });
 
-        it('returns assetProfile source overriding global when enabled and valid', () => {
-            const globalPhaseMock = { level: 1, lot_size: 5 };
-            const overridePhaseMock = { level: 2, lot_size: 15 }; // Override phase
-            
-            const profileMock = { 
-                id: '1', active: true, growth_plan_enabled: true, 
-                growth_phases: [globalPhaseMock], current_phase_index: 0,
+        it('Scenario C: Asset selected, AssetRiskProfile linked, Override Growth', () => {
+            settingsStore.riskProfiles = [{ 
+                id: 'global-1', active: true, growth_plan_enabled: true, 
+                growth_phases: [{ level: 1, lot_size: 5 }], current_phase_index: 0,
                 linked_asset_risk_profile_ids: ['profile-wdo']
-            };
-            const assetMock = { id: 'WDO' };
-            
-            const assetProfileMock = { 
+            } as any];
+            settingsStore.assets = [{ id: 'WDO', symbol: 'WDO', point_value: 10 } as any];
+            settingsStore.assetRiskProfiles = [{ 
                 id: 'profile-wdo', asset_id: 'WDO', 
                 growth_override_enabled: true,
-                growth_phases_override: [overridePhaseMock],
+                growth_phases_override: [{ level: 1, lot_size: 15 }], // Override
                 current_phase_index: 0
-            };
-
-            settingsStore.riskProfiles = [profileMock as any];
-            settingsStore.assets = [assetMock as any];
-            settingsStore.assetRiskProfiles = [assetProfileMock as any];
+            } as any];
+            
             riskStore.activeAssetId = 'WDO';
             
-            const context = riskStore.resolvedGrowthContext;
+            expect(riskStore.resolvedGrowthContext?.growthSourceType).toBe('assetProfile');
+            expect(riskStore.resolvedGrowthContext?.growthPhase.lot_size).toBe(15);
+        });
+
+        it('Scenario D: Asset selected, valid config, output isValid = true with allowedContracts', () => {
+             settingsStore.riskProfiles = [{ 
+                id: 'global-1', active: true, max_risk_per_trade_percent: 2.0, capital_source: 'Fixed', fixed_capital: 10000,
+                linked_asset_risk_profile_ids: ['profile-wdo']
+            } as any];
+            settingsStore.assets = [{ id: 'WDO', symbol: 'WDO', point_value: 10.0 } as any];
+            settingsStore.assetRiskProfiles = [{ 
+                id: 'profile-wdo', asset_id: 'WDO', default_stop_points: 10, min_contracts: 1, max_contracts: 50
+            } as any];
             
-            expect(context).not.toBeNull();
-            expect(context?.growthSourceType).toBe('assetProfile');
-            expect(context?.growthPhase.level).toBe(2); // Should pick the override
+            riskStore.activeAssetId = 'WDO';
+            
+            const positionSizing = riskStore.positionSizingResult;
+            expect(positionSizing).not.toBeNull();
+            expect(positionSizing?.isValid).toBe(true);
+            
+            // Calc: 10000 * 2% = $200
+            // Risk per contract: 10 points * $10 = $100
+            // Allowed: $200 / $100 = 2 contracts
+            expect(positionSizing?.allowedContracts).toBe(2);
+        });
+
+        it('Scenario E: Asset selected, missing stop, output isValid = false with reasons', () => {
+             settingsStore.riskProfiles = [{ 
+                id: 'global-1', active: true, max_risk_per_trade_percent: 1.0, capital_source: 'Fixed', fixed_capital: 1000,
+                linked_asset_risk_profile_ids: ['profile-win']
+            } as any];
+            settingsStore.assets = [{ id: 'WIN', symbol: 'WIN', point_value: 0.20 } as any];
+            settingsStore.assetRiskProfiles = [{ id: 'profile-win', asset_id: 'WIN', default_stop_points: 0, min_contracts: 1, max_contracts: 10 } as any];
+            
+            riskStore.activeAssetId = 'WIN';
+            
+            const positionSizing = riskStore.positionSizingResult;
+            expect(positionSizing).not.toBeNull();
+            expect(positionSizing?.isValid).toBe(false);
+            expect(positionSizing?.allowedContracts).toBe(0);
+            expect(positionSizing?.reasons.length).toBeGreaterThan(0);
+        });
+
+        it('Scenario F: Asset change triggers context switch', () => {
+            settingsStore.riskProfiles = [{ 
+                id: 'global-1', active: true, growth_plan_enabled: true, growth_phases: [{ level: 1, lot_size: 5 }], current_phase_index: 0,
+                linked_asset_risk_profile_ids: ['profile-wdo', 'profile-win']
+            } as any];
+            
+            settingsStore.assets = [
+                { id: 'WDO', symbol: 'WDO', point_value: 10 } as any,
+                { id: 'WIN', symbol: 'WIN', point_value: 0.20 } as any
+            ];
+            
+            settingsStore.assetRiskProfiles = [
+                { id: 'profile-wdo', asset_id: 'WDO', growth_override_enabled: false } as any, // Uses global
+                { id: 'profile-win', asset_id: 'WIN', growth_override_enabled: true, growth_phases_override: [{ level: 1, lot_size: 99 }], current_phase_index: 0 } as any // Uses override
+            ];
+            
+            // Select WDO
+            riskStore.activeAssetId = 'WDO';
+            expect(riskStore.resolvedAssetRiskProfile?.asset_id).toBe('WDO');
+            expect(riskStore.resolvedGrowthContext?.growthSourceType).toBe('global');
+            
+            // Switch to WIN
+            riskStore.activeAssetId = 'WIN';
+            expect(riskStore.resolvedAssetRiskProfile?.asset_id).toBe('WIN');
+            expect(riskStore.resolvedGrowthContext?.growthSourceType).toBe('assetProfile');
+            expect(riskStore.resolvedGrowthContext?.growthPhase.lot_size).toBe(99);
         });
     });
 });
