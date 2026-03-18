@@ -248,6 +248,21 @@
         }));
     }
 
+    function applyTemplate(id: string) {
+        const base = settingsStore.riskProfiles.find((r) => r.id === id);
+        if (!base) return;
+        formData = {
+            ...base,
+            name: `${base.name} (Template)`,
+            active: false,
+            linked_asset_risk_profile_ids: [],
+            growth_phases: base.growth_phases
+                ? base.growth_phases.map((p) => ({ ...p, id: crypto.randomUUID() }))
+                : [],
+        } as Omit<RiskProfile, "id">;
+        selectedPreset = "custom";
+    }
+
     function save() {
         onSave({
             ...formData,
@@ -256,6 +271,51 @@
 </script>
 
 <div class="space-y-4 py-4">
+    {#if !initialData}
+        <div class="space-y-2 pb-2 bg-muted/20 p-4 rounded-xl border border-border/50">
+            <Label class="text-xs text-muted-foreground uppercase font-bold">
+                {$t("settings.risk.management.baseTemplate") || "Modelo Base"}
+            </Label>
+            <div class="flex flex-col md:flex-row items-start md:items-center gap-4">
+                <Select.Root
+                    type="single"
+                    onValueChange={(value: string) => {
+                        if (!value) return;
+                        if (value === "blank") {
+                            selectedPreset = "custom";
+                        } else {
+                            applyTemplate(value);
+                        }
+                    }}
+                >
+                    <Select.Trigger class="w-full md:w-[350px] bg-background">
+                        <Select.Value
+                            placeholder={$t("settings.risk.management.startBlank") || "Criar em Branco"}
+                        />
+                    </Select.Trigger>
+                    <Select.Content>
+                        <Select.Item value="blank">
+                            {$t("settings.risk.management.startBlank") || "Criar em Branco"}
+                        </Select.Item>
+                        <Select.Group>
+                            <Select.Label>
+                                {$t("settings.risk.management.copyOf") || "Cópia de"}
+                            </Select.Label>
+                            {#each settingsStore.riskProfiles as baseProfile}
+                                <Select.Item value={baseProfile.id}>
+                                    {baseProfile.name}
+                                </Select.Item>
+                            {/each}
+                        </Select.Group>
+                    </Select.Content>
+                </Select.Root>
+                <span class="text-xs text-muted-foreground max-w-sm">
+                    Carrega as configurações principais de um perfil existente. Vínculos de ativos não são transferidos na template.
+                </span>
+            </div>
+        </div>
+    {/if}
+
     <!-- Presets Selection -->
     <div class="space-y-2">
         <Label class="text-xs text-muted-foreground uppercase font-bold"

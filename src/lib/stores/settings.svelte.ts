@@ -863,6 +863,60 @@ class SettingsStore {
         this.saveRiskProfiles();
     }
 
+    async duplicateRiskProfile(id: string): Promise<string | null> {
+        const original = this.riskProfiles.find(r => r.id === id);
+        if (!original) return null;
+
+        const newProfileId = crypto.randomUUID();
+        
+        // Clone Global Growth Phases generating new IDs
+        const clonedPhases = original.growth_phases?.map(p => ({
+            ...p,
+            id: crypto.randomUUID()
+        })) || [];
+
+        const clonedProfile: RiskProfile = {
+            ...original,
+            id: newProfileId,
+            name: `${original.name} (Cópia)`,
+            active: false,
+            growth_phases: clonedPhases,
+            linked_asset_risk_profile_ids: []
+        };
+
+        // Clone linked AssetRiskProfiles
+        if (original.linked_asset_risk_profile_ids && original.linked_asset_risk_profile_ids.length > 0) {
+            const newLinkedIds: string[] = [];
+            
+            for (const assetProfileId of original.linked_asset_risk_profile_ids) {
+                const originalAssetProfile = this.assetRiskProfiles.find(a => a.id === assetProfileId);
+                if (originalAssetProfile) {
+                    const newAssetProfileId = crypto.randomUUID();
+                    
+                    const clonedAssetPhases = originalAssetProfile.growth_phases_override?.map(p => ({
+                        ...p,
+                        id: crypto.randomUUID()
+                    }));
+
+                    const clonedAssetProfile: AssetRiskProfile = {
+                        ...originalAssetProfile,
+                        id: newAssetProfileId,
+                        growth_phases_override: clonedAssetPhases
+                    };
+                    
+                    this.assetRiskProfiles.push(clonedAssetProfile);
+                    newLinkedIds.push(newAssetProfileId);
+                }
+            }
+            clonedProfile.linked_asset_risk_profile_ids = newLinkedIds;
+            this.saveAssetRiskProfiles();
+        }
+
+        this.riskProfiles.push(clonedProfile);
+        this.saveRiskProfiles();
+        return newProfileId;
+    }
+
     // Asset Risk Profiles
     addAssetRiskProfile(item: Omit<AssetRiskProfile, "id">) {
         this.assetRiskProfiles.push({ ...item, id: crypto.randomUUID() });

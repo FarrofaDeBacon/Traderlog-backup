@@ -113,4 +113,83 @@ describe('SettingsStore Unit Tests', () => {
 
         uuidSpy.mockRestore();
     });
+
+    describe('duplicateRiskProfile', () => {
+        it('should deep clone a risk profile, including linked asset profiles, with new IDs', async () => {
+            const originalProfileId = crypto.randomUUID();
+            const originalAssetProfileId = crypto.randomUUID();
+
+            settingsStore.riskProfiles = [{
+                id: originalProfileId,
+                name: 'Original Profile',
+                active: true,
+                max_daily_loss: 1000,
+                daily_target: 2000,
+                max_risk_per_trade_percent: 1,
+                max_trades_per_day: 5,
+                min_risk_reward: 2,
+                lock_on_loss: true,
+                target_type: 'Financial',
+                capital_source: 'Fixed',
+                fixed_capital: 10000,
+                linked_account_id: 'acc1',
+                growth_plan_enabled: true,
+                current_phase_index: 0,
+                growth_phases: [{ id: 'gp1', level: 1, name: 'Phase 1', lot_size: 1, conditions_to_advance: [], conditions_to_demote: [] }],
+                psychological_coupling_enabled: false,
+                outlier_regression_enabled: false,
+                sniper_mode_enabled: false,
+                sniper_mode_selectivity: 3,
+                psychological_lookback_count: 10,
+                outlier_lookback_count: 20,
+                psychological_threshold: -2,
+                lot_reduction_multiplier: 0.5,
+                psychological_search_strategy: 'Strict',
+                account_type_applicability: 'All',
+                account_ids: [],
+                linked_asset_risk_profile_ids: [originalAssetProfileId]
+            }];
+
+            settingsStore.assetRiskProfiles = [{
+                id: originalAssetProfileId,
+                asset_id: 'asset1',
+                name: 'Original Asset Profile',
+                default_stop_points: 100,
+                min_contracts: 1,
+                max_contracts: 10,
+                growth_override_enabled: true,
+                growth_phases_override: [{ id: 'ago1', level: 1, name: 'Asset Phase 1', lot_size: 2, conditions_to_advance: [], conditions_to_demote: [] }]
+            }];
+
+            const uuidSpy = vi.spyOn(crypto, 'randomUUID');
+
+            const newId = await settingsStore.duplicateRiskProfile(originalProfileId);
+
+            expect(newId).toBeTruthy();
+            expect(newId).not.toBe(originalProfileId);
+
+            const clonedProfile = settingsStore.riskProfiles.find(p => p.id === newId);
+            expect(clonedProfile).toBeDefined();
+            expect(clonedProfile!.name).toBe('Original Profile (Cópia)');
+            expect(clonedProfile!.active).toBe(false); 
+            expect(clonedProfile!.max_daily_loss).toBe(1000);
+            
+            expect(clonedProfile!.growth_phases?.length).toBe(1);
+            expect(clonedProfile!.growth_phases![0].id).not.toBe('gp1');
+            expect(clonedProfile!.growth_phases![0].name).toBe('Phase 1');
+
+            expect(clonedProfile!.linked_asset_risk_profile_ids?.length).toBe(1);
+            const newAssetProfileId = clonedProfile!.linked_asset_risk_profile_ids![0];
+            expect(newAssetProfileId).not.toBe(originalAssetProfileId);
+
+            const clonedAssetProfile = settingsStore.assetRiskProfiles.find(a => a.id === newAssetProfileId);
+            expect(clonedAssetProfile).toBeDefined();
+            expect(clonedAssetProfile!.asset_id).toBe('asset1');
+            
+            expect(clonedAssetProfile!.growth_phases_override?.length).toBe(1);
+            expect(clonedAssetProfile!.growth_phases_override![0].id).not.toBe('ago1');
+
+            uuidSpy.mockRestore();
+        });
+    });
 });

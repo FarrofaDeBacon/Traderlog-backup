@@ -1720,7 +1720,12 @@
         "noLinkedAssetProfiles": "No asset profile linked.",
         "assetProfileSelector": "Select an Asset Profile...",
         "noLinkedAssetProfileForThisAsset": "No Asset Profile linked for this asset.",
-        "linkedProfile": "Linked Profile"
+        "linkedProfile": "Linked Profile",
+        "duplicate": "Duplicate Profile",
+        "createFromTemplate": "Create from Template",
+        "copyOf": "Copy of",
+        "startBlank": "Start Blank",
+        "baseTemplate": "Base Template"
       },
       "growth": {
         "selectAssetToView": "Select an Asset at the top to view the Growth Plan rules.",

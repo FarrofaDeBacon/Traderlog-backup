@@ -1720,7 +1720,12 @@
         "noLinkedAssetProfiles": "Nenhum perfil de ativo vinculado.",
         "assetProfileSelector": "Selecione um Perfil de Ativo...",
         "noLinkedAssetProfileForThisAsset": "Nenhum Perfil de Ativo vinculado para este ativo.",
-        "linkedProfile": "Perfil Vinculado"
+        "linkedProfile": "Perfil Vinculado",
+        "duplicate": "Duplicar Perfil",
+        "createFromTemplate": "Criar a partir de Modelo",
+        "copyOf": "Cópia de",
+        "startBlank": "Criar em Branco",
+        "baseTemplate": "Modelo Base"
       },
       "growth": {
         "selectAssetToView": "Selecione um Ativo no topo para visualizar as regras do Plano de Crescimento.",

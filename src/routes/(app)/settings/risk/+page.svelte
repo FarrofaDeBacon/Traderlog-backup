@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Plus, Pencil, Trash2, ShieldAlert } from "lucide-svelte";
+    import { Plus, Pencil, Trash2, ShieldAlert, Copy } from "lucide-svelte";
     import { Button } from "$lib/components/ui/button";
     import * as Card from "$lib/components/ui/card";
     import * as Dialog from "$lib/components/ui/dialog";
@@ -185,6 +185,19 @@
                         {/if}
                     </div>
                     <div class="flex gap-2">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            class="h-8 w-8 hover:bg-muted text-muted-foreground"
+                            title={$t("settings.risk.management.duplicate") || "Duplicar Perfil"}
+                            onclick={async (e) => {
+                                e.stopPropagation();
+                                const newId = await settingsStore.duplicateRiskProfile(profile.id);
+                                if (newId) toast.success("Perfil duplicado com sucesso!");
+                            }}
+                        >
+                            <Copy class="w-4 h-4" />
+                        </Button>
                         <Button
                             variant="ghost"
                             size="icon"
