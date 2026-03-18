@@ -427,60 +427,80 @@
                 </Card.Root>
 
                 <!-- Widget 4: Growth Phase (Dependent on whether it's enabled) -->
-                {#if currentProfile.growth_plan_enabled && currentProfile.growth_phases.length > 0}
-                    {@const currentPhase = currentProfile.growth_phases[currentProfile.current_phase_index] || currentProfile.growth_phases[0]}
+                {#if currentProfile.growth_plan_enabled}
                     <Card.Root class="lg:col-span-12 border-primary/20 shadow-lg bg-black/10 overflow-hidden relative">
                         <div class="absolute top-0 left-0 w-1 h-full bg-primary"></div>
                         <div class="p-6">
-                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-4">
-                                
-                                <div class="flex items-center gap-3">
-                                   <div class="p-2.5 bg-primary/10 rounded-lg">
-                                       <Layers class="w-6 h-6 text-primary" />
-                                   </div>
-                                   <div>
-                                       <span class="text-[10px] font-black uppercase tracking-widest text-primary mb-0.5 block">Plano de Crescimento Ativo</span>
-                                       <h2 class="text-2xl font-black text-foreground tracking-tight">
-                                           {currentPhase.name || `Fase ${currentPhase.level}`}
-                                       </h2>
-                                   </div>
-                                </div>
-
-                                <div class="flex gap-3 items-center">
-                                     <div class="flex flex-col p-3 rounded-lg border border-border/10 bg-black/20 min-w[100px] items-center text-center">
-                                         <span class="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1">Mão Máxima (Contratos)</span>
-                                         <span class="text-xl font-bold font-mono tracking-tight text-emerald-500">{currentPhase.lot_size}x</span>
-                                     </div>
-                                     <div class="flex flex-col p-3 rounded-lg border border-border/10 bg-black/20 items-center text-center">
-                                         <span class="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1">Fase</span>
-                                         <span class="text-xl font-bold font-mono tracking-tight text-primary">{currentProfile.current_phase_index + 1}<span class="text-xs text-muted-foreground font-normal">/{currentProfile.growth_phases.length}</span></span>
-                                     </div>
-                                     <div class="flex flex-col gap-2">
-                                         <!-- Consuming DOMAIN growthEvaluation -->
-                                         <Button size="sm" variant="outline"
-                                             class="h-8 text-xs border-emerald-500/40 text-emerald-500 hover:bg-emerald-500/10 hover:border-emerald-500 disabled:opacity-30 relative"
-                                             disabled={currentProfile.current_phase_index >= currentProfile.growth_phases.length - 1 || riskData.growthEvaluation?.canPromote === false}
-                                             onclick={promotePhase}>
-                                             <ChevronRight class="w-4 h-4 mr-1" /> Promover
-                                             {#if riskData.growthEvaluation?.canPromote}
-                                                <div class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse blur-[1px]"></div>
-                                             {/if}
-                                         </Button>
-                                         <Button size="sm" variant="outline"
-                                             class="h-8 text-xs border-rose-500/40 text-rose-500 hover:bg-rose-500/10 hover:border-rose-500 disabled:opacity-30 relative"
-                                             disabled={currentProfile.current_phase_index <= 0 || riskData.growthEvaluation?.shouldRegress === false}
-                                             onclick={demotePhase}>
-                                             <ChevronLeft class="w-4 h-4 mr-1" /> Regredir
-                                             {#if riskData.growthEvaluation?.shouldRegress}
-                                                <div class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full animate-pulse blur-[1px]"></div>
-                                             {/if}
-                                         </Button>
-                                     </div>
-                                </div>
-
+                            <div class="flex items-center gap-3 mb-6">
+                               <div class="p-2.5 bg-primary/10 rounded-lg">
+                                   <Layers class="w-6 h-6 text-primary" />
+                               </div>
+                               <div>
+                                   <span class="text-[10px] font-black uppercase tracking-widest text-primary mb-0.5 block">Plano de Crescimento Ativo</span>
+                                   <h2 class="text-2xl font-black text-foreground tracking-tight">Performance Direcional</h2>
+                               </div>
                             </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {#if !riskStore.activeAssetId}
+                                <div class="py-10 rounded-xl bg-black/20 border border-border/10 flex flex-col items-center justify-center text-center gap-3">
+                                    <Info class="w-8 h-8 text-blue-400 mb-2 opacity-80" />
+                                    <span class="text-sm font-medium text-foreground">{$_('risk.growth.selectAssetToView')}</span>
+                                </div>
+                            {:else if !riskStore.resolvedGrowthContext}
+                                <div class="py-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex flex-col items-center justify-center text-center gap-2">
+                                    <AlertTriangle class="w-8 h-8 text-rose-400 mb-2 opacity-80" />
+                                    <span class="text-sm font-bold text-rose-400 uppercase tracking-widest">{$_('risk.growth.noProfileLinked')}</span>
+                                    <p class="text-xs text-rose-300/80 max-w-md mt-1 leading-relaxed">{$_('risk.growth.noProfileLinkedDesc')}</p>
+                                </div>
+                            {:else}
+                                {@const ctx = riskStore.resolvedGrowthContext}
+                                {@const currentPhase = ctx.growthPhase}
+                                <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 pt-2">
+                                    
+                                    <div>
+                                        <!-- Sub-header do nome da fase usando o currentPhase lido de ctx.growthPhase -->
+                                        <h3 class="text-xl font-bold text-foreground">
+                                           {currentPhase.name || `Fase ${currentPhase.level}`}
+                                        </h3>
+                                        <div class="mt-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                            Asset: {ctx.asset.symbol} ({ctx.assetRiskProfile.name})
+                                        </div>
+                                    </div>
+
+                                    <div class="flex gap-3 items-center">
+                                         <div class="flex flex-col p-3 rounded-lg border border-border/10 bg-black/20 min-w[100px] items-center text-center">
+                                             <span class="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1">Mão Máxima (Contratos)</span>
+                                             <span class="text-xl font-bold font-mono tracking-tight text-emerald-500">{currentPhase.lot_size}x</span>
+                                         </div>
+                                         <div class="flex flex-col p-3 rounded-lg border border-border/10 bg-black/20 items-center text-center">
+                                             <span class="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1">Fase</span>
+                                             <span class="text-xl font-bold font-mono tracking-tight text-primary">{ctx.riskProfile.current_phase_index + 1}<span class="text-xs text-muted-foreground font-normal">/{ctx.riskProfile.growth_phases.length}</span></span>
+                                         </div>
+                                         <div class="flex flex-col gap-2">
+                                             <!-- Consuming DOMAIN growthEvaluation -->
+                                             <Button size="sm" variant="outline"
+                                                 class="h-8 text-xs border-emerald-500/40 text-emerald-500 hover:bg-emerald-500/10 hover:border-emerald-500 disabled:opacity-30 relative"
+                                                 disabled={ctx.riskProfile.current_phase_index >= ctx.riskProfile.growth_phases.length - 1 || riskData.growthEvaluation?.canPromote === false}
+                                                 onclick={promotePhase}>
+                                                 <ChevronRight class="w-4 h-4 mr-1" /> Promover
+                                                 {#if riskData.growthEvaluation?.canPromote}
+                                                    <div class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse blur-[1px]"></div>
+                                                 {/if}
+                                             </Button>
+                                             <Button size="sm" variant="outline"
+                                                 class="h-8 text-xs border-rose-500/40 text-rose-500 hover:bg-rose-500/10 hover:border-rose-500 disabled:opacity-30 relative"
+                                                 disabled={ctx.riskProfile.current_phase_index <= 0 || riskData.growthEvaluation?.shouldRegress === false}
+                                                 onclick={demotePhase}>
+                                                 <ChevronLeft class="w-4 h-4 mr-1" /> Regredir
+                                                 {#if riskData.growthEvaluation?.shouldRegress}
+                                                    <div class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full animate-pulse blur-[1px]"></div>
+                                                 {/if}
+                                             </Button>
+                                         </div>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <!-- Rules to advance -->
                                 <div>
                                     <h4 class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-1.5"><ArrowRight class="w-3 h-3 text-emerald-500"/> Requisitos para Avançar (Promote)</h4>
@@ -545,6 +565,7 @@
                                     </div>
                                 </div>
                             </div>
+                            {/if}
                         </div>
                     </Card.Root>
                 {/if}

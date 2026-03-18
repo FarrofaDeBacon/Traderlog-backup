@@ -1717,6 +1717,11 @@
         "assetProfileSelector": "Selecione um Perfil de Ativo...",
         "noLinkedAssetProfileForThisAsset": "Nenhum Perfil de Ativo vinculado para este ativo.",
         "linkedProfile": "Perfil Vinculado"
+      },
+      "growth": {
+        "selectAssetToView": "Selecione um Ativo no topo para visualizar as regras do Plano de Crescimento.",
+        "noProfileLinked": "Sem perfil compatível.",
+        "noProfileLinkedDesc": "O ativo selecionado não possui um Perfil de Ativo vinculado a este Perfil de Risco. As regras de Crescimento não se aplicam."
       }
     },
     "strategies": {
