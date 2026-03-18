@@ -1721,7 +1721,9 @@
       "growth": {
         "selectAssetToView": "Selecione um Ativo no topo para visualizar as regras do Plano de Crescimento.",
         "noProfileLinked": "Sem perfil compatível.",
-        "noProfileLinkedDesc": "O ativo selecionado não possui um Perfil de Ativo vinculado a este Perfil de Risco. As regras de Crescimento não se aplicam."
+        "noProfileLinkedDesc": "O ativo selecionado não possui um Perfil de Ativo vinculado a este Perfil de Risco. As regras de Crescimento não se aplicam.",
+        "sourceGlobal": "Plano Global",
+        "sourceAsset": "Específico do Ativo"
       }
     },
     "strategies": {

@@ -16,6 +16,7 @@ import {
     adaptTradeToDomain, 
     adaptGrowthPhaseToDomain 
 } from '$lib/domain/risk/risk-adapters';
+import type { ResolvedGrowthContext } from '../types';
 
 /**
  * Store reativo estritamente focado no Cockpit de Risco.
@@ -89,9 +90,11 @@ class RiskStore {
 
     /**
      * Retorna o contexto completo de Growth Plan associado ao Perfil ativo e Ativo selecionado.
-     * Segue a hierarquia: Ativo -> AssetRiskProfile -> RiskProfile -> GrowthPhase.
+     * Segue a hierarquia de Prioridade (Override):
+     * 1. AssetRiskProfile Override Phase
+     * 2. Global RiskProfile Phase
      */
-    get resolvedGrowthContext() {
+    get resolvedGrowthContext(): ResolvedGrowthContext | null {
         const activeProfile = settingsStore.activeProfile;
         if (!activeProfile || !activeProfile.active || !this.activeAssetId) return null;
 
@@ -103,22 +106,36 @@ class RiskStore {
         // Exige vínculo explícito: sem perfil de ativo, sem avaliação de growth pra este ativo
         if (!assetRiskProfile) return null;
 
-        if (!activeProfile.growth_plan_enabled || !activeProfile.growth_phases || activeProfile.growth_phases.length === 0) {
-            return null; // O plano não está ativado
+        // 1. Tenta resolver via AssetRiskProfile (Override prioritário)
+        if (assetRiskProfile.growth_override_enabled && assetRiskProfile.growth_phases_override && assetRiskProfile.growth_phases_override.length > 0) {
+            const currentObjPhaseIndex = assetRiskProfile.current_phase_index || 0;
+            if (currentObjPhaseIndex < assetRiskProfile.growth_phases_override.length) {
+                return {
+                    asset,
+                    assetRiskProfile,
+                    riskProfile: activeProfile,
+                    growthSourceType: "assetProfile",
+                    growthPhase: assetRiskProfile.growth_phases_override[currentObjPhaseIndex]
+                };
+            }
         }
 
-        const currentPhaseIndex = activeProfile.current_phase_index || 0;
-        if (currentPhaseIndex >= activeProfile.growth_phases.length) return null;
+        // 2. Fallback para o Global RiskProfile
+        if (activeProfile.growth_plan_enabled && activeProfile.growth_phases && activeProfile.growth_phases.length > 0) {
+            const currentPhaseIndex = activeProfile.current_phase_index || 0;
+            if (currentPhaseIndex < activeProfile.growth_phases.length) {
+                return {
+                    asset,
+                    assetRiskProfile,
+                    riskProfile: activeProfile,
+                    growthSourceType: "global",
+                    growthPhase: activeProfile.growth_phases[currentPhaseIndex]
+                };
+            }
+        }
 
-        const currentPhase = activeProfile.growth_phases[currentPhaseIndex];
-        
-        // Monta o encadeamento restrito (ResolvedGrowthContext struct)
-        return {
-            asset,
-            assetRiskProfile,
-            riskProfile: activeProfile,
-            growthPhase: currentPhase
-        };
+        // 3. Nenhum Contexto de Crescimento Aplicável
+        return null;
     }
 
     /**

@@ -1721,7 +1721,9 @@
       "growth": {
         "selectAssetToView": "Select an Asset at the top to view the Growth Plan rules.",
         "noProfileLinked": "No compatible profile.",
-        "noProfileLinkedDesc": "The selected asset does not have an Asset Profile linked to this Risk Profile. Growth rules do not apply."
+        "noProfileLinkedDesc": "The selected asset does not have an Asset Profile linked to this Risk Profile. Growth rules do not apply.",
+        "sourceGlobal": "Global Plan",
+        "sourceAsset": "Asset Specific"
       }
     },
     "strategies": {

@@ -371,12 +371,16 @@ export type AssetRiskProfile = {
     min_contracts: number;
     max_contracts: number;
     notes?: string;
+    growth_override_enabled?: boolean;
+    growth_phases_override?: GrowthPhase[];
+    current_phase_index?: number;
 };
 
 export type ResolvedGrowthContext = {
     asset: Asset;
     assetRiskProfile: AssetRiskProfile;
     riskProfile: RiskProfile;
+    growthSourceType: "global" | "assetProfile";
     growthPhase: GrowthPhase;
 };
 

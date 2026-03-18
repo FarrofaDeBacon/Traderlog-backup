@@ -149,15 +149,18 @@ describe('RiskStore Position Sizing Integration', () => {
             expect(riskStore.resolvedGrowthContext).toBeNull();
         });
 
-        it('returns the full bounded context chain when valid', () => {
-            const phaseMock = { level: 1, lot_size: 5 };
+        it('returns global source when asset profile has no override', () => {
+            const globalPhaseMock = { level: 1, lot_size: 5 };
             const profileMock = { 
                 id: '1', active: true, growth_plan_enabled: true, 
-                growth_phases: [phaseMock], current_phase_index: 0,
+                growth_phases: [globalPhaseMock], current_phase_index: 0,
                 linked_asset_risk_profile_ids: ['profile-wdo']
             };
             const assetMock = { id: 'WDO' };
-            const assetProfileMock = { id: 'profile-wdo', asset_id: 'WDO' };
+            const assetProfileMock = { 
+                id: 'profile-wdo', asset_id: 'WDO', 
+                growth_override_enabled: false 
+            };
 
             settingsStore.riskProfiles = [profileMock as any];
             settingsStore.assets = [assetMock as any];
@@ -167,10 +170,38 @@ describe('RiskStore Position Sizing Integration', () => {
             const context = riskStore.resolvedGrowthContext;
             
             expect(context).not.toBeNull();
-            expect(context?.asset.id).toBe('WDO');
-            expect(context?.assetRiskProfile.id).toBe('profile-wdo');
-            expect(context?.riskProfile.id).toBe('1');
+            expect(context?.growthSourceType).toBe('global');
             expect(context?.growthPhase.level).toBe(1);
+        });
+
+        it('returns assetProfile source overriding global when enabled and valid', () => {
+            const globalPhaseMock = { level: 1, lot_size: 5 };
+            const overridePhaseMock = { level: 2, lot_size: 15 }; // Override phase
+            
+            const profileMock = { 
+                id: '1', active: true, growth_plan_enabled: true, 
+                growth_phases: [globalPhaseMock], current_phase_index: 0,
+                linked_asset_risk_profile_ids: ['profile-wdo']
+            };
+            const assetMock = { id: 'WDO' };
+            
+            const assetProfileMock = { 
+                id: 'profile-wdo', asset_id: 'WDO', 
+                growth_override_enabled: true,
+                growth_phases_override: [overridePhaseMock],
+                current_phase_index: 0
+            };
+
+            settingsStore.riskProfiles = [profileMock as any];
+            settingsStore.assets = [assetMock as any];
+            settingsStore.assetRiskProfiles = [assetProfileMock as any];
+            riskStore.activeAssetId = 'WDO';
+            
+            const context = riskStore.resolvedGrowthContext;
+            
+            expect(context).not.toBeNull();
+            expect(context?.growthSourceType).toBe('assetProfile');
+            expect(context?.growthPhase.level).toBe(2); // Should pick the override
         });
     });
 });

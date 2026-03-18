@@ -436,7 +436,14 @@
                                    <Layers class="w-6 h-6 text-primary" />
                                </div>
                                <div>
-                                   <span class="text-[10px] font-black uppercase tracking-widest text-primary mb-0.5 block">Plano de Crescimento Ativo</span>
+                                   <div class="flex items-center gap-2 mb-0.5">
+                                       <span class="text-[10px] font-black uppercase tracking-widest text-primary block">Plano de Crescimento Ativo</span>
+                                       {#if riskStore.resolvedGrowthContext}
+                                           <span class="px-1.5 py-[1px] rounded-[3px] text-[8px] font-bold uppercase tracking-widest leading-none {riskStore.resolvedGrowthContext.growthSourceType === 'assetProfile' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-primary/20 text-primary border border-primary/30'}">
+                                                {riskStore.resolvedGrowthContext.growthSourceType === 'assetProfile' ? $_('risk.growth.sourceAsset') : $_('risk.growth.sourceGlobal')}
+                                           </span>
+                                       {/if}
+                                   </div>
                                    <h2 class="text-2xl font-black text-foreground tracking-tight">Performance Direcional</h2>
                                </div>
                             </div>
